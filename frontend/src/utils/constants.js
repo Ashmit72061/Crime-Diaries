@@ -1,5 +1,5 @@
-export const APP_NAME = 'Crime Diaries';
-export const APP_DESCRIPTION = 'Your dark corner of the internet for crime fiction, true crime, and mystery.';
+export const APP_NAME = 'PRISM';
+export const APP_DESCRIPTION = 'Police Reporting, Intelligence & Statistics Management';
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const ROLES = {

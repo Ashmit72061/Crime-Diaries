@@ -33,10 +33,12 @@ export const AppRouter = () => (
         {/* Public Routes layout wrapper */}
         <Route element={<PublicLayout />}>
           <Route path={ROUTES.HOME}     element={<HomePage />} />
-          <Route path={ROUTES.LOGIN}    element={<LoginPage />} />
-          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
           <Route path={ROUTES.PROFILE}  element={<div className="p-8 text-zinc-100">Profile page — coming soon</div>} />
         </Route>
+
+        {/* Auth routes without public site header and footer */}
+        <Route path={ROUTES.LOGIN}    element={<LoginPage />} />
+        <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
 
         {/* Protected Dashboard Routes */}
         <Route element={<ProtectedRoute />}>

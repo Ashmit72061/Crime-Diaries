@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Save, FileCheck, Users, MapPin, Shield, HelpCircle, Plus, Trash2 } from "lucide-react";
+import { Save, FileCheck, Users, MapPin, Shield, HelpCircle, Plus, Trash2, AlertTriangle, ShieldOff } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
+import useAuthStore from "../store/authStore.js";
 
 export default function CaseManagement() {
   const { onSubmitReport, addNotification } = useOutletContext();
+  const { user } = useAuthStore();
   const [activeStep, setActiveStep] = useState(1);
   const [formData, setFormData] = useState({
     uid: "",
@@ -37,6 +39,29 @@ export default function CaseManagement() {
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (user?.role === "PS") {
+      setFormData(prev => ({
+        ...prev,
+        district: user.districtKey,
+        policeStation: user.stationName
+      }));
+    }
+  }, [user]);
+
+  // Access guard: only PS operators can fill forms
+  if (user && user.role !== "PS") {
+    return (
+      <div className="page-wrapper">
+        <div className="access-denied-card">
+          <div className="access-icon"><ShieldOff size={32} /></div>
+          <h2>Access Restricted</h2>
+          <p>Case entry forms are only accessible to Police Station Operators. Switch to a PS Operator view using the Console Scope selector to enter data.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Steps definition
   const steps = [
@@ -164,7 +189,7 @@ export default function CaseManagement() {
     <div className="page-wrapper">
       <div className="page-header">
         <div>
-          <h1>New Case & Crime Diary Entry</h1>
+          <h1>New Case Record (PRISM)</h1>
           <p className="page-desc">Enter complete Case details. Single entry propagates to District Analytics.</p>
         </div>
         <button 
@@ -377,6 +402,13 @@ export default function CaseManagement() {
               <span>Location & Case Details</span>
             </div>
             
+            {user?.role === "PS" && (
+              <div className="col-span-full p-2 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs rounded mb-3 flex items-center gap-1.5 font-sans">
+                <AlertTriangle size={14} />
+                <span>Console View: Police Station Operator. Location inputs are locked to PS {user.stationName}.</span>
+              </div>
+            )}
+            
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label required" htmlFor="district">District</label>
@@ -387,6 +419,7 @@ export default function CaseManagement() {
                   value={formData.district}
                   onChange={handleDistrictChange}
                   required
+                  disabled={user?.role === "PS"}
                 >
                   <option value="">Select District</option>
                   {Object.keys(DISTRICTS_AND_STATIONS).map((dist) => (
@@ -405,7 +438,7 @@ export default function CaseManagement() {
                   value={formData.policeStation}
                   onChange={handleInputChange}
                   required
-                  disabled={!formData.district}
+                  disabled={!formData.district || user?.role === "PS"}
                 >
                   <option value="">Select Police Station</option>
                   {formData.district && DISTRICTS_AND_STATIONS[formData.district]?.map((ps) => (

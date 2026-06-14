@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Save, FileCheck, PhoneCall, User, MapPin, ShieldAlert, Award } from "lucide-react";
+import { Save, FileCheck, PhoneCall, User, MapPin, ShieldAlert, Award, AlertTriangle, Shield, ShieldOff } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
+import useAuthStore from "../store/authStore.js";
 
 export default function PCRCallEntry() {
   const { onSubmitReport, addNotification } = useOutletContext();
+  const { user } = useAuthStore();
   const [activeStep, setActiveStep] = useState(1);
   const [formData, setFormData] = useState({
     district: "New Delhi District (NDD)",
@@ -27,6 +29,29 @@ export default function PCRCallEntry() {
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (user?.role === "PS") {
+      setFormData(prev => ({
+        ...prev,
+        district: user.districtKey,
+        policeStation: user.stationName
+      }));
+    }
+  }, [user]);
+
+  // Access guard: only PS operators can fill forms
+  if (user && user.role !== "PS") {
+    return (
+      <div className="page-wrapper">
+        <div className="access-denied-card">
+          <div className="access-icon"><ShieldOff size={32} /></div>
+          <h2>Access Restricted</h2>
+          <p>PCR Call entry forms are only accessible to Police Station Operators. Switch to a PS Operator view using the Console Scope selector to enter data.</p>
+        </div>
+      </div>
+    );
+  }
 
   const steps = [
     { num: 1, label: "Call & Caller Info" },
@@ -311,6 +336,18 @@ export default function PCRCallEntry() {
                 <span>Incident Classification & Location</span>
               </div>
               <div className="form-grid">
+                {user?.role === "PS" ? (
+                  <div className="col-span-full p-2 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs rounded mb-3 flex items-center gap-1.5 font-sans">
+                    <AlertTriangle size={14} />
+                    <span>Console View: Police Station Operator. Location inputs are locked to PS {user.stationName}.</span>
+                  </div>
+                ) : (
+                  <div className="col-span-full p-2 bg-blue-500/10 border border-blue-500/30 text-blue-500 text-xs rounded mb-3 flex items-center gap-1.5 font-sans">
+                    <Shield size={14} />
+                    <span>Logged in as Command Staff. Please select a District and Station.</span>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label className="form-label required" htmlFor="district">District</label>
                   <select
@@ -320,6 +357,7 @@ export default function PCRCallEntry() {
                     value={formData.district}
                     onChange={handleDistrictChange}
                     required
+                    disabled={user?.role === "PS"}
                   >
                     <option value="">Select District</option>
                     {Object.keys(DISTRICTS_AND_STATIONS).map((dist) => (
@@ -338,7 +376,7 @@ export default function PCRCallEntry() {
                     value={formData.policeStation}
                     onChange={handleInputChange}
                     required
-                    disabled={!formData.district}
+                    disabled={!formData.district || user?.role === "PS"}
                   >
                     <option value="">Select Police Station</option>
                     {formData.district && DISTRICTS_AND_STATIONS[formData.district]?.map((ps) => (
