@@ -58,4 +58,3 @@ export const AppRouter = () => (
     </Suspense>
   </BrowserRouter>
 );
-

@@ -5,48 +5,57 @@ import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
-import { globalLimiter } from './middleware/rateLimiter.middleware.js';
-import { errorHandler, notFound } from './middleware/error.middleware.js';
 import { logger } from './utils/logger.js';
-import routes from './routes/index.js';
 
 const app = express();
 
-// ── Security ──────────────────────────────────────────────────────────────────
+// Security
 app.use(helmet());
-
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: env.FRONTEND_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-// ── Compression ───────────────────────────────────────────────────────────────
+// Compression & Body parsing
 app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-// ── Request Logging ───────────────────────────────────────────────────────────
+// Request Logging
 app.use(
   morgan(env.isDev ? 'dev' : 'combined', {
     stream: { write: (msg) => logger.http(msg.trim()) },
   })
 );
 
-// ── Body Parsers ──────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
+// Routes placeholder for modules
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'success', data: { message: 'PHAROS API is running' } });
+});
 
-// ── Rate Limiting ─────────────────────────────────────────────────────────────
-app.use('/api', globalLimiter);
+// To be imported from modules and registered here
+// app.use('/api/auth', authRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/fields', fieldsRoutes);
+// app.use('/api/records', recordsRoutes);
 
-// ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api', routes);
+// 404 & Error Handling
+app.use((req, res, next) => {
+  res.status(404).json({ status: 'error', code: 'NOT_FOUND', message: 'Endpoint not found' });
+});
 
-// ── 404 & Error Handling ──────────────────────────────────────────────────────
-app.use(notFound);
-app.use(errorHandler);
+app.use((err, req, res, next) => {
+  logger.error(err.stack);
+  res.status(err.status || 500).json({
+    status: 'error',
+    code: err.code || 'INTERNAL_ERROR',
+    message: err.message || 'Something went wrong',
+  });
+});
 
 export default app;

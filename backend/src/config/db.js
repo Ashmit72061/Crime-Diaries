@@ -1,25 +1,27 @@
-import mongoose from 'mongoose';
+import knex from 'knex';
 import { env } from './env.js';
 import { logger } from '../utils/logger.js';
 
+export const db = knex({
+  client: 'pg',
+  connection: env.DATABASE_URL,
+  pool: { min: 2, max: 10 }
+});
+
 export const connectDB = async () => {
   try {
-    mongoose.set('strictQuery', true);
-    const conn = await mongoose.connect(env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
-    });
-    logger.info(`MongoDB connected: ${conn.connection.host}`);
+    await db.raw('SELECT 1');
+    logger.info('PostgreSQL connected');
   } catch (err) {
-    logger.error(`MongoDB connection error: ${err.message}`);
+    logger.error(`PostgreSQL connection error: ${err.message}`);
     process.exit(1);
   }
 };
 
-// Graceful shutdown
 const shutdownDB = async (signal) => {
-  logger.info(`${signal} received. Closing MongoDB connection...`);
-  await mongoose.connection.close();
-  logger.info('MongoDB connection closed.');
+  logger.info(`${signal} received. Closing PostgreSQL connection...`);
+  await db.destroy();
+  logger.info('PostgreSQL connection closed.');
   process.exit(0);
 };
 
