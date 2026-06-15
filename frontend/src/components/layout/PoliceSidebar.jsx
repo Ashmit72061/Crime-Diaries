@@ -12,17 +12,21 @@ import {
   Plus
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
+import useAuthStore from "../../store/authStore.js";
 
 export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
   const [expandedSubmenu, setExpandedSubmenu] = useState(null);
+  const { user } = useAuthStore();
+  const isPS = user?.role === "PS";
 
-  const navItems = [
+  const allNavItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
     { 
       id: "case-management", 
       label: "Case Management", 
       icon: FileText,
       to: "/dashboard/case-management",
+      psOnly: true,
       subItems: [{ id: "case-management-new", label: "New Case Entry", icon: Plus, to: "/dashboard/case-management" }]
     },
     { 
@@ -30,6 +34,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
       label: "Arrest Management", 
       icon: UserX,
       to: "/dashboard/arrest-management",
+      psOnly: true,
       subItems: [{ id: "arrest-management-new", label: "New Arrest Entry", icon: Plus, to: "/dashboard/arrest-management" }]
     },
     { 
@@ -37,6 +42,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
       label: "PCR Calls", 
       icon: PhoneCall,
       to: "/dashboard/pcr-calls",
+      psOnly: true,
       subItems: [{ id: "pcr-calls-new", label: "New PCR Entry", icon: Plus, to: "/dashboard/pcr-calls" }]
     },
     { 
@@ -44,6 +50,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
       label: "UIDB Management", 
       icon: Fingerprint,
       to: "/dashboard/uidb-management",
+      psOnly: true,
       subItems: [{ id: "uidb-management-new", label: "New UIDB Entry", icon: Plus, to: "/dashboard/uidb-management" }]
     },
     { 
@@ -51,9 +58,13 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
       label: "Missing Persons", 
       icon: Search,
       to: "/dashboard/missing-persons",
+      psOnly: true,
       subItems: [{ id: "missing-persons-new", label: "New Missing Entry", icon: Plus, to: "/dashboard/missing-persons" }]
     }
   ];
+
+  // Only show form entries to PS Operators
+  const navItems = allNavItems.filter(item => !item.psOnly || isPS);
 
   const handleNavClick = (itemId, hasSubItems) => {
     if (isCollapsed) {
@@ -86,8 +97,8 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
           />
           {!isCollapsed && (
             <div className="brand-text">
-              <span className="brand-main">DELHI POLICE</span>
-              <span className="brand-sub">CRIME DIARY</span>
+              <span className="brand-main">PRISM</span>
+              <span className="brand-sub" style={{ fontSize: "0.6rem" }}>DELHI POLICE</span>
             </div>
           )}
         </div>

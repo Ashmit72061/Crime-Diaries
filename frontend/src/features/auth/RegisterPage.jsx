@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { registerSchema } from '../../utils/validators.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { Input } from '../../components/ui/Input.jsx';
@@ -22,9 +22,9 @@ export default function RegisterPage() {
   const onSubmit = (data) => registerMutation.mutate(data);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-zinc-950 to-zinc-950 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-[#0c1222]">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-slate-950 to-slate-950 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -32,14 +32,14 @@ export default function RegisterPage() {
         transition={{ duration: 0.5 }}
         className="relative w-full max-w-md"
       >
-        <Card variant="glass" className="p-8">
+        <Card variant="glass" className="p-8 border-white/5 bg-slate-900/60">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex p-3 rounded-2xl bg-violet-500/10 border border-violet-500/20 mb-4">
-              <BookOpen className="w-7 h-7 text-violet-400" />
+            <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-4">
+              <Shield className="w-7 h-7 text-amber-500" />
             </div>
-            <h1 className="text-2xl font-bold text-zinc-100">Create your account</h1>
-            <p className="text-zinc-500 text-sm mt-1">Join thousands of crime fiction readers</p>
+            <h1 className="text-2xl font-bold text-zinc-100">Register Console Account</h1>
+            <p className="text-zinc-400 text-sm mt-1">Request official access to the PRISM Database Console</p>
           </div>
 
           {/* Form */}
@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-zinc-500 mt-6">
             Already have an account?{' '}
-            <Link to={ROUTES.LOGIN} className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
+            <Link to={ROUTES.LOGIN} className="text-amber-500 hover:text-amber-400 font-medium transition-colors">
               Sign in
             </Link>
           </p>

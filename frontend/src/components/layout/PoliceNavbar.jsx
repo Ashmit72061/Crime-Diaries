@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Bell, User, LogOut, Settings, Award } from "lucide-react";
+import { Bell, User, LogOut, Settings, Award, Shield } from "lucide-react";
 import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
+import { findNodeById } from "../../utils/hierarchyData.js";
 
 export default function PoliceNavbar({ notifications, removeNotification }) {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
   const { logoutMutation } = useAuth();
-  const { user } = useAuthStore();
+  const { user, activeNodeId, setActiveNodeId } = useAuthStore();
 
   // Live localized clock as per i18n instructions
   useEffect(() => {
@@ -78,6 +79,15 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
       </div>
 
       <div className="navbar-right">
+        {/* Terminal Authorization Scope Badge (Read-Only) */}
+        <div className="console-switcher-container">
+          <Shield size={14} className="text-amber-500" />
+          <span className="console-switcher-label" translate="no">Authorized Terminal:</span>
+          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200" translate="no">
+            {findNodeById(activeNodeId)?.name || "Secure Terminal"}
+          </span>
+        </div>
+
         {/* Localized Time Display */}
         <div className="time-display tabular-numbers" aria-live="off" translate="no">
           {currentTime}
@@ -147,9 +157,11 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
             <div className="officer-avatar" aria-hidden="true">
               <User size={16} />
             </div>
-            <div className="officer-details text-left">
-              <span className="officer-name">{user?.username || "HC Ramesh Kumar"}</span>
-              <span className="officer-rank">Station Operator (PS Parliament Street)</span>
+            <div className="officer-details text-left font-sans">
+              <span className="officer-name block text-sm font-semibold">{user?.username || "HC Ramesh Kumar"}</span>
+              <span className="officer-rank block text-xs text-slate-400">
+                {user?.rank || "Station Operator"}{user?.stationName ? ` (PS ${user.stationName})` : user?.districtKey ? ` (${user.districtKey})` : ""}
+              </span>
             </div>
           </button>
 
@@ -158,8 +170,8 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
               <div className="profile-panel-header">
                 <Award size={24} className="badge-icon text-amber-500" aria-hidden="true" />
                 <div>
-                  <h4 translate="no">PIS: 28160942</h4>
-                  <p>Diary Operator / Clerk</p>
+                  <h4 translate="no">{user?.pis || "PIS-28160942"}</h4>
+                  <p>{user?.rank || "Station Operator"}</p>
                 </div>
               </div>
               <ul className="profile-menu-list">

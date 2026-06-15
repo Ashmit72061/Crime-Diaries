@@ -51,8 +51,8 @@ export const useAuth = () => {
         throw err;
       }
     },
-    onSuccess: (userData) => {
-      login(userData);
+    onSuccess: (userData, variables) => {
+      login(userData, variables?.selectedNodeId);
       toast.success('Welcome back!');
       navigate('/dashboard');
     },
