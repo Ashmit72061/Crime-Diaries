@@ -211,7 +211,7 @@ This starts:
 ### 6.2 Setup and Launch Server
 1. Navigate to the backend directory:
    ```bash
-   cd pharos-backend
+   cd backend
    ```
 2. Install dependencies:
    ```bash
