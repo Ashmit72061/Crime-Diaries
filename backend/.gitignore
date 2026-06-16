@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+node_modules/
+.env
+database.sqlite
+generated-reports/
+reports/output/
+coverage/
+*.log
+=======
 # Dependencies
 node_modules/
 node_modules
@@ -27,3 +36,4 @@ Thumbs.db
 .idea/
 *.suo
 *.sw?
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856

@@ -1,11 +1,44 @@
 {
+<<<<<<< HEAD
+  "name": "pharos-frontend",
+  "private": true,
+  "version": "1.0.0",
+=======
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+<<<<<<< HEAD
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.7",
+    "@tanstack/react-query": "^5.37.1",
+    "antd": "^5.17.0",
+    "axios": "^1.6.8",
+    "i18next": "^23.11.3",
+    "lucide-react": "^0.379.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^14.1.1",
+    "react-router-dom": "^6.23.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.7",
+    "vite": "^5.2.11"
+=======
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -38,5 +71,6 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "vite": "^8.0.12"
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
   }
 }
