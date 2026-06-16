@@ -1,17 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Bell, User, LogOut, Settings, Award, Shield } from "lucide-react";
 import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
-import { findNodeById } from "../../utils/hierarchyData.js";
+import { findNodeById, POLICE_HIERARCHY } from "../../utils/hierarchyData.js";
 
 export default function PoliceNavbar({ notifications, removeNotification }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { logoutMutation } = useAuth();
   const { user, activeNodeId, setActiveNodeId } = useAuthStore();
+
+  const getHierarchyOptions = () => {
+    const districts = [];
+    const stations = [];
+
+    const traverse = (node) => {
+      if (node.type === 'DISTRICT') {
+        districts.push({ id: node.id, name: node.name });
+      } else if (node.type === 'PS') {
+        stations.push({ id: node.id, name: node.name });
+      }
+      if (node.children) {
+        node.children.forEach(traverse);
+      }
+    };
+
+    traverse(POLICE_HIERARCHY);
+
+    return {
+      hq: [{ id: POLICE_HIERARCHY.id, name: POLICE_HIERARCHY.name }],
+      districts: districts.sort((a, b) => a.name.localeCompare(b.name)),
+      stations: stations.sort((a, b) => a.name.localeCompare(b.name)),
+    };
+  };
+
+  const options = getHierarchyOptions();
+
+  const handleScopeChange = (e) => {
+    const newNodeId = e.target.value;
+    setActiveNodeId(newNodeId);
+    
+    const node = findNodeById(newNodeId);
+    if (node) {
+      const routes = {
+        PS: '/records',
+        HC: '/records',
+        SHO: '/queue',
+        DISTRICT: '/district',
+        DISTRICT_OFFICER: '/district',
+        HQ: '/hq',
+        HQ_ANALYST: '/hq',
+        HQ_ADMIN: '/hq',
+        SYSTEM_ADMIN: '/admin/users'
+      };
+      const dest = routes[node.type] || '/records';
+      navigate(dest);
+    }
+  };
 
   // Live localized clock as per i18n instructions
   useEffect(() => {
@@ -79,13 +128,38 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
       </div>
 
       <div className="navbar-right">
-        {/* Terminal Authorization Scope Badge (Read-Only) */}
+        {/* Terminal Authorization Scope Selector (Interactive Dropdown) */}
         <div className="console-switcher-container">
           <Shield size={14} className="text-amber-500" />
           <span className="console-switcher-label" translate="no">Authorized Terminal:</span>
-          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200" translate="no">
-            {findNodeById(activeNodeId)?.name || "Secure Terminal"}
-          </span>
+          <select
+            className="console-switcher-select"
+            value={activeNodeId}
+            onChange={handleScopeChange}
+            translate="no"
+          >
+            <optgroup label="Headquarters">
+              {options.hq.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Districts (DCP)">
+              {options.districts.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Police Stations (SHO/HC)">
+              {options.stations.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
         </div>
 
         {/* Localized Time Display */}

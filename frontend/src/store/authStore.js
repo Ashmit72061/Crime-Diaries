@@ -30,7 +30,11 @@ const useAuthStore = create(
           set({ user: mergedUser, isAuthenticated: true, activeNodeId: initialNode.id });
         },
 
-        logout: () => set({ user: null, isAuthenticated: false, activeNodeId: "PS_NDD_PARLIAMENT_STREET" }),
+        logout: () => {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          set({ user: null, isAuthenticated: false, activeNodeId: "PS_NDD_PARLIAMENT_STREET" });
+        },
 
         setActiveNodeId: (nodeId) => {
           const node = findNodeById(nodeId);

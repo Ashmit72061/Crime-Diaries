@@ -1,16 +1,15 @@
-import { Link, NavLink } from 'react-router-dom';
-import { BookOpen, LogOut, User, Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Shield, LogOut, User, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import useAuthStore from '../../store/authStore.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES, APP_NAME } from '../../utils/constants.js';
 import { Button } from '../ui/Button.jsx';
-import { clsx } from 'clsx';
 
 const navLinks = [
-  { label: 'Stories', to: '/stories' },
-  { label: 'True Crime', to: '/true-crime' },
-  { label: 'Community', to: '/community' },
+  { label: 'About PRISM', to: '#about' },
+  { label: 'Security Policy', to: '#security' },
+  { label: 'Helplines', to: '#helplines' },
 ];
 
 export const Navbar = () => {
@@ -25,61 +24,28 @@ export const Navbar = () => {
 
           {/* Logo */}
           <Link to={ROUTES.HOME} className="flex items-center gap-2 group">
-            <BookOpen className="w-6 h-6 text-violet-400 group-hover:text-violet-300 transition-colors" />
-            <span className="font-bold text-lg text-zinc-100 tracking-tight">{APP_NAME}</span>
+            <Shield className="w-6 h-6 text-[#cca43b] group-hover:text-amber-400 transition-colors" />
+            <span className="font-bold text-lg text-zinc-100 tracking-tight font-display">{APP_NAME}</span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
-              <NavLink
+              <a
                 key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  clsx(
-                    'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'text-violet-400 bg-violet-500/10'
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                  )
-                }
+                href={link.to}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-[#cca43b] hover:bg-zinc-800/40 transition-colors"
               >
                 {link.label}
-              </NavLink>
+              </a>
             ))}
           </div>
 
           {/* Auth Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <Link
-                  to={ROUTES.PROFILE}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                  {user?.username}
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => logoutMutation.mutate()}
-                  isLoading={logoutMutation.isPending}
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" as={Link} to={ROUTES.LOGIN}>
-                  Log in
-                </Button>
-                <Button variant="primary" size="sm" as={Link} to={ROUTES.REGISTER}>
-                  Get Started
-                </Button>
-              </>
-            )}
+            <Button variant="primary" size="sm" as={Link} to={ROUTES.LOGIN}>
+              Access Command Console
+            </Button>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -95,22 +61,22 @@ export const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 space-y-1">
+        <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 space-y-2">
           {navLinks.map((link) => (
-            <NavLink
+            <a
               key={link.to}
-              to={link.to}
+              href={link.to}
               onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                clsx(
-                  'block px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive ? 'text-violet-400 bg-violet-500/10' : 'text-zinc-400 hover:text-zinc-100'
-                )
-              }
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-[#cca43b]"
             >
               {link.label}
-            </NavLink>
+            </a>
           ))}
+          <div className="pt-2 border-t border-zinc-800">
+            <Button variant="primary" size="sm" fullWidth as={Link} to={ROUTES.LOGIN}>
+              Access Command Console
+            </Button>
+          </div>
         </div>
       )}
     </nav>

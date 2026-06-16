@@ -1,10 +1,12 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import PublicLayout from '../components/layout/PublicLayout.jsx';
 import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import { Spinner } from '../components/ui/Spinner.jsx';
 import { ROUTES } from '../utils/constants.js';
+import useAuthStore from '../store/authStore.js';
+import DebugBar from '../components/common/DebugBar.jsx';
 
 // ── Lazy-loaded pages ──────────────────────────────────────────────────────────
 const HomePage     = lazy(() => import('../features/home/HomePage.jsx'));
@@ -20,11 +22,47 @@ const PCRCallEntry       = lazy(() => import('../pages/PCRCallEntry.jsx'));
 const UIDBManagement     = lazy(() => import('../pages/UIDBManagement.jsx'));
 const MissingPersonEntry = lazy(() => import('../pages/MissingPersonEntry.jsx'));
 
+// ── NEW PHAROS Pages (Dev 3 Sprint Track) ──────────────────────────────────────
+const MyRecords         = lazy(() => import('../pages/hc/MyRecords.jsx'));
+const NewRecord         = lazy(() => import('../pages/hc/NewRecord.jsx'));
+const Queue             = lazy(() => import('../pages/sho/Queue.jsx'));
+const RecordDetail      = lazy(() => import('../pages/sho/RecordDetail.jsx'));
+const DistrictDashboard = lazy(() => import('../pages/district/Dashboard.jsx'));
+const CompilationUI     = lazy(() => import('../pages/district/CompilationUI.jsx'));
+const HQDashboard       = lazy(() => import('../pages/hq/Dashboard.jsx'));
+const AnalyticsDashboard = lazy(() => import('../pages/analytics/AnalyticsDashboard.jsx'));
+const ReportBuilder     = lazy(() => import('../pages/reports/ReportBuilder.jsx'));
+const Users             = lazy(() => import('../pages/admin/Users.jsx'));
+const HierarchyManager  = lazy(() => import('../pages/admin/HierarchyManager.jsx'));
+const FieldManager      = lazy(() => import('../pages/admin/FieldManager.jsx'));
+
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
     <Spinner size="lg" />
   </div>
 );
+
+// Dynamic Role Redirect helper based on active user role in the station hierarchy
+function RoleRedirect() {
+  const { user } = useAuthStore();
+  
+  if (!user) return <Navigate to="/login" replace />;
+
+  const routes = {
+    PS: '/records',          // Head Constable (HC)
+    HC: '/records',          // Head Constable (HC)
+    SHO: '/queue',           // Station House Officer
+    DISTRICT: '/district',   // District DCP
+    DISTRICT_OFFICER: '/district',
+    HQ: '/hq',               // Headquarters CP
+    HQ_ANALYST: '/hq',
+    HQ_ADMIN: '/hq',
+    SYSTEM_ADMIN: '/admin/users' // Platform Admin
+  };
+
+  const redirectPath = routes[user.role] || '/records';
+  return <Navigate to={redirectPath} replace />;
+}
 
 export const AppRouter = () => (
   <BrowserRouter>
@@ -43,12 +81,33 @@ export const AppRouter = () => (
         {/* Protected Dashboard Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
-            <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+            {/* Scoped RoleRedirect route for root dashboard calls */}
+            <Route path={ROUTES.DASHBOARD} element={<RoleRedirect />} />
+            
+            {/* Standard fallback/redirect for root dashboard layout */}
+            <Route path="/" element={<RoleRedirect />} />
+
+            {/* Backwards compatible older views */}
+            <Route path="/dashboard/old-console" element={<Dashboard />} />
             <Route path="/dashboard/case-management" element={<CaseManagement />} />
             <Route path="/dashboard/arrest-management" element={<ArrestManagement />} />
             <Route path="/dashboard/pcr-calls" element={<PCRCallEntry />} />
             <Route path="/dashboard/uidb-management" element={<UIDBManagement />} />
             <Route path="/dashboard/missing-persons" element={<MissingPersonEntry />} />
+
+            {/* NEW PHAROS Pages (Dev 3 Sprint Track) */}
+            <Route path="/records" element={<MyRecords />} />
+            <Route path="/records/new/:type" element={<NewRecord />} />
+            <Route path="/records/:id" element={<RecordDetail />} />
+            <Route path="/queue" element={<Queue />} />
+            <Route path="/district" element={<DistrictDashboard />} />
+            <Route path="/compile" element={<CompilationUI />} />
+            <Route path="/hq" element={<HQDashboard />} />
+            <Route path="/analytics" element={<AnalyticsDashboard />} />
+            <Route path="/reports" element={<ReportBuilder />} />
+            <Route path="/admin/users" element={<Users />} />
+            <Route path="/admin/hierarchy" element={<HierarchyManager />} />
+            <Route path="/admin/fields" element={<FieldManager />} />
           </Route>
         </Route>
 
@@ -56,6 +115,8 @@ export const AppRouter = () => (
         <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
       </Routes>
     </Suspense>
+    
+    {/* Global visual testing console bar */}
+    <DebugBar />
   </BrowserRouter>
 );
-

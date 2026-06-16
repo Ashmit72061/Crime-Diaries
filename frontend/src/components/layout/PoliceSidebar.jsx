@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
-  LayoutDashboard, 
+  Shield,
   FileText, 
   UserX, 
   PhoneCall, 
@@ -9,62 +10,91 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight,
-  Plus
+  Plus,
+  ClipboardList,
+  BarChart3,
+  FileSpreadsheet,
+  Users,
+  Network,
+  Settings,
+  Building
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
 
 export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
-  const [expandedSubmenu, setExpandedSubmenu] = useState(null);
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language || 'en';
   const { user } = useAuthStore();
-  const isPS = user?.role === "PS";
+  const [expandedSubmenu, setExpandedSubmenu] = useState(null);
 
-  const allNavItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
-    { 
-      id: "case-management", 
-      label: "Case Management", 
-      icon: FileText,
-      to: "/dashboard/case-management",
-      psOnly: true,
-      subItems: [{ id: "case-management-new", label: "New Case Entry", icon: Plus, to: "/dashboard/case-management" }]
-    },
-    { 
-      id: "arrest-management", 
-      label: "Arrest Management", 
-      icon: UserX,
-      to: "/dashboard/arrest-management",
-      psOnly: true,
-      subItems: [{ id: "arrest-management-new", label: "New Arrest Entry", icon: Plus, to: "/dashboard/arrest-management" }]
-    },
-    { 
-      id: "pcr-calls", 
-      label: "PCR Calls", 
-      icon: PhoneCall,
-      to: "/dashboard/pcr-calls",
-      psOnly: true,
-      subItems: [{ id: "pcr-calls-new", label: "New PCR Entry", icon: Plus, to: "/dashboard/pcr-calls" }]
-    },
-    { 
-      id: "uidb-management", 
-      label: "UIDB Management", 
-      icon: Fingerprint,
-      to: "/dashboard/uidb-management",
-      psOnly: true,
-      subItems: [{ id: "uidb-management-new", label: "New UIDB Entry", icon: Plus, to: "/dashboard/uidb-management" }]
-    },
-    { 
-      id: "missing-persons", 
-      label: "Missing Persons", 
-      icon: Search,
-      to: "/dashboard/missing-persons",
-      psOnly: true,
-      subItems: [{ id: "missing-persons-new", label: "New Missing Entry", icon: Plus, to: "/dashboard/missing-persons" }]
+  const role = user?.role || 'PS';
+
+  // Build navigation items based on active authorization role
+  const getNavItems = () => {
+    const items = [];
+
+    // ── Head Constable (HC / PS) Desk ──────────────────────────────────────────
+    if (role === 'PS' || role === 'HC') {
+      items.push(
+        { id: "records", label: t('nav.records', 'My Records'), icon: FileText, to: "/records" },
+        { 
+          id: "new-record", 
+          label: t('nav.newRecord', 'New Record'), 
+          icon: Plus,
+          to: "/records/new/CASE",
+          subItems: [
+            { id: "new-case", label: t('recordTypes.CASE', 'Cases FIR'), to: "/records/new/CASE" },
+            { id: "new-arrest", label: t('recordTypes.ARREST', 'Arrest Register'), to: "/records/new/ARREST" },
+            { id: "new-pcr", label: t('recordTypes.PCR_CALL', 'PCR Calls'), to: "/records/new/PCR_CALL" },
+            { id: "new-missing", label: t('recordTypes.MISSING', 'Missing Register'), to: "/records/new/MISSING" },
+            { id: "new-uidb", label: t('recordTypes.UIDB', 'UIDB Unidentified Bodies'), to: "/records/new/UIDB" },
+          ]
+        }
+      );
     }
-  ];
 
-  // Only show form entries to PS Operators
-  const navItems = allNavItems.filter(item => !item.psOnly || isPS);
+    // ── Reviewer / SHO Desk ───────────────────────────────────────────────────
+    if (role === 'SHO') {
+      items.push(
+        { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" },
+        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" }
+      );
+    }
+
+    // ── District DCP Desk ─────────────────────────────────────────────────────
+    if (role === 'DISTRICT' || role === 'DISTRICT_OFFICER') {
+      items.push(
+        { id: "district", label: t('nav.district', 'District View'), icon: Shield, to: "/district" },
+        { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" },
+        { id: "compile", label: t('nav.compile', 'Compile Records'), icon: FileSpreadsheet, to: "/compile" },
+        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
+        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" }
+      );
+    }
+
+    // ── HQ Analyst Desk ───────────────────────────────────────────────────────
+    if (role === 'HQ' || role === 'HQ_ANALYST' || role === 'HQ_ADMIN') {
+      items.push(
+        { id: "hq", label: t('nav.hq', 'Command Center'), icon: Building, to: "/hq" },
+        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
+        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" }
+      );
+    }
+
+    // ── Platform System Administrator ─────────────────────────────────────────
+    if (role === 'SYSTEM_ADMIN') {
+      items.push(
+        { id: "admin-users", label: t('nav.adminUsers', 'Users Register'), icon: Users, to: "/admin/users" },
+        { id: "admin-hierarchy", label: t('nav.adminHierarchy', 'Hierarchy Config'), icon: Network, to: "/admin/hierarchy" },
+        { id: "admin-fields", label: t('nav.adminFields', 'Field Registry'), icon: Settings, to: "/admin/fields" }
+      );
+    }
+
+    return items;
+  };
+
+  const navItems = getNavItems();
 
   const handleNavClick = (itemId, hasSubItems) => {
     if (isCollapsed) {
@@ -97,7 +127,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
           />
           {!isCollapsed && (
             <div className="brand-text">
-              <span className="brand-main">PRISM</span>
+              <span className="brand-main">PHAROS</span>
               <span className="brand-sub" style={{ fontSize: "0.6rem" }}>DELHI POLICE</span>
             </div>
           )}
@@ -147,7 +177,6 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
               {hasSubItems && isSubmenuExpanded && (
                 <div className="submenu-list" role="menu">
                   {item.subItems.map((subItem) => {
-                    const SubIcon = subItem.icon;
                     return (
                       <NavLink
                         key={subItem.id}
@@ -156,7 +185,6 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
                         className={({ isActive }) => `submenu-link ${isActive ? "active" : ""}`}
                         aria-label={subItem.label}
                       >
-                        <SubIcon size={14} aria-hidden="true" className="submenu-icon" />
                         <span className="submenu-text">{subItem.label}</span>
                       </NavLink>
                     );

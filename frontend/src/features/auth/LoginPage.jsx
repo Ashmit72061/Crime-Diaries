@@ -18,6 +18,8 @@ import { loginSchema } from '../../utils/validators.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { POLICE_HIERARCHY, findNodeById } from '../../utils/hierarchyData.js';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore.js';
 
 // Dynamic email generator based on officer name
 const getEmailForNode = (node) => {
@@ -37,6 +39,15 @@ const getEmailForNode = (node) => {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { loginMutation } = useAuth();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   
   // Login hierarchy states
   const [activeTier, setActiveTier] = useState("PS"); // HQ, ZONE, RANGE, DISTRICT, PS
