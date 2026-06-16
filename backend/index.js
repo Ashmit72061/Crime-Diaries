@@ -15,6 +15,10 @@ const start = async () => {
     // 2. Connect to RabbitMQ Event Bus
     await connectEventBus();
 
+    // 2.5 Init notification subscriptions
+    const { initSubscriptions } = await import('./src/modules/notifications/notifications.service.js');
+    await initSubscriptions();
+
     // 3. Start Express server
     httpServer.listen(env.PORT, () => {
       logger.info(`PHAROS Server running on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
