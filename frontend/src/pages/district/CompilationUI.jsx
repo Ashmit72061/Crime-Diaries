@@ -57,7 +57,7 @@ export default function CompilationUI() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Back Header */}
       <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
         <button
@@ -94,7 +94,7 @@ export default function CompilationUI() {
           <button
             onClick={handleCompileTrigger}
             disabled={createCompMutation.isPending}
-            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
           >
             {createCompMutation.isPending ? 'Aggregating Data...' : 'Compile Station Logs'}
           </button>
@@ -154,7 +154,7 @@ export default function CompilationUI() {
                           submitCompMutation.mutate(comp.id);
                         }
                       }}
-                      className="bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 px-5.5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Send size={12} />
                       <span>Dispatch to HQ</span>

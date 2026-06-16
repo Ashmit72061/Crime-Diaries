@@ -25,7 +25,7 @@ function StepDot({ index, active, completed, hasError, title, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-center gap-1.5 cursor-pointer outline-none"
+      className="group flex flex-col items-center gap-1 cursor-pointer outline-none"
       title={title}
     >
       <span className={`
@@ -39,10 +39,10 @@ function StepDot({ index, active, completed, hasError, title, onClick }) {
               : 'bg-white border-slate-300 text-slate-400 group-hover:border-slate-400 group-hover:text-slate-600'
         }
       `}>
-        {completed && !active ? <CheckCircle2 size={16} /> : index + 1}
+        {completed && !active ? <CheckCircle2 size={14} /> : index + 1}
       </span>
       <span className={`text-[11px] font-semibold max-w-[90px] text-center leading-tight hidden sm:block transition-colors ${
-        active ? 'text-[#0f52ba]' : hasError ? 'text-red-600' : 'text-slate-500'
+        active ? 'text-[#0f52ba]' : hasError ? 'text-red-600' : 'text-slate-400'
       }`}>
         {title}
       </span>
@@ -71,7 +71,7 @@ export default function DynamicForm({
   const navigate = useNavigate();
 
   const { user } = useAuthStore();
-  const { schema, isLoading, isError } = useFormSchema(recordType);
+  const { schema, isLoading, isError, schemaError } = useFormSchema(recordType);
   const activeRecordIdRef = useRef(initialValues?.id || null);
 
   const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
@@ -282,12 +282,17 @@ export default function DynamicForm({
   }
 
   if (isError || schema.length === 0) {
+    const status = schemaError?.response?.status;
+    const hint = status === 401
+      ? 'Session expired — please log out and log back in with your badge credentials.'
+      : status
+        ? `Server returned ${status}. Check that the backend is running.`
+        : 'No fields are configured for this record type. Re-run the database seed or switch to Mock Mode.';
     return (
-      <div className="flex flex-col items-center justify-center p-16 text-slate-500 gap-3 bg-white border border-dashed border-slate-300 rounded-xl shadow-sm">
+      <div className="flex flex-col items-center justify-center p-16 text-slate-500 gap-4 bg-white border border-dashed border-slate-300 rounded-xl shadow-sm">
         <AlertTriangle size={32} className="text-amber-500" />
-        <p className="text-sm font-semibold text-slate-700">
-          {t('common.error', 'Unable to load form configuration.')}
-        </p>
+        <p className="text-sm font-semibold text-slate-700">Form schema not found</p>
+        <p className="text-xs text-slate-400 text-center max-w-xs leading-relaxed">{hint}</p>
         <p className="text-xs text-slate-500">
           Record type: <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{recordType}</code>
         </p>
@@ -308,36 +313,39 @@ export default function DynamicForm({
 
       {/* ── Step Navigator ─────────────────────────────────────────────── */}
       {schema.length > 1 && (
-        <div className="bg-white border border-slate-200 rounded-xl px-8 py-5 shadow-sm">
-          <div className="flex items-start justify-between gap-2 overflow-x-auto pb-2">
-            {schema.map((sec, idx) => {
-              const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
-              return (
-                <React.Fragment key={sec.section || idx}>
-                  <StepDot
-                    index={idx}
-                    active={idx === currentStep}
-                    completed={completedSteps.has(idx)}
-                    hasError={stepHasError(idx)}
-                    title={title}
-                    onClick={() => handleStepClick(idx)}
-                  />
-                  {idx < schema.length - 1 && (
-                    <div className={`flex-1 h-0.5 mt-4 mx-2 rounded-full transition-colors ${
-                      completedSteps.has(idx) ? 'bg-emerald-400' : 'bg-slate-200'
-                    }`} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
+        <div className="bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            {/* Step dots row */}
+            <div className="flex items-center gap-1 overflow-x-auto flex-1">
+              {schema.map((sec, idx) => {
+                const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
+                return (
+                  <React.Fragment key={sec.section || idx}>
+                    <StepDot
+                      index={idx}
+                      active={idx === currentStep}
+                      completed={completedSteps.has(idx)}
+                      hasError={stepHasError(idx)}
+                      title={title}
+                      onClick={() => handleStepClick(idx)}
+                    />
+                    {idx < schema.length - 1 && (
+                      <div className={`flex-1 h-0.5 mx-1 rounded-full transition-colors ${
+                        completedSteps.has(idx) ? 'bg-emerald-400' : 'bg-slate-200'
+                      }`} />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
 
-          {/* Step title text & Autosave status */}
-          <div className="mt-4 flex justify-between items-center text-xs font-medium border-t border-slate-100 pt-3">
-            <span className="text-slate-500">
-              {lang === 'hi' ? `चरण ${currentStep + 1} / ${schema.length}` : `Step ${currentStep + 1} of ${schema.length}`}
-            </span>
-            <FormAutosave status={saveStatus} lang={lang} />
+            {/* Right: step counter + autosave */}
+            <div className="flex items-center gap-3 flex-shrink-0 pl-4 border-l border-slate-100">
+              <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">
+                {lang === 'hi' ? `चरण ${currentStep + 1}/${schema.length}` : `${currentStep + 1} / ${schema.length}`}
+              </span>
+              <FormAutosave status={saveStatus} lang={lang} />
+            </div>
           </div>
         </div>
       )}

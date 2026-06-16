@@ -31,18 +31,20 @@ export async function up(knex) {
   // 3. field_registry
   await knex.schema.createTable('field_registry', (table) => {
     table.string('id', 36).primary();
-    table.string('field_key', 60).unique().notNullable();
-    table.string('field_type', 20).notNullable(); // TEXT|NUMBER|DATE|DATETIME|SELECT|MULTISELECT|FILE|BOOLEAN|TEXTAREA
+    table.string('field_key', 60).notNullable(); // not globally unique — same key can exist per module
+    table.string('field_type', 20).notNullable();
     table.text('applicable_record_types').notNullable(); // JSON array string
     table.string('label_en', 120).notNullable();
     table.string('label_hi', 120).notNullable();
-    table.text('options'); // JSON array string of {value, label_en, label_hi}
+    table.text('options'); // JSON array [{value, label_en, label_hi}]
     table.text('validation_rules'); // JSON string
     table.text('visible_to_levels').notNullable(); // JSON array string
     table.text('editable_by_levels').notNullable(); // JSON array string
     table.string('introduced_at_level', 30).notNullable().defaultTo('PS');
     table.string('section', 60);
     table.integer('sort_order').defaultTo(0);
+    table.boolean('full_width').defaultTo(false);
+    table.text('show_when'); // JSON {field, value} — conditional visibility
     table.boolean('is_active').notNullable().defaultTo(true);
   });
 

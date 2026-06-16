@@ -5,9 +5,23 @@ export default function DebugBar() {
   const [mode, setMode] = useState(() => localStorage.getItem('prism_debug_api_mode') || 'mock');
 
   const handleModeChange = (newMode) => {
+    const currentMode = localStorage.getItem('prism_debug_api_mode') || 'mock';
+    // When switching between mock ↔ live, clear session so user re-authenticates
+    // with the correct token type for the new mode
+    if (currentMode !== newMode) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      // Clear Zustand persisted auth state
+      const stored = JSON.parse(localStorage.getItem('crime-diaries-auth') || '{}');
+      if (stored?.state) {
+        stored.state.user = null;
+        stored.state.isAuthenticated = false;
+        localStorage.setItem('crime-diaries-auth', JSON.stringify(stored));
+      }
+    }
     localStorage.setItem('prism_debug_api_mode', newMode);
     setMode(newMode);
-    window.location.reload(); // reload to reset axios interceptors immediately
+    window.location.reload();
   };
 
   return (

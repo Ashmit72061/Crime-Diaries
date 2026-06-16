@@ -81,7 +81,7 @@ export default function FormSection({
                 {/* Label row */}
                 <label
                   htmlFor={`field-${key}`}
-                  className="flex items-center justify-between text-xs font-bold text-slate-700 gap-2 mb-0.5"
+                  className="flex items-center justify-between gap-2 form-label-custom"
                 >
                   <span className="flex items-center gap-1">
                     {label}

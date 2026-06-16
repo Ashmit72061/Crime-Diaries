@@ -37,20 +37,12 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     // ── Head Constable (HC / PS) Desk ──────────────────────────────────────────
     if (role === 'PS' || role === 'HC') {
       items.push(
-        { id: "records", label: t('nav.records', 'My Records'), icon: FileText, to: "/records" },
-        { 
-          id: "new-record", 
-          label: t('nav.newRecord', 'New Record'), 
-          icon: Plus,
-          to: "/records/new/CASE",
-          subItems: [
-            { id: "new-case", label: t('recordTypes.CASE', 'Cases FIR'), to: "/records/new/CASE" },
-            { id: "new-arrest", label: t('recordTypes.ARREST', 'Arrest Register'), to: "/records/new/ARREST" },
-            { id: "new-pcr", label: t('recordTypes.PCR_CALL', 'PCR Calls'), to: "/records/new/PCR_CALL" },
-            { id: "new-missing", label: t('recordTypes.MISSING', 'Missing Register'), to: "/records/new/MISSING" },
-            { id: "new-uidb", label: t('recordTypes.UIDB', 'UIDB Unidentified Bodies'), to: "/records/new/UIDB" },
-          ]
-        }
+        { id: "records",      label: t('nav.records',         'My Records'),               icon: ClipboardList, to: "/records" },
+        { id: "new-case",     label: t('recordTypes.CASE',    'Cases (FIR) Master'),       icon: FileText,      to: "/records/new/CASE" },
+        { id: "new-arrest",   label: t('recordTypes.ARREST',  'Arrest Person Master'),     icon: UserX,         to: "/records/new/ARREST" },
+        { id: "new-pcr",      label: t('recordTypes.PCR_CALL','PCR / Kalandra Call'),      icon: PhoneCall,     to: "/records/new/PCR_CALL" },
+        { id: "new-missing",  label: t('recordTypes.MISSING', 'Missing Persons Register'), icon: Search,        to: "/records/new/MISSING" },
+        { id: "new-uidb",     label: t('recordTypes.UIDB',    'UIDB Unidentified Bodies'), icon: Fingerprint,   to: "/records/new/UIDB" },
       );
     }
 

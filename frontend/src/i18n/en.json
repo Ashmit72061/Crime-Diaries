@@ -48,7 +48,8 @@
   },
   "common": {
     "loading": "Loading secure terminal...",
-    "error": "Access Error",
+    "error": "Form schema not found",
+    "errorHint": "No fields configured for this record type. Please contact admin or re-run seed.",
     "success": "Success",
     "selected": "selected",
     "active": "Active",

@@ -62,5 +62,5 @@ export function useFormSchema(recordType) {
     retry: 1,
   });
 
-  return { schema: schema || [], isLoading, isError, error };
+  return { schema: schema || [], isLoading, isError, schemaError: error };
 }
