@@ -4,8 +4,11 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
+import { swaggerSpec } from './config/swagger.js';
+import path from 'path';
 
 const app = express();
 
@@ -41,8 +44,26 @@ app.get('/api/health', (req, res) => {
 // To be imported from modules and registered here
 // app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
-// app.use('/api/fields', fieldsRoutes);
-// app.use('/api/records', recordsRoutes);
+import fieldsRoutes from './modules/fields/fields.routes.js';
+app.use('/api/fields', fieldsRoutes);
+import recordsRoutes from './modules/records/records.routes.js';
+app.use('/api/records', recordsRoutes);
+import workflowRoutes from './modules/workflow/workflow.routes.js';
+app.use('/api/workflow', workflowRoutes);
+import compilationRoutes from './modules/compilation/compilation.routes.js';
+app.use('/api/compilations', compilationRoutes);
+import analyticsRoutes from './modules/analytics/analytics.routes.js';
+app.use('/api/analytics', analyticsRoutes);
+import notificationsRoutes from './modules/notifications/notifications.routes.js';
+app.use('/api/notifications', notificationsRoutes);
+import uploadRoutes from './modules/upload/upload.routes.js';
+app.use('/api/upload', uploadRoutes);
+
+// Serve uploads folder statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Swagger Documentation Route
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 404 & Error Handling
 app.use((req, res, next) => {
