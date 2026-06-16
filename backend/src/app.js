@@ -2,83 +2,126 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import swaggerUi from 'swagger-ui-express';
+import rateLimit from 'express-rate-limit';
+
 import { env } from './config/env.js';
-import { logger } from './utils/logger.js';
-import { swaggerSpec } from './config/swagger.js';
-import path from 'path';
+import * as eventBus from './events/eventBus.js';
+import * as auditHandler from './events/handlers/auditHandler.js';
+import * as notifyHandler from './events/handlers/notifyHandler.js';
+
+// Import routers
+import authRouter from './modules/auth/auth.router.js';
+import fieldsRouter from './modules/fields/fields.router.js';
+import recordsRouter from './modules/records/records.router.js';
+import workflowRouter from './modules/workflow/workflow.router.js';
+import analyticsRouter from './modules/analytics/analytics.router.js';
+import reportsRouter from './modules/reports/reports.router.js';
+import usersRouter from './modules/users/users.router.js';
+import hierarchyRouter from './modules/hierarchy/hierarchy.router.js';
+import adminRouter from './modules/admin/admin.router.js';
+import auditRouter from './modules/audit/audit.router.js';
 
 const app = express();
 
-// Security
+// Base middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: env.FRONTEND_URL,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-
-// Compression & Body parsing
-app.use(compression());
+app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(morgan('dev'));
 
-// Request Logging
-app.use(
-  morgan(env.isDev ? 'dev' : 'combined', {
-    stream: { write: (msg) => logger.http(msg.trim()) },
-  })
-);
+// Rate limiting
+const isDevOrTest = env.NODE_ENV === 'development' || env.NODE_ENV === 'test' || process.env.PHAROS_TEST === 'true';
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDevOrTest ? 99999 : 100,
+  message: { status: 'error', code: 'RATE_LIMITED', message: 'Too many requests' }
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDevOrTest ? 99999 : 50,
+  message: { status: 'error', code: 'RATE_LIMITED', message: 'Too many requests' }
+});
+app.use('/api/', apiLimiter);
+app.use('/api/v1/auth', authLimiter);
 
-// Routes placeholder for modules
+// Bind API Routes (Dual Registration for compatibility)
+app.use('/api/v1/auth', authRouter);
+app.use('/api/auth', authRouter);
+
+app.use('/api/v1/fields', fieldsRouter);
+app.use('/api/fields', fieldsRouter);
+
+app.use('/api/v1/records', recordsRouter);
+app.use('/api/records', recordsRouter);
+
+app.use('/api/v1/workflow', workflowRouter);
+app.use('/api/workflow', workflowRouter);
+
+app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/analytics', analyticsRouter);
+
+app.use('/api/v1/reports', reportsRouter);
+app.use('/api/reports', reportsRouter);
+
+app.use('/api/v1/admin/users', usersRouter);
+app.use('/api/v1/users', usersRouter);
+app.use('/api/users', usersRouter);
+
+app.use('/api/v1/admin/hierarchy', hierarchyRouter);
+app.use('/api/v1/hierarchy', hierarchyRouter);
+app.use('/api/hierarchy', hierarchyRouter);
+
+app.use('/api/v1/admin', adminRouter);
+app.use('/api/admin', adminRouter);
+
+app.use('/api/v1/audit', auditRouter);
+app.use('/api/audit', auditRouter);
+
+// Health check
+app.get('/api/v1/health', (req, res) => {
+  return res.status(200).json({ success: true, message: 'PHAROS Backend Operational API online' });
+});
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'success', data: { message: 'PHAROS API is running' } });
+  return res.status(200).json({ success: true, message: 'PHAROS Backend Operational API online' });
 });
 
-// Auth module
-import authRoutes from './modules/auth/auth.routes.js';
-app.use('/api/auth', authRoutes);
-
-import fieldsRoutes from './modules/fields/fields.routes.js';
-app.use('/api/fields', fieldsRoutes);
-import recordsRoutes from './modules/records/records.routes.js';
-app.use('/api/records', recordsRoutes);
-import workflowRoutes from './modules/workflow/workflow.routes.js';
-app.use('/api/workflow', workflowRoutes);
-import compilationRoutes from './modules/compilation/compilation.routes.js';
-app.use('/api/compilations', compilationRoutes);
-import analyticsRoutes from './modules/analytics/analytics.routes.js';
-app.use('/api/analytics', analyticsRoutes);
-import notificationsRoutes from './modules/notifications/notifications.routes.js';
-app.use('/api/notifications', notificationsRoutes);
-import uploadRoutes from './modules/upload/upload.routes.js';
-app.use('/api/upload', uploadRoutes);
-
-// Serve uploads folder statically
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-// Swagger Documentation Route
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-// 404 & Error Handling
+// 404 Route Not Found handler
 app.use((req, res, next) => {
-  res.status(404).json({ status: 'error', code: 'NOT_FOUND', message: 'Endpoint not found' });
+  return res.status(404).json({ success: false, message: `Route not found: ${req.originalUrl}` });
 });
 
+// Global Error Handler
 app.use((err, req, res, next) => {
-  logger.error(err.stack);
-  const statusCode = err.statusCode || err.status || 500;
-  res.status(statusCode).json({
-    status: 'error',
-    code: err.code || 'INTERNAL_ERROR',
-    message: err.message || 'Something went wrong',
+  console.error('[AppError] Caught global error:', err.stack || err.message);
+  return res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
   });
 });
 
+const startServer = async () => {
+  // Connect Event Broker
+  await eventBus.connect();
+  
+  // Start background handlers
+  await auditHandler.init();
+  await notifyHandler.init();
+
+  app.listen(env.PORT, () => {
+    console.log(`===================================================`);
+    console.log(`  PHAROS API Server listening on port ${env.PORT}`);
+    console.log(`  Mode: ${env.NODE_ENV}`);
+    console.log(`===================================================`);
+  });
+};
+
+if (process.env.PHAROS_TEST !== 'true') {
+  startServer().catch(err => {
+    console.error('[App] Failed to start server:', err.message);
+    process.exit(1);
+  });
+}
 export default app;

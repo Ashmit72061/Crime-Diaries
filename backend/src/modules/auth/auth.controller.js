@@ -1,210 +1,257 @@
+import * as authService from './auth.service.js';
+import db from '../../config/db.js';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
-import { db } from '../../config/db.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { ApiError } from '../../utils/ApiError.js';
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
-  setTokenCookies,
-  clearTokenCookies,
-} from '../../utils/generateToken.js';
-import { logger } from '../../utils/logger.js';
 
-/**
- * POST /api/auth/register
- * Creates a new user account.
- */
-export const register = asyncHandler(async (req, res) => {
-  const { badge_no, name_en, name_hi, role, ps_id, district_id, password, email } = req.body;
+export const login = async (req, res) => {
+  const badgeNo = req.body.badgeNo || req.body.badge_no;
+  const password = req.body.password;
 
-  // Use badge_no or email as unique identifier
-  const identifier = badge_no || email;
-  if (!identifier) {
-    throw new ApiError(400, 'Badge number or email is required');
-  }
-  if (!password) {
-    throw new ApiError(400, 'Password is required');
+  if (!badgeNo || !password) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      code: 'BAD_REQUEST',
+      message: 'Badge number and password are required'
+    });
   }
 
-  // Check for existing user
-  const existing = await db('users').where('badge_no', identifier).first();
-  if (existing) {
-    throw new ApiError(409, 'User with this badge number already exists');
-  }
-
-  const password_hash = await bcrypt.hash(password, 10);
-  const id = uuidv4();
-
-  await db('users').insert({
-    id,
-    badge_no: identifier,
-    name_en: name_en || identifier,
-    name_hi: name_hi || '',
-    role: role || 'HC',
-    ps_id: ps_id || null,
-    district_id: district_id || null,
-    password_hash,
-  });
-
-  logger.info(`User registered: ${identifier}`);
-
-  res.status(201).json({
-    status: 'success',
-    data: { message: 'Account created successfully' },
-  });
-});
-
-/**
- * POST /api/auth/login
- * Authenticates a user and returns JWT tokens.
- * The frontend sends { email, password, selectedNodeId }.
- * We match `email` against `badge_no` in the users table.
- */
-export const login = asyncHandler(async (req, res) => {
-  const { email, password, badge_no } = req.body;
-
-  // The frontend uses 'email' field but we store badge_no
-  const identifier = badge_no || email;
-  if (!identifier || !password) {
-    throw new ApiError(400, 'Badge number/email and password are required');
-  }
-
-  const user = await db('users').where('badge_no', identifier).first()
-    || await db('users').whereRaw("LOWER(name_en) LIKE ?", [`%${identifier.split('@')[0].replace(/\./g, '%')}%`]).first();
-  if (!user) {
-    throw new ApiError(401, 'Invalid credentials');
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password_hash);
-  if (!isMatch) {
-    throw new ApiError(401, 'Invalid credentials');
-  }
-
-  // Build JWT payload
-  const tokenPayload = {
-    id: user.id,
-    badge_no: user.badge_no,
-    role: user.role,
-    ps_id: user.ps_id,
-    district_id: user.district_id,
-  };
-
-  const accessToken = generateAccessToken(tokenPayload);
-  const refreshToken = generateRefreshToken(tokenPayload);
-
-  // Set as HttpOnly cookies
-  setTokenCookies(res, accessToken, refreshToken);
-
-  // Also return in body for frontend localStorage usage
-  const userData = {
-    id: user.id,
-    badge_no: user.badge_no,
-    name_en: user.name_en,
-    name_hi: user.name_hi,
-    role: user.role,
-    ps_id: user.ps_id,
-    district_id: user.district_id,
-    is_active: user.is_active,
-  };
-
-  logger.info(`User logged in: ${identifier}`);
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      user: userData,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    },
-  });
-});
-
-/**
- * POST /api/auth/logout
- * Clears token cookies.
- */
-export const logout = asyncHandler(async (req, res) => {
-  clearTokenCookies(res);
-  res.status(200).json({
-    status: 'success',
-    data: { message: 'Logged out successfully' },
-  });
-});
-
-/**
- * GET /api/auth/me
- * Returns the current authenticated user's profile.
- * Requires a valid access_token (cookie or Authorization header).
- */
-export const getMe = asyncHandler(async (req, res) => {
-  // req.user is set by the protect middleware
-  const userId = req.user?.id;
-  if (!userId) {
-    throw new ApiError(401, 'Authentication required');
-  }
-
-  const user = await db('users')
-    .select('id', 'badge_no', 'name_en', 'name_hi', 'role', 'ps_id', 'district_id', 'is_active', 'created_at')
-    .where('id', userId)
-    .first();
-
-  if (!user) {
-    throw new ApiError(404, 'User not found');
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: { user },
-  });
-});
-
-/**
- * POST /api/auth/refresh
- * Issues a new access token using a valid refresh token.
- */
-export const refresh = asyncHandler(async (req, res) => {
-  const refreshTokenValue =
-    req.cookies?.refresh_token ||
-    req.body?.refresh_token ||
-    req.headers.authorization?.replace(/^Bearer\s+/i, '');
-
-  if (!refreshTokenValue) {
-    throw new ApiError(401, 'Refresh token required');
-  }
-
-  let decoded;
   try {
-    decoded = verifyRefreshToken(refreshTokenValue);
-  } catch (err) {
-    throw new ApiError(401, 'Invalid or expired refresh token');
+    const data = await authService.loginUser(badgeNo, password);
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data
+    });
+  } catch (error) {
+    return res.status(401).json({
+      status: 'error',
+      success: false,
+      code: 'INVALID_CREDENTIALS',
+      message: error.message
+    });
+  }
+};
+
+export const refresh = async (req, res) => {
+  const refreshToken = req.body.refresh_token || req.body.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      code: 'BAD_REQUEST',
+      message: 'Refresh token is required'
+    });
   }
 
-  // Verify user still exists and is active
-  const user = await db('users').where('id', decoded.id).first();
-  if (!user || !user.is_active) {
-    throw new ApiError(401, 'User account is deactivated or not found');
+  try {
+    const data = await authService.refreshUserToken(refreshToken);
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data
+    });
+  } catch (error) {
+    return res.status(401).json({
+      status: 'error',
+      success: false,
+      code: 'UNAUTHORIZED',
+      message: error.message
+    });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user.id) : null;
+    if (userId) {
+      await authService.logoutUser(userId);
+    }
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: { message: 'Logged out' }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const me = async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user.id) : null;
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        success: false,
+        code: 'UNAUTHORIZED',
+        message: 'Unauthorized'
+      });
+    }
+
+    const user = await db('users')
+      .select('users.*', 'ps.name_en as ps_name_en', 'ps.name_hi as ps_name_hi', 'dist.name_en as district_name_en', 'dist.name_hi as district_name_hi')
+      .leftJoin('hierarchy_nodes as ps', 'users.station_id', 'ps.id')
+      .leftJoin('hierarchy_nodes as dist', 'users.district_id', 'dist.id')
+      .where('users.id', userId)
+      .first();
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        success: false,
+        code: 'NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    const getLevelFromRole = (role) => {
+      if (['HC', 'SHO'].includes(role)) return 'PS';
+      if (role === 'DISTRICT_OFFICER') return 'DISTRICT';
+      return 'HQ';
+    };
+
+    const level = getLevelFromRole(user.role);
+
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          userId: user.id,
+          username: user.username,
+          badge_no: user.badge_no,
+          badgeNo: user.badge_no,
+          name_en: user.name_en,
+          name_hi: user.name_hi,
+          name: user.name_en,
+          role: user.role,
+          level: level,
+          ps_id: user.station_id || null,
+          psId: user.station_id || null,
+          district_id: user.district_id || null,
+          districtId: user.district_id || null,
+          sub_div_id: user.sub_div_id || null,
+          is_active: !!user.is_active,
+          last_login: user.last_login,
+          ps_name_en: user.ps_name_en || null,
+          ps_name_hi: user.ps_name_hi || null,
+          district_name_en: user.district_name_en || null,
+          district_name_hi: user.district_name_hi || null
+        },
+        jurisdiction: {
+          station: user.station_id ? { id: user.station_id, name_en: user.ps_name_en, name_hi: user.ps_name_hi, code: user.ps_code } : null,
+          district: user.district_id ? { id: user.district_id, name_en: user.district_name_en, name_hi: user.district_name_hi, code: user.district_code } : null
+        }
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const oldPassword = req.body.oldPassword || req.body.old_password;
+  const newPassword = req.body.newPassword || req.body.new_password;
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      code: 'BAD_REQUEST',
+      message: 'Old and new passwords are required'
+    });
   }
 
-  const tokenPayload = {
-    id: user.id,
-    badge_no: user.badge_no,
-    role: user.role,
-    ps_id: user.ps_id,
-    district_id: user.district_id,
-  };
+  try {
+    const userId = req.user ? (req.user.userId || req.user.id) : null;
+    const user = await db('users').where({ id: userId }).first();
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        success: false,
+        code: 'NOT_FOUND',
+        message: 'User not found'
+      });
+    }
 
-  const newAccessToken = generateAccessToken(tokenPayload);
-  const newRefreshToken = generateRefreshToken(tokenPayload);
+    const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({
+        status: 'error',
+        success: false,
+        code: 'BAD_REQUEST',
+        message: 'Incorrect old password'
+      });
+    }
 
-  setTokenCookies(res, newAccessToken, newRefreshToken);
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await db('users').where({ id: userId }).update({ password_hash: newHash });
 
-  res.status(200).json({
-    status: 'success',
-    data: {
-      access_token: newAccessToken,
-      refresh_token: newRefreshToken,
-    },
-  });
-});
+    // Force re-login by deleting refresh token from Redis
+    await authService.logoutUser(userId);
+
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: { message: 'Password updated' }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const getNotifications = async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user.id) : null;
+    const list = await db('notifications')
+      .where({ user_id: userId })
+      .orderBy('created_at', 'desc')
+      .limit(50);
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: { notifications: list }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const markNotificationRead = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userId = req.user ? (req.user.userId || req.user.id) : null;
+    await db('notifications')
+      .where({ id, user_id: userId })
+      .update({ is_read: true });
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: { message: 'Notification marked as read' }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: error.message
+    });
+  }
+};
