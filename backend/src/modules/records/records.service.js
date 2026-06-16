@@ -213,8 +213,8 @@ export const updateRecord = async (id, user, data, ipAddress) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK') {
-      throw new Error('This record is locked. Only DRAFT or SENT_BACK records can be edited.');
+    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
+      throw new Error('This record is locked. Only DRAFT or SENT_BACK_HC records can be edited.');
     }
 
     const oldData = parseJsonField(record.data);
@@ -285,7 +285,7 @@ export const submitRecord = async (id, user) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK') {
+    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
       throw new Error('Record is already submitted');
     }
 
@@ -332,11 +332,11 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
   const TRANSITIONS = {
     PENDING_SHO: {
       approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT' },
-      send_back: { to: 'SENT_BACK', toLevel: 'PS', requiresComment: true }
+      send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true }
     },
     DISTRICT_REVIEW: {
       approve: { to: 'HQ_RECEIVED', toLevel: 'HQ' },
-      send_back: { to: 'SENT_BACK', toLevel: 'PS', requiresComment: true }
+      send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true }
     }
   };
 
@@ -411,7 +411,7 @@ export const overrideCaseHead = async (id, user, newHead, reason, ipAddress) => 
     if (!record) throw new Error('Record not found');
 
     const oldData = parseJsonField(record.data);
-    const key = record.record_type === 'CASES' ? 'case_head' : 'crime_head';
+    const key = record.record_type === 'CASE' ? 'local_head' : 'crime_head';
     const oldHead = oldData[key];
 
     const hydratedData = { ...oldData, [key]: newHead };

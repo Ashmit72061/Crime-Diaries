@@ -118,7 +118,7 @@ const startServer = async () => {
   });
 };
 
-if (process.env.PHAROS_TEST !== 'true') {
+if (process.env.PHAROS_TEST !== 'true' && process.argv[1] && (process.argv[1].endsWith('app.js') || process.argv[1].endsWith('app'))) {
   startServer().catch(err => {
     console.error('[App] Failed to start server:', err.message);
     process.exit(1);

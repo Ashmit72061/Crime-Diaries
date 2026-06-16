@@ -55,6 +55,10 @@ export async function publish(routingKey, payload) {
 }
 
 export async function subscribe(pattern, queueName, handler) {
+  if (typeof queueName === 'function') {
+    handler = queueName;
+    queueName = `${pattern.replace(/[^a-zA-Z0-9.-]/g, '_')}-queue`;
+  }
   if (isMock || !channel) {
     console.log(`[EventBus] Subscribing listener locally to pattern: "${pattern}"`);
     localEmitter.on(pattern, async (payload) => {
@@ -90,3 +94,5 @@ export async function subscribe(pattern, queueName, handler) {
     localEmitter.on(pattern, handler);
   }
 }
+
+export { connect as connectEventBus };

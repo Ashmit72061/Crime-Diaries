@@ -1,321 +1,406 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileUp, CheckSquare, Square, AlertCircle, Save } from 'lucide-react';
-import api from '../../utils/api.js';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { message, notification } from 'antd';
+
+import { useFormSchema } from '../../hooks/useFormSchema.js';
+import { useAutosave } from '../../hooks/useAutosave.js';
+import useAuthStore from '../../store/authStore.js';
+
+import FormSection from './FormSection.jsx';
+import FormToolbar from './FormToolbar.jsx';
+import FormAutosave from './FormAutosave.jsx';
+
+/* ─── Helpers ─────────────────────────────────────────────────────────────── */
+function parseRules(rawRules) {
+  if (!rawRules) return {};
+  if (typeof rawRules === 'object') return rawRules;
+  try { return JSON.parse(rawRules); } catch { return {}; }
+}
+
+/* ─── StepDot ─────────────────────────────────────────────────────────────── */
+function StepDot({ index, active, completed, hasError, title, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex flex-col items-center gap-1.5 cursor-pointer outline-none"
+      title={title}
+    >
+      <span className={`
+        flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs font-bold transition-all duration-300
+        ${active
+          ? 'bg-[#0f52ba] border-[#0f52ba] text-white shadow-md shadow-[#0f52ba]/30 scale-110'
+          : hasError
+            ? 'bg-red-50 border-red-500 text-red-600'
+            : completed
+              ? 'bg-emerald-50 border-emerald-500 text-emerald-600'
+              : 'bg-white border-slate-300 text-slate-400 group-hover:border-slate-400 group-hover:text-slate-600'
+        }
+      `}>
+        {completed && !active ? <CheckCircle2 size={16} /> : index + 1}
+      </span>
+      <span className={`text-[11px] font-semibold max-w-[90px] text-center leading-tight hidden sm:block transition-colors ${
+        active ? 'text-[#0f52ba]' : hasError ? 'text-red-600' : 'text-slate-500'
+      }`}>
+        {title}
+      </span>
+    </button>
+  );
+}
 
 /**
- * DynamicForm - Core schema-driven generator component
+ * DynamicForm
  *
- * @param {string} recordType - CASE | ARREST | PCR_CALL | MISSING
- * @param {object} initialValues - Initial field values
- * @param {function} onSaveDraft - Callback for debounced draft auto-save
- * @param {function} onSubmit - Callback for final form submission
- * @param {boolean} readOnly - Disable all inputs for review state
- * @param {array} targetFields - Highlighted keys requested for correction
+ * @param {string}   recordType     - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
+ * @param {object}   initialValues  - Pre-populated data (from existing record.data)
+ * @param {function} onSubmit       - Final submit callback(formValues, activeRecordId)
+ * @param {boolean}  readOnly       - Lock all inputs for review
+ * @param {string[]} targetFields   - Field keys flagged for correction (send-back)
  */
 export default function DynamicForm({
   recordType,
   initialValues = {},
-  onSaveDraft,
   onSubmit,
   readOnly = false,
-  targetFields = []
+  targetFields = [],
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language || 'en';
+  const navigate = useNavigate();
 
-  // State to hold all form field values
-  const [values, setValues] = useState({});
-  const [errors, setErrors] = useState({});
-  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving'
+  const { user } = useAuthStore();
+  const { schema, isLoading, isError } = useFormSchema(recordType);
+  const activeRecordIdRef = useRef(initialValues?.id || null);
 
-  // Fetch form schema from API (Mock or Live)
-  const { data: schema, isLoading } = useQuery({
-    queryKey: ['fields', 'form', recordType],
-    queryFn: async () => {
-      const res = await api.get(`/fields/form/${recordType}`);
-      return res.data.data;
-    },
-  });
+  const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
+    recordType,
+    initialValues?.id
+  );
 
-  // Populate initial values when ready
+  const [values,       setValues      ] = useState({});
+  const [errors,       setErrors      ] = useState({});
+  const [touched,      setTouched     ] = useState({});
+  const [currentStep,  setCurrentStep ] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(new Set());
+
+  const formRef = useRef(null);
+
+  /* ── Sync saved record ID ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (initialValues) {
-      setValues(initialValues.data || initialValues || {});
+    if (savedRecord?.id) {
+      activeRecordIdRef.current = savedRecord.id;
     }
-  }, [initialValues]);
+  }, [savedRecord]);
 
-  // Handle field change and trigger auto-save
-  const handleChange = (key, val) => {
-    if (readOnly) return;
-    const newValues = { ...values, [key]: val };
-    setValues(newValues);
-
-    // Clear validation error when editing
-    if (errors[key]) {
-      setErrors({ ...errors, [key]: null });
+  /* ── Seed initial values & System Fields ──────────────────────────────── */
+  useEffect(() => {
+    const seed = initialValues?.data || initialValues || {};
+    
+    // Auto-populate readonly system fields from session/metadata
+    const updatedSeed = {
+      ...seed,
+      uid: initialValues?.id || seed.uid || 'NEW_DRAFT_PENDING',
+      district: seed.district || user?.districtKey || user?.districtId || 'DIST_NDD',
+      police_station: seed.police_station || user?.stationName || user?.psId || 'PS_NDD_PARLIAMENT_STREET',
+      submission_status: initialValues?.current_status || seed.submission_status || 'DRAFT'
+    };
+    
+    setValues(updatedSeed);
+    if (initialValues?.id) {
+      activeRecordIdRef.current = initialValues.id;
     }
+  }, [initialValues, user]);
 
-    // Trigger auto-save callback
-    if (onSaveDraft) {
-      setSaveStatus('saving');
-      const delay = setTimeout(() => {
-        onSaveDraft(newValues);
-        setSaveStatus('saved');
-      }, 1000);
-      return () => clearTimeout(delay);
-    }
-  };
+  /* ── Validate a single section (step) ─────────────────────────────────── */
+  const validateSection = useCallback((stepIdx, currentValues = values) => {
+    const section = schema[stepIdx];
+    if (!section) return {};
 
-  // Perform validation before submission
-  const validateForm = () => {
-    const newErrors = {};
-    if (!schema) return false;
-
-    schema.forEach((section) => {
-      section.fields.forEach((field) => {
-        if (field.validation_rules?.required) {
-          const val = values[field.field_key];
-          if (val === undefined || val === null || val === '' || val === false) {
-            newErrors[field.field_key] = lang === 'hi' 
-              ? `${lang === 'hi' ? field.label_hi : field.label_en} आवश्यक है`
-              : `${field.label_en} is required`;
-          }
+    const errs = {};
+    section.fields.forEach((field) => {
+      // Skip validating if field is hidden by condition
+      if (field.show_when) {
+        const { field: targetField, value: targetValue } = field.show_when;
+        const currentValue = currentValues[targetField];
+        if (String(currentValue || '').toLowerCase() !== String(targetValue || '').toLowerCase()) {
+          return;
         }
-      });
+      }
+
+      const rules = parseRules(field.validation_rules);
+      if (!rules.required) return;
+
+      const val = currentValues[field.field_key];
+      const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+
+      if (isEmpty) {
+        const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+        errs[field.field_key] = lang === 'hi'
+          ? `${label} आवश्यक है`
+          : `${label} is required`;
+      }
+    });
+    return errs;
+  }, [schema, values, lang]);
+
+  /* ── Validate ALL sections ─────────────────────────────────────────────── */
+  const validateAll = useCallback((currentValues = values) => {
+    const allErrs = {};
+    schema.forEach((section) => {
+      const errs = validateSection(schema.indexOf(section), currentValues);
+      Object.assign(allErrs, errs);
+    });
+    return allErrs;
+  }, [schema, values, validateSection]);
+
+  /* ── Handle field change ──────────────────────────────────────────────── */
+  const handleChange = useCallback((key, val) => {
+    if (readOnly) return;
+
+    setValues((prev) => {
+      const next = { ...prev, [key]: val };
+
+      // Clear error on change
+      if (errors[key]) {
+        setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
+      }
+
+      // Auto-save using custom hook (2 seconds debounce)
+      triggerAutosave(next, activeRecordIdRef.current);
+
+      return next;
     });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setTouched((prev) => ({ ...prev, [key]: true }));
+  }, [readOnly, errors, triggerAutosave]);
+
+  /* ── Navigate forward (with step validation) ──────────────────────────── */
+  const handleNext = () => {
+    const stepErrs = validateSection(currentStep);
+    if (Object.keys(stepErrs).length > 0) {
+      setErrors((prev) => ({ ...prev, ...stepErrs }));
+      // Mark all fields in this step as touched
+      const section = schema[currentStep];
+      const newTouched = {};
+      section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
+      setTouched((prev) => ({ ...prev, ...newTouched }));
+      
+      message.error(lang === 'hi'
+        ? 'कृपया सभी आवश्यक फ़ील्ड भरें।'
+        : 'Please fill all required fields before continuing.');
+      return;
+    }
+
+    setCompletedSteps((prev) => new Set([...prev, currentStep]));
+    setCurrentStep((s) => Math.min(s + 1, schema.length - 1));
+    // Scroll to top of form
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
+  /* ── Navigate backward ────────────────────────────────────────────────── */
+  const handleBack = () => {
+    setCurrentStep((s) => Math.max(s - 1, 0));
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
+
+  /* ── Jump to a specific step (click step dot) ─────────────────────────── */
+  const handleStepClick = (targetIdx) => {
+    if (targetIdx < currentStep) {
+      setCurrentStep(targetIdx);
+      return;
+    }
+    if (targetIdx === currentStep) return;
+
+    let canJump = true;
+    for (let i = currentStep; i < targetIdx; i++) {
+      const errs = validateSection(i);
+      if (Object.keys(errs).length > 0) {
+        setErrors((prev) => ({ ...prev, ...errs }));
+        canJump = false;
+        break;
+      }
+      setCompletedSteps((prev) => new Set([...prev, i]));
+    }
+    if (canJump) setCurrentStep(targetIdx);
+  };
+
+  /* ── Final form submission ─────────────────────────────────────────────── */
   const handleFormSubmit = (e) => {
     e.preventDefault();
     if (readOnly) return;
 
-    if (validateForm()) {
-      onSubmit?.(values);
-    } else {
-      // Focus on first error or notify user
-      const firstError = Object.keys(errors)[0];
-      const el = document.getElementById(`field-${firstError}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const allErrs = validateAll();
+    if (Object.keys(allErrs).length > 0) {
+      setErrors(allErrs);
+      const allTouched = {};
+      schema.forEach((sec) => sec.fields.forEach((f) => { allTouched[f.field_key] = true; }));
+      setTouched(allTouched);
+
+      let firstErrStep = 0;
+      schema.forEach((sec, idx) => {
+        const hasErr = sec.fields.some((f) => allErrs[f.field_key]);
+        if (hasErr && idx < firstErrStep + 1) firstErrStep = idx;
+      });
+      setCurrentStep(firstErrStep);
+
+      message.error(lang === 'hi'
+        ? 'कृपया सभी आवश्यक फ़ील्ड भरें।'
+        : 'Please complete all required fields.');
+
+      setTimeout(() => {
+        const firstErrKey = Object.keys(allErrs)[0];
+        document.getElementById(`field-${firstErrKey}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return;
     }
+
+    onSubmit?.(values, activeRecordIdRef.current);
   };
 
+  /* ── Manual save draft (button click) ────────────────────────────────────*/
+  const handleManualSave = () => {
+    saveImmediately(values, activeRecordIdRef.current);
+    notification.success({
+      message: lang === 'hi' ? 'सफलता' : 'Draft Saved',
+      description: lang === 'hi' ? 'ड्राफ्ट सहेज लिया गया है।' : 'Draft saved successfully.',
+      placement: 'topRight',
+      duration: 3,
+    });
+  };
+
+  /* ── Render states ─────────────────────────────────────────────────────── */
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-zinc-400">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4"></div>
-        <p>{t('common.loading', 'Loading secure form terminal...')}</p>
+      <div className="flex flex-col items-center justify-center p-16 text-slate-500 gap-3">
+        <Loader2 size={32} className="animate-spin text-[#0f52ba]" />
+        <p className="text-sm font-semibold">{t('common.loading', 'Loading form schema...')}</p>
       </div>
     );
   }
 
+  if (isError || schema.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-16 text-slate-500 gap-3 bg-white border border-dashed border-slate-300 rounded-xl shadow-sm">
+        <AlertTriangle size={32} className="text-amber-500" />
+        <p className="text-sm font-semibold text-slate-700">
+          {t('common.error', 'Unable to load form configuration.')}
+        </p>
+        <p className="text-xs text-slate-500">
+          Record type: <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{recordType}</code>
+        </p>
+      </div>
+    );
+  }
+
+  const activeSection = schema[currentStep];
+  const isLastStep    = currentStep === schema.length - 1;
+
+  const stepHasError = (idx) => {
+    const sec = schema[idx];
+    return sec?.fields?.some((f) => errors[f.field_key] && touched[f.field_key]);
+  };
+
   return (
-    <form onSubmit={handleFormSubmit} className="space-y-6">
-      {/* Auto-save status bar */}
-      {!readOnly && onSaveDraft && (
-        <div className="flex justify-end text-xs text-zinc-500 gap-1.5 items-center">
-          <Save size={12} className={saveStatus === 'saving' ? 'animate-pulse text-amber-500' : 'text-emerald-500'} />
-          <span>
-            {saveStatus === 'saving'
-              ? t('actions.saving', 'Saving local draft...')
-              : t('actions.saved', 'All changes auto-saved to local draft')}
-          </span>
-        </div>
-      )}
+    <div className="space-y-6" ref={formRef}>
 
-      {/* Render sections dynamically */}
-      {schema?.map((section) => (
-        <div
-          key={section.section}
-          className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl p-5 shadow-lg space-y-4"
-        >
-          {/* Section title */}
-          <div className="border-b border-zinc-800 pb-2">
-            <h2 className="text-sm font-bold tracking-wide text-zinc-100 font-display uppercase border-l-2 border-[#cca43b] pl-2">
-              {lang === 'hi' ? section.title_hi : section.title_en}
-            </h2>
-          </div>
-
-          {/* Form grid layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {section.fields.map((field) => {
-              const key = field.field_key;
-              const label = lang === 'hi' ? field.label_hi : field.label_en;
-              const type = field.field_type;
-              const isRequired = field.validation_rules?.required;
-              const isHighlighted = targetFields.includes(key);
-              const error = errors[key];
-
+      {/* ── Step Navigator ─────────────────────────────────────────────── */}
+      {schema.length > 1 && (
+        <div className="bg-white border border-slate-200 rounded-xl px-8 py-5 shadow-sm">
+          <div className="flex items-start justify-between gap-2 overflow-x-auto pb-2">
+            {schema.map((sec, idx) => {
+              const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
               return (
-                <div
-                  key={key}
-                  id={`field-${key}`}
-                  className={`flex flex-col gap-1.5 p-2 rounded-lg transition-colors ${
-                    isHighlighted ? 'bg-amber-950/20 border border-amber-800/40' : ''
-                  }`}
-                >
-                  <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                    <span>
-                      {label} {isRequired && <span className="text-[#cca43b]">*</span>}
-                    </span>
-                    {isHighlighted && (
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-950 px-1.5 py-0.5 rounded border border-amber-700">
-                        {t('actions.correctionRequired', 'Correction Requested')}
-                      </span>
-                    )}
-                  </label>
-
-                  {/* Dynamic inputs based on type */}
-                  {type === 'TEXT' && (
-                    <input
-                      type="text"
-                      disabled={readOnly}
-                      value={values[key] || ''}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={`w-full bg-zinc-950 border text-sm text-zinc-200 px-3 py-2 rounded-lg outline-none focus:border-[#cca43b] focus:ring-1 focus:ring-[#cca43b] transition-all ${
-                        error ? 'border-red-500' : isHighlighted ? 'border-amber-600' : 'border-zinc-800'
-                      }`}
-                    />
+                <React.Fragment key={sec.section || idx}>
+                  <StepDot
+                    index={idx}
+                    active={idx === currentStep}
+                    completed={completedSteps.has(idx)}
+                    hasError={stepHasError(idx)}
+                    title={title}
+                    onClick={() => handleStepClick(idx)}
+                  />
+                  {idx < schema.length - 1 && (
+                    <div className={`flex-1 h-0.5 mt-4 mx-2 rounded-full transition-colors ${
+                      completedSteps.has(idx) ? 'bg-emerald-400' : 'bg-slate-200'
+                    }`} />
                   )}
-
-                  {type === 'NUMBER' && (
-                    <input
-                      type="number"
-                      disabled={readOnly}
-                      value={values[key] || ''}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={`w-full bg-zinc-950 border text-sm text-zinc-200 px-3 py-2 rounded-lg outline-none focus:border-[#cca43b] focus:ring-1 focus:ring-[#cca43b] transition-all ${
-                        error ? 'border-red-500' : isHighlighted ? 'border-amber-600' : 'border-zinc-800'
-                      }`}
-                    />
-                  )}
-
-                  {type === 'DATE' && (
-                    <input
-                      type="date"
-                      disabled={readOnly}
-                      value={values[key] || ''}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={`w-full bg-zinc-950 border text-sm text-zinc-200 px-3 py-2 rounded-lg outline-none focus:border-[#cca43b] focus:ring-1 focus:ring-[#cca43b] transition-all ${
-                        error ? 'border-red-500' : isHighlighted ? 'border-amber-600' : 'border-zinc-800'
-                      }`}
-                    />
-                  )}
-
-                  {type === 'TEXTAREA' && (
-                    <textarea
-                      rows={3}
-                      disabled={readOnly}
-                      value={values[key] || ''}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={`w-full bg-zinc-950 border text-sm text-zinc-200 px-3 py-2 rounded-lg outline-none focus:border-[#cca43b] focus:ring-1 focus:ring-[#cca43b] transition-all ${
-                        error ? 'border-red-500' : isHighlighted ? 'border-amber-600' : 'border-zinc-800'
-                      }`}
-                    />
-                  )}
-
-                  {type === 'PHONE' && (
-                    <input
-                      type="tel"
-                      disabled={readOnly}
-                      value={values[key] || ''}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={`w-full bg-zinc-950 border text-sm text-zinc-200 px-3 py-2 rounded-lg outline-none focus:border-[#cca43b] focus:ring-1 focus:ring-[#cca43b] transition-all ${
-                        error ? 'border-red-500' : isHighlighted ? 'border-amber-600' : 'border-zinc-800'
-                      }`}
-                    />
-                  )}
-
-                  {type === 'SELECT' && (
-                    <select
-                      disabled={readOnly}
-                      value={values[key] || ''}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={`w-full bg-zinc-950 border text-sm text-zinc-200 px-3 py-2 rounded-lg outline-none focus:border-[#cca43b] focus:ring-1 focus:ring-[#cca43b] transition-all ${
-                        error ? 'border-red-500' : isHighlighted ? 'border-amber-600' : 'border-zinc-800'
-                      }`}
-                    >
-                      <option value="">-- Select Option --</option>
-                      {field.options?.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {lang === 'hi' ? o.label_hi : o.label_en}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {type === 'BOOLEAN' && (
-                    <button
-                      type="button"
-                      disabled={readOnly}
-                      onClick={() => handleChange(key, !values[key])}
-                      className="flex items-center gap-2 text-sm text-zinc-300 py-2 outline-none cursor-pointer disabled:cursor-not-allowed"
-                    >
-                      {values[key] ? (
-                        <CheckSquare className="text-[#cca43b] w-5 h-5" />
-                      ) : (
-                        <Square className="text-zinc-600 w-5 h-5" />
-                      )}
-                      <span>{t('common.yes', 'Yes / True')}</span>
-                    </button>
-                  )}
-
-                  {type === 'FILE' && (
-                    <div className="flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-lg p-2">
-                      <input
-                        type="file"
-                        id={`file-input-${key}`}
-                        disabled={readOnly}
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) handleChange(key, file.name);
-                        }}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        disabled={readOnly}
-                        onClick={() => document.getElementById(`file-input-${key}`).click()}
-                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                      >
-                        <FileUp size={14} />
-                        <span>Upload File</span>
-                      </button>
-                      <span className="text-xs text-zinc-400 truncate">
-                        {values[key] || 'No file selected'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Validation feedback */}
-                  {error && (
-                    <span className="text-[10px] text-red-400 flex items-center gap-1">
-                      <AlertCircle size={10} />
-                      {error}
-                    </span>
-                  )}
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
-        </div>
-      ))}
 
-      {/* Form submit buttons */}
-      {!readOnly && (
-        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
-          <button
-            type="submit"
-            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 font-bold px-6 py-2.5 rounded-lg text-sm shadow-md transition-colors cursor-pointer"
-          >
-            {t('actions.submit', 'Submit Record')}
-          </button>
+          {/* Step title text & Autosave status */}
+          <div className="mt-4 flex justify-between items-center text-xs font-medium border-t border-slate-100 pt-3">
+            <span className="text-slate-500">
+              {lang === 'hi' ? `चरण ${currentStep + 1} / ${schema.length}` : `Step ${currentStep + 1} of ${schema.length}`}
+            </span>
+            <FormAutosave status={saveStatus} lang={lang} />
+          </div>
         </div>
       )}
-    </form>
+
+      {/* ── Single-step save indicator (when no step nav) ─────────────── */}
+      {schema.length === 1 && (
+        <div className="flex justify-end">
+          <FormAutosave status={saveStatus} lang={lang} />
+        </div>
+      )}
+
+      {/* ── Validation summary (top — shown after first submit attempt) ── */}
+      {Object.keys(errors).length > 0 && Object.values(touched).some(Boolean) && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 shadow-sm space-y-2">
+          <div className="flex items-center gap-2 font-bold text-red-700 mb-1">
+            <AlertCircle size={16} />
+            <span>
+              {lang === 'hi'
+                ? `${Object.keys(errors).filter(k => touched[k]).length} फ़ील्ड अपूर्ण हैं`
+                : `${Object.keys(errors).filter(k => touched[k]).length} field(s) need your attention`}
+            </span>
+          </div>
+          {Object.entries(errors)
+            .filter(([k]) => touched[k])
+            .slice(0, 5)
+            .map(([, msg]) => (
+              <div key={msg} className="flex items-center gap-2 text-red-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                {msg}
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* ── Active Section Form ─────────────────────────────────────────── */}
+      {activeSection && (
+        <form onSubmit={handleFormSubmit} noValidate className="space-y-6">
+          <FormSection
+            section={activeSection}
+            currentStep={currentStep}
+            values={values}
+            errors={errors}
+            touched={touched}
+            handleChange={handleChange}
+            readOnly={readOnly}
+            targetFields={targetFields}
+            lang={lang}
+          />
+
+          {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
+          <FormToolbar
+            currentStep={currentStep}
+            totalSteps={schema.length}
+            readOnly={readOnly}
+            onBack={() => navigate('/records')}
+            onPrevious={handleBack}
+            onSaveDraft={!readOnly ? handleManualSave : null}
+            onNext={handleNext}
+            isLastStep={isLastStep}
+            lang={lang}
+          />
+        </form>
+      )}
+    </div>
   );
 }

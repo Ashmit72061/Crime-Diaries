@@ -10,7 +10,7 @@ export const getRecords = async (req, res) => {
       { status, dateFrom, dateTo },
       req.jurisdictionQuery
     );
-    return res.status(200).json({ success: true, data: { cases: records } }); // named cases for UI compatibility
+    return res.status(200).json({ success: true, data: records });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

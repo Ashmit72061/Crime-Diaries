@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth.api.js';
 import useAuthStore from '../store/authStore.js';
@@ -11,12 +12,11 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   // Fetch current user (runs once on mount)
-  const { isLoading: isFetching } = useQuery({
+  const { data: userData, isLoading: isFetching, error: queryError } = useQuery({
     queryKey: QUERY_KEYS.ME,
     queryFn: async () => {
       try {
         const res = await authApi.getMe();
-        login(res.data.data.user);
         return res.data.data.user;
       } catch (err) {
         if (!err.response && isAuthenticated) {
@@ -29,14 +29,32 @@ export const useAuth = () => {
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
     retry: false,
-    onError: () => logout(),
   });
+
+  // Safe side-effect sync
+  useEffect(() => {
+    if (userData) {
+      login(userData);
+    }
+  }, [userData]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (queryError) {
+      logout();
+    }
+  }, [queryError]);
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials) => {
       try {
-        const res = await authApi.login(credentials);
+        const payload = {
+          ...credentials,
+          badge_no: credentials.email,
+          badgeNo: credentials.email
+        };
+        const res = await authApi.login(payload);
         const { user, access_token, refresh_token } = res.data.data;
         if (access_token) localStorage.setItem('access_token', access_token);
         if (refresh_token) localStorage.setItem('refresh_token', refresh_token);

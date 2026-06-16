@@ -603,6 +603,14 @@ const formSchemas = {
           ],
           validation_rules: { required: true }
         },
+        {
+          field_key: 'other_status_reason',
+          field_type: 'TEXT',
+          label_en: 'Reason for Other Status',
+          label_hi: 'अन्य स्थिति का कारण',
+          validation_rules: { required: false },
+          show_when: { field: 'status', value: 'others' }
+        },
         { field_key: 'recovered_material', field_type: 'TEXTAREA', label_en: 'Recovered Material Items', label_hi: 'बरामद की गई सामग्री', validation_rules: { required: false } },
         {
           field_key: 'special_scheme',
@@ -879,17 +887,37 @@ api.interceptors.request.use(
 
     // Handle Mock Authentication Login
     if (url.includes('/auth/login') && method === 'POST') {
-      const { badgeNo, password, selectedNodeId } = JSON.parse(config.data);
+      const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
+      const badgeNo = payload.badgeNo || payload.email || payload.badge_no || 'HC001';
+      const password = payload.password;
+      const selectedNodeId = payload.selectedNodeId;
       if (!badgeNo || !password) {
         throw createMockError('Missing badge number or security key', 400);
       }
       
       const node = findNodeById(selectedNodeId || 'PS_NDD_PARLIAMENT_STREET') || POLICE_HIERARCHY.children[0].children[1].children[0].children[0];
+      
+      let mockRole = node.type;
+      const lowerB = badgeNo.toLowerCase();
+      if (lowerB.includes('sho')) {
+        mockRole = 'SHO';
+      } else if (lowerB.includes('hc') || lowerB.includes('ramesh')) {
+        mockRole = 'HC';
+      } else if (lowerB.includes('dcp') || lowerB.includes('do') || lowerB.includes('priya') || lowerB.includes('vardhan')) {
+        mockRole = 'DISTRICT_OFFICER';
+      } else if (lowerB.includes('hq') || lowerB.includes('analyst') || lowerB.includes('anita') || lowerB.includes('vikram.singh')) {
+        mockRole = 'HQ_ANALYST';
+      } else if (lowerB.includes('admin') || lowerB.includes('suresh')) {
+        mockRole = 'HQ_ADMIN';
+      } else if (lowerB.includes('sa') || lowerB.includes('system')) {
+        mockRole = 'SYSTEM_ADMIN';
+      }
+
       const mockUser = {
         userId: 'mock-usr-' + badgeNo.toLowerCase(),
         badgeNo,
         name: node.officerName || 'Ramesh Kumar',
-        role: node.type, // e.g. PS, DISTRICT, HQ, etc.
+        role: mockRole,
         level: node.type,
         psId: node.type === 'PS' ? node.id : '',
         districtId: node.type === 'DISTRICT' ? node.id : 'DIST_NDD',
@@ -1013,9 +1041,9 @@ api.interceptors.request.use(
       });
     }
 
-    // Create Record
     if (url.match(/\/records$/) && method === 'POST') {
-      const { record_type, data } = JSON.parse(config.data);
+      const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
+      const { record_type, data } = payload;
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
       
       const userJSON = localStorage.getItem('crime-diaries-auth');
@@ -1061,10 +1089,10 @@ api.interceptors.request.use(
       });
     }
 
-    // Update Record
     if (url.match(/\/records\/([A-Za-z0-9-]+)$/) && method === 'PUT') {
       const recId = url.match(/\/records\/([A-Za-z0-9-]+)$/)[1];
-      const { data } = JSON.parse(config.data);
+      const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
+      const { data } = payload;
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
       const idx = allRecords.findIndex(r => r.id === recId);
       if (idx === -1) {

@@ -1,4 +1,5 @@
-<<<<<<< HEAD
+@import "tailwindcss";
+
 /* Core Global Stylesheet for PHAROS - Premium Dark UI/UX Theme */
 
 :root {
@@ -214,8 +215,6 @@ body {
   box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4) !important;
   transform: translateY(-1px);
 }
-=======
-@import "tailwindcss";
 
 /* Premium Design System for Delhi Police Crime Diary Command Center */
 :root {
@@ -2090,4 +2089,3 @@ textarea.form-control {
   cursor: not-allowed;
   box-shadow: none;
 }
->>>>>>> 050d70686de07c389fe62cdcf8820253124b8856

@@ -3,9 +3,13 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, BookOpen, AlertTriangle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Breadcrumb, message, notification } from 'antd';
 import DynamicForm from '../../components/forms/DynamicForm.jsx';
 import api from '../../utils/api.js';
+
+// Import our custom hooks
+import { useCreateRecord } from '../../hooks/useCreateRecord.js';
+import { useUpdateRecord } from '../../hooks/useUpdateRecord.js';
 
 export default function NewRecord() {
   const { t } = useTranslation();
@@ -25,31 +29,9 @@ export default function NewRecord() {
     enabled: !!editId,
   });
 
-  // Create or Update Record Mutation
-  const saveMutation = useMutation({
-    mutationFn: async (formData) => {
-      if (editId) {
-        // Edit record PUT
-        const res = await api.put(`/records/${editId}`, { data: formData });
-        return res.data.data;
-      } else {
-        // Create record POST
-        const res = await api.post('/records', { record_type: type, data: formData });
-        return res.data.data;
-      }
-    },
-    onSuccess: (savedRecord) => {
-      toast.success(
-        editId 
-          ? t('actions.draftUpdated', 'Draft record updated successfully') 
-          : t('actions.draftSaved', 'Draft record saved successfully')
-      );
-      queryClient.invalidateQueries({ queryKey: ['records'] });
-    },
-    onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to save record draft');
-    },
-  });
+  // Create or Update Record Mutations from custom hooks
+  const createMutation = useCreateRecord(type);
+  const updateMutation = useUpdateRecord(type || record?.record_type);
 
   // Final Submission Mutation
   const submitMutation = useMutation({
@@ -58,30 +40,42 @@ export default function NewRecord() {
       return res.data.data;
     },
     onSuccess: () => {
-      toast.success(t('actions.submitSuccess', 'Record submitted to SHO successfully'));
+      notification.success({
+        message: t('actions.submitSuccessTitle', 'Record Submitted'),
+        description: t('actions.submitSuccess', 'Record submitted to SHO successfully'),
+        placement: 'topRight',
+        duration: 4,
+      });
       queryClient.invalidateQueries({ queryKey: ['records'] });
       navigate('/records');
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to submit record');
+      message.error(err.response?.data?.message || 'Failed to submit record');
     },
   });
 
-  // Auto save draft handler (triggered automatically on input changes)
-  const handleAutoSave = (formData) => {
-    saveMutation.mutate(formData);
-  };
-
   // Submit form handler
-  const handleFormSubmit = async (formData) => {
+  const handleFormSubmit = async (formData, activeId) => {
     try {
-      // First save the current data as draft
-      const saved = await saveMutation.mutateAsync(formData);
-      const activeId = editId || saved.id;
-      // Then submit the saved record
-      await submitMutation.mutateAsync(activeId);
+      let savedRecord;
+      if (activeId || editId) {
+        // Save using update mutation
+        savedRecord = await updateMutation.mutateAsync({ id: activeId || editId, data: formData });
+      } else {
+        // Save using create mutation
+        savedRecord = await createMutation.mutateAsync(formData);
+      }
+      
+      const finalId = activeId || editId || savedRecord?.id;
+      if (!finalId) {
+        throw new Error('No valid record ID found for submission.');
+      }
+      
+      // Submit the saved record
+      await submitMutation.mutateAsync(finalId);
     } catch (e) {
       console.error('Failed to submit form', e);
+      message.error('Failed to save or submit record.');
     }
   };
 
@@ -97,8 +91,8 @@ export default function NewRecord() {
 
   if (editId && isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-zinc-500">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4"></div>
+      <div className="flex flex-col items-center justify-center p-20 text-slate-500">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0f52ba] mb-4"></div>
         <p>{t('common.loading', 'Syncing digital registry logs...')}</p>
       </div>
     );
@@ -106,25 +100,36 @@ export default function NewRecord() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Back navigation header */}
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+      
+      {/* Ant Design Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { title: <span className="cursor-pointer text-slate-500 hover:text-[#0f52ba]" onClick={() => navigate('/dashboard')}>{t('nav.dashboard', 'Dashboard')}</span> },
+          { title: <span className="cursor-pointer text-slate-500 hover:text-[#0f52ba]" onClick={() => navigate('/records')}>{t('nav.records', 'Records')}</span> },
+          { title: editId ? t('actions.edit', 'Edit Record') : `${t('actions.new', 'New')} ${t(`recordTypes.${type}`, type)}` }
+        ]}
+        className="text-xs font-semibold"
+      />
+
+      {/* Page Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/records')}
-            className="hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 p-2 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-zinc-700"
+            className="hover:bg-slate-100 text-slate-500 hover:text-slate-700 p-2 rounded-lg transition-colors cursor-pointer border border-slate-200"
           >
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h1 className="text-xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-              <BookOpen className="text-[#cca43b]" size={20} />
+            <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2 tracking-wide">
+              <BookOpen className="text-[#0f52ba]" size={18} />
               <span>
                 {editId
                   ? `${t('actions.edit', 'Edit')} ${t(`recordTypes.${record?.record_type}`, record?.record_type)}`
                   : `${t('actions.new', 'New')} ${t(`recordTypes.${type}`, type)} ${t('nav.record', 'Entry')}`}
               </span>
             </h1>
-            <p className="text-xs text-zinc-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Secure operational entry for Delhi Police Daily General Diary record registry.
             </p>
           </div>
@@ -133,21 +138,21 @@ export default function NewRecord() {
 
       {/* Reviewer feedback banner if the record was sent back */}
       {sbDetails && (
-        <div className="bg-red-950/20 border border-red-800/40 rounded-xl p-4 flex gap-3 text-xs text-zinc-300">
-          <AlertTriangle className="text-red-400 flex-shrink-0 mt-0.5" size={16} />
-          <div className="space-y-1">
-            <h4 className="font-bold text-red-400 uppercase tracking-wide">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 text-xs text-slate-700 shadow-sm">
+          <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={16} />
+          <div className="space-y-1 w-full">
+            <h4 className="font-bold text-red-700 uppercase tracking-wide">
               {t('actions.correctionRequired', 'Reviewer Correction Requested')}
             </h4>
             <p>
               <strong>Reviewer Officer:</strong> {sbDetails.performed_by}
             </p>
-            <p className="bg-zinc-950/50 p-2.5 rounded border border-zinc-800 text-zinc-300 italic mt-1.5">
+            <p className="bg-white p-2.5 rounded border border-red-200 text-red-700 italic mt-1.5 font-medium shadow-sm">
               "{sbDetails.comment}"
             </p>
             {sbDetails.target_fields?.length > 0 && (
-              <p className="text-[11px] text-zinc-400 mt-1">
-                Fields to correct: <span className="font-mono text-amber-400">{sbDetails.target_fields.join(', ')}</span>
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                Fields to correct: <span className="font-mono text-red-600 bg-red-100 px-1.5 py-0.5 rounded border border-red-200/50">{sbDetails.target_fields.join(', ')}</span>
               </p>
             )}
           </div>
@@ -158,7 +163,6 @@ export default function NewRecord() {
       <DynamicForm
         recordType={type || record?.record_type}
         initialValues={record}
-        onSaveDraft={handleAutoSave}
         onSubmit={handleFormSubmit}
         targetFields={sbDetails?.target_fields || []}
         readOnly={record && record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC'}
