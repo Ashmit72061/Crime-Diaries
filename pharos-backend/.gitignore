@@ -1,0 +1,7 @@
+node_modules/
+.env
+database.sqlite
+generated-reports/
+reports/output/
+coverage/
+*.log
