@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -133,5 +134,16 @@ export const App = () => {
     </Routes>
   );
 };
+=======
+import { AppRouter } from './routes/AppRouter.jsx';
+
+/**
+ * Root App component — delegates everything to the router.
+ * Keep this file minimal; all layout/routing lives in AppRouter.
+ */
+function App() {
+  return <AppRouter />;
+}
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
 
 export default App;

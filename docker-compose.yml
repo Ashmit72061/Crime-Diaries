@@ -1,15 +1,22 @@
+<<<<<<< HEAD
 version: '3.9'
 
 services:
   rabbitmq:
     image: rabbitmq:3-management
     restart: unless-stopped
+=======
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
     ports: 
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: pharos
       RABBITMQ_DEFAULT_PASS: pharos123
+<<<<<<< HEAD
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -27,3 +34,9 @@ services:
       timeout: 5s
       retries: 5
 
+=======
+  redis:
+    image: redis:7-alpine
+    ports: 
+      - "6379:6379"
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856

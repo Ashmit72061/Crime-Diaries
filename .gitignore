@@ -6,8 +6,11 @@ node_modules
 .env
 .env.local
 .env.*.local
+<<<<<<< HEAD
 .env.development
 .env.production
+=======
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
 
 # Logs
 logs/
@@ -18,12 +21,15 @@ pnpm-debug.log*
 
 # Build output
 dist/
+<<<<<<< HEAD
 coverage/
 
 # Database and Reports
 database.sqlite
 generated-reports/
 reports/output/
+=======
+>>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
 
 # OS
 .DS_Store
