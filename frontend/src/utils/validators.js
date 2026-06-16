@@ -21,7 +21,7 @@ export const registerSchema = z
   });
 
 export const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
+  email: z.string().min(1, 'Badge number or email is required'),
   password: z.string().min(1, 'Password is required'),
 });
 

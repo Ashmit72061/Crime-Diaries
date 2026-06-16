@@ -41,9 +41,10 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'success', data: { message: 'PHAROS API is running' } });
 });
 
-// To be imported from modules and registered here
-// app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
+// Auth module
+import authRoutes from './modules/auth/auth.routes.js';
+app.use('/api/auth', authRoutes);
+
 import fieldsRoutes from './modules/fields/fields.routes.js';
 app.use('/api/fields', fieldsRoutes);
 import recordsRoutes from './modules/records/records.routes.js';
@@ -72,7 +73,8 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
   logger.error(err.stack);
-  res.status(err.status || 500).json({
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
     status: 'error',
     code: err.code || 'INTERNAL_ERROR',
     message: err.message || 'Something went wrong',

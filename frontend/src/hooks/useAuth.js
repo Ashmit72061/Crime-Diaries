@@ -37,7 +37,10 @@ export const useAuth = () => {
     mutationFn: async (credentials) => {
       try {
         const res = await authApi.login(credentials);
-        return res.data.data.user;
+        const { user, access_token, refresh_token } = res.data.data;
+        if (access_token) localStorage.setItem('access_token', access_token);
+        if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
+        return user;
       } catch (err) {
         if (!err.response) {
           console.warn("Backend offline. Simulating mock login for:", credentials.email);

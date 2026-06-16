@@ -5,13 +5,13 @@ import { env } from '../config/env.js';
  * Generate a short-lived JWT access token.
  */
 export const generateAccessToken = (payload) =>
-  jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: env.JWT_ACCESS_EXPIRES_IN });
+  jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: env.JWT_ACCESS_EXPIRES });
 
 /**
  * Generate a long-lived JWT refresh token.
  */
 export const generateRefreshToken = (payload) =>
-  jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES_IN });
+  jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES });
 
 /**
  * Verify an access token. Returns decoded payload or throws.
