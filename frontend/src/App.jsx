@@ -136,13 +136,18 @@ export const App = () => {
 };
 =======
 import { AppRouter } from './routes/AppRouter.jsx';
+import { AuthProvider } from './contexts/AuthContext.jsx';
 
 /**
  * Root App component — delegates everything to the router.
  * Keep this file minimal; all layout/routing lives in AppRouter.
  */
 function App() {
-  return <AppRouter />;
+  return (
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
+  );
 }
 >>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
 

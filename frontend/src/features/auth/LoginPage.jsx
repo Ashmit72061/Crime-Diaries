@@ -18,6 +18,8 @@ import { loginSchema } from '../../utils/validators.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { POLICE_HIERARCHY, findNodeById } from '../../utils/hierarchyData.js';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore.js';
 
 // Dynamic email generator based on officer name
 const getEmailForNode = (node) => {
@@ -37,6 +39,15 @@ const getEmailForNode = (node) => {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { loginMutation } = useAuth();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   
   // Login hierarchy states
   const [activeTier, setActiveTier] = useState("PS"); // HQ, ZONE, RANGE, DISTRICT, PS
@@ -92,13 +103,16 @@ export default function LoginPage() {
     }
   }, [selectedDistrictId]);
 
-  // Sync email & password when selectedNodeId changes
+  // Sync email & password when selectedNodeId changes (only in mock mode)
   useEffect(() => {
-    const node = findNodeById(selectedNodeId);
-    if (node) {
-      const email = getEmailForNode(node);
-      setValue('email', email);
-      setValue('password', 'Password123'); // Demo password
+    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'mock';
+    if (debugMode !== 'production') {
+      const node = findNodeById(selectedNodeId);
+      if (node) {
+        const email = getEmailForNode(node);
+        setValue('email', email);
+        setValue('password', 'Password123'); // Demo password
+      }
     }
   }, [selectedNodeId, setValue]);
 
@@ -325,13 +339,12 @@ export default function LoginPage() {
           {/* Email / Password Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
             <div className="login-form-group">
-              <label>Official Email</label>
+              <label>Badge No / Official Email</label>
               <input
                 id="login-email"
-                type="email"
-                readOnly
-                placeholder="officer@delhipolice.gov.in"
-                className="login-input-field cursor-not-allowed opacity-80"
+                type="text"
+                placeholder="HC001 or officer@delhipolice.gov.in"
+                className="login-input-field"
                 {...register('email')}
               />
               {errors.email && <span className="text-xs text-red-400">{errors.email.message}</span>}
