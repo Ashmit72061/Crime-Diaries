@@ -41,7 +41,7 @@ export default function StationPerformanceDashboard() {
         ]);
         
         setNodes(nodesRes.data.data || []);
-        setRecords(recordsRes.data.data || []);
+        setRecords(recordsRes.data.data?.cases || recordsRes.data.data || []);
         setError(null);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);

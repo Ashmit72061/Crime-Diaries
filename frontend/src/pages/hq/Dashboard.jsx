@@ -23,7 +23,7 @@ export default function HQDashboard() {
     queryKey: ['records', 'all'],
     queryFn: async () => {
       const res = await api.get('/records');
-      return res.data.data;
+      return res.data.data.cases ?? [];
     },
   });
 

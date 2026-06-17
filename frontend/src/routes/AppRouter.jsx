@@ -57,6 +57,7 @@ function RoleRedirect() {
     PS: '/records',          // Head Constable (HC)
     HC: '/records',          // Head Constable (HC)
     SHO: '/queue',           // Station House Officer
+    ACP: '/queue',           // Assistant Commissioner of Police
     DISTRICT: '/district',   // District DCP
     DISTRICT_OFFICER: '/district',
     HQ: '/hq',               // Headquarters CP

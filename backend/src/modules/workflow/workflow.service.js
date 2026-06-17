@@ -1,7 +1,7 @@
 import { db } from '../../config/db.js';
 import { publish } from '../../events/eventBus.js';
 
-export const getQueue = async (level, psId, districtId, filters) => {
+export const getQueue = async (level, psId, districtId, subDivId, filters) => {
   let query = db('records')
     .select('records.*', 'users.name_en as creator_name')
     .leftJoin('users', 'records.created_by', 'users.id');
@@ -10,6 +10,9 @@ export const getQueue = async (level, psId, districtId, filters) => {
   if (level === 'SHO') {
     query = query.where('current_status', 'PENDING_SHO');
     if (psId) query = query.andWhere('records.ps_id', psId);
+  } else if (level === 'ACP') {
+    query = query.where('current_status', 'ACP_REVIEW');
+    if (subDivId) query = query.andWhere('records.sub_div_id', subDivId);
   } else if (level === 'DISTRICT_OFFICER') {
     query = query.where('current_status', 'DISTRICT_REVIEW');
     if (districtId) query = query.andWhere('records.district_id', districtId);
@@ -28,12 +31,15 @@ export const getQueue = async (level, psId, districtId, filters) => {
   return await query;
 };
 
-export const getQueueCount = async (level, psId, districtId) => {
+export const getQueueCount = async (level, psId, districtId, subDivId) => {
   let query = db('records').count('* as count');
 
   if (level === 'SHO') {
     query = query.where('current_status', 'PENDING_SHO');
     if (psId) query = query.andWhere('ps_id', psId);
+  } else if (level === 'ACP') {
+    query = query.where('current_status', 'ACP_REVIEW');
+    if (subDivId) query = query.andWhere('sub_div_id', subDivId);
   } else if (level === 'DISTRICT_OFFICER') {
     query = query.where('current_status', 'DISTRICT_REVIEW');
     if (districtId) query = query.andWhere('district_id', districtId);

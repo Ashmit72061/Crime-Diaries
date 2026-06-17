@@ -33,7 +33,7 @@ export default function NewRecord() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: record, isLoading } = useQuery({
+  const { data: recordPayload, isLoading } = useQuery({
     queryKey: ['records', editId],
     queryFn: async () => {
       const res = await api.get(`/records/${editId}`);
@@ -41,6 +41,9 @@ export default function NewRecord() {
     },
     enabled: !!editId,
   });
+
+  const record = recordPayload?.record;
+  const transitions = recordPayload?.transitions || [];
 
   const createMutation = useCreateRecord(type);
   const updateMutation = useUpdateRecord(type || record?.record_type);
@@ -79,7 +82,7 @@ export default function NewRecord() {
 
   const getSendBackDetails = () => {
     if (!record || record.current_status !== 'SENT_BACK_HC') return null;
-    return record.transitions?.find((tr) => tr.action === 'SEND_BACK') || null;
+    return transitions.find((tr) => tr.action === 'SEND_BACK') || null;
   };
 
   const sbDetails = getSendBackDetails();
@@ -134,7 +137,7 @@ export default function NewRecord() {
             <BookOpen className="text-[#0f52ba]" size={18} />
             <span>
               {editId
-                ? `${t('actions.edit', 'Edit')} ${t(`recordTypes.${record?.record_type}`, record?.record_type)}`
+                ? `${t('actions.edit', 'Edit')} ${t(`recordTypes.${record?.record_type}`, record?.record_type || '')}`
                 : `${t('actions.new', 'New')} ${t(`recordTypes.${type}`, type)} ${t('nav.record', 'Entry')}`}
             </span>
           </h1>

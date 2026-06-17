@@ -12,6 +12,14 @@ const api = axios.create({
   timeout: 15000,
 });
 
+// Helper to parse cookies
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
@@ -19,6 +27,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const csrfToken = getCookie('csrfToken');
+    if (csrfToken) {
+      config.headers['x-csrf-token'] = csrfToken;
+    }
+    // Allow credentials to ensure cookies are sent back
+    config.withCredentials = true;
     return config;
   },
   (error) => Promise.reject(error)

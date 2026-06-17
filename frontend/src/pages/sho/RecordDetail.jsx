@@ -26,13 +26,17 @@ export default function RecordDetail() {
   const [overrideReason, setOverrideReason] = useState('');
 
   // Fetch record details
-  const { data: record, isLoading } = useQuery({
+  const { data: recordPayload, isLoading } = useQuery({
     queryKey: ['records', id],
     queryFn: async () => {
       const res = await api.get(`/records/${id}`);
       return res.data.data;
     },
   });
+
+  const record = recordPayload?.record;
+  const transitions = recordPayload?.transitions || [];
+  const revisions = recordPayload?.revisions || [];
 
   // Approve mutation
   const approveMutation = useMutation({
@@ -255,10 +259,10 @@ export default function RecordDetail() {
             </h3>
 
             <div className="relative border-l border-zinc-800 pl-4 ml-1 space-y-5 text-xs">
-              {record.transitions?.length === 0 ? (
+              {transitions.length === 0 ? (
                 <p className="text-zinc-500 italic p-1">No hierarchy transitions completed yet.</p>
               ) : (
-                record.transitions?.map((tran, i) => (
+                transitions.map((tran, i) => (
                   <div key={i} className="relative">
                     <div className="absolute -left-[21px] top-1 bg-zinc-950 border border-zinc-800 h-2.5 w-2.5 rounded-full" />
                     <div className="space-y-1">
@@ -289,7 +293,7 @@ export default function RecordDetail() {
             </h3>
 
             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-              {record.revisions?.map((rev, idx) => (
+              {revisions.map((rev, idx) => (
                 <div key={idx} className="bg-zinc-950/30 border border-zinc-850 p-3 rounded-lg text-xs space-y-1">
                   <div className="flex justify-between items-center border-b border-zinc-850 pb-1">
                     <span className="font-bold text-zinc-200">Revision #{rev.revision_number}</span>

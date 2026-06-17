@@ -3,7 +3,6 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Bell, User, LogOut, Settings, Award, Shield } from "lucide-react";
 import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
-import { findNodeById, POLICE_HIERARCHY } from "../../utils/hierarchyData.js";
 
 export default function PoliceNavbar({ notifications, removeNotification }) {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -12,55 +11,7 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logoutMutation } = useAuth();
-  const { user, activeNodeId, setActiveNodeId } = useAuthStore();
-
-  const getHierarchyOptions = () => {
-    const districts = [];
-    const stations = [];
-
-    const traverse = (node) => {
-      if (node.type === 'DISTRICT') {
-        districts.push({ id: node.id, name: node.name });
-      } else if (node.type === 'PS') {
-        stations.push({ id: node.id, name: node.name });
-      }
-      if (node.children) {
-        node.children.forEach(traverse);
-      }
-    };
-
-    traverse(POLICE_HIERARCHY);
-
-    return {
-      hq: [{ id: POLICE_HIERARCHY.id, name: POLICE_HIERARCHY.name }],
-      districts: districts.sort((a, b) => a.name.localeCompare(b.name)),
-      stations: stations.sort((a, b) => a.name.localeCompare(b.name)),
-    };
-  };
-
-  const options = getHierarchyOptions();
-
-  const handleScopeChange = (e) => {
-    const newNodeId = e.target.value;
-    setActiveNodeId(newNodeId);
-    
-    const node = findNodeById(newNodeId);
-    if (node) {
-      const routes = {
-        PS: '/records',
-        HC: '/records',
-        SHO: '/queue',
-        DISTRICT: '/district',
-        DISTRICT_OFFICER: '/district',
-        HQ: '/hq',
-        HQ_ANALYST: '/hq',
-        HQ_ADMIN: '/hq',
-        SYSTEM_ADMIN: '/admin/users'
-      };
-      const dest = routes[node.type] || '/records';
-      navigate(dest);
-    }
-  };
+  const { user, jurisdiction } = useAuthStore();
 
   // Live localized clock as per i18n instructions
   useEffect(() => {
@@ -110,7 +61,7 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
         <nav aria-label="Breadcrumb" className="breadcrumbs-nav">
           <ol className="breadcrumbs-list">
             {getBreadcrumbs().map((crumb, idx, arr) => (
-              <li key={crumb.to} className="breadcrumb-item">
+              <li key={`${crumb.to}-${idx}`} className="breadcrumb-item">
                 {idx < arr.length - 1 ? (
                   <>
                     <Link to={crumb.to}>
@@ -135,24 +86,19 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
             {(() => {
               if (!user) return "";
               const roleUpper = user.role.toUpperCase();
-              if (roleUpper === 'SYSTEM_ADMIN') {
-                return "SYSTEM ADMIN VIEW";
+              if (roleUpper === 'SYSTEM_ADMIN') return "SYSTEM ADMIN VIEW";
+              if (roleUpper === 'HQ_ANALYST' || roleUpper === 'HQ_ADMIN') return "HEADQUARTERS VIEW | DELHI POLICE HQ";
+              
+              if (roleUpper === 'HC' || roleUpper === 'SHO') {
+                return `PS VIEW | ${jurisdiction?.station?.name_en?.toUpperCase() || 'POLICE STATION'}`;
               }
-              const node = findNodeById(activeNodeId);
-              if (!node) {
-                if (roleUpper === 'HC' || roleUpper === 'SHO') return `PS VIEW | PS ${user.stationName?.toUpperCase() || 'NARELA'}`;
-                if (roleUpper === 'DISTRICT_OFFICER') return `DISTRICT VIEW | ${user.districtKey?.toUpperCase() || 'OUTER NORTH DISTRICT'}`;
-                return "HEADQUARTERS VIEW | DELHI POLICE HQ";
+              if (roleUpper === 'ACP') {
+                return `SUB-DIVISION VIEW | ${jurisdiction?.sub_division?.name_en?.toUpperCase() || 'SUB-DIVISION'}`;
               }
-              if (node.type === 'PS') {
-                const cleanName = node.name.replace('PS: ', 'PS ').toUpperCase();
-                return `PS VIEW | ${cleanName}`;
+              if (roleUpper === 'DISTRICT_OFFICER') {
+                return `DISTRICT VIEW | ${jurisdiction?.district?.name_en?.toUpperCase() || 'DISTRICT'}`;
               }
-              if (node.type === 'DISTRICT') {
-                const cleanName = node.name.replace(/\s*\([^)]*\)/g, "").toUpperCase();
-                return `DISTRICT VIEW | ${cleanName}`;
-              }
-              return "HEADQUARTERS VIEW | DELHI POLICE HQ";
+              return "VIEW | UNKNOWN JURISDICTION";
             })()}
           </span>
         </div>
@@ -231,8 +177,10 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
               <span className="officer-rank block text-[11px] text-slate-400 font-medium">{user?.rank || "Station Operator"}</span>
               <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5">
                 {user?.role === 'SYSTEM_ADMIN' ? 'Central Administration' : 
-                 (findNodeById(activeNodeId)?.name ? findNodeById(activeNodeId).name.replace('PS: ', 'PS ').replace(/\s*\([^)]*\)/g, "") : 
-                  (user?.stationName ? `PS ${user.stationName}` : (user?.districtKey ? user.districtKey.replace(/\s*\([^)]*\)/g, "") : "Delhi Police HQ")))}
+                 user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' ? 'Delhi Police HQ' :
+                 user?.role === 'DISTRICT_OFFICER' ? jurisdiction?.district?.name_en :
+                 user?.role === 'ACP' ? jurisdiction?.sub_division?.name_en :
+                 jurisdiction?.station?.name_en}
               </span>
             </div>
           </button>

@@ -5,8 +5,9 @@ export const getQueue = async (req, res, next) => {
     const level = req.user?.level || 'SHO';
     const psId = req.user?.psId;
     const districtId = req.user?.districtId;
+    const subDivId = req.user?.sub_div_id;
     
-    const records = await workflowService.getQueue(level, psId, districtId, req.query);
+    const records = await workflowService.getQueue(level, psId, districtId, subDivId, req.query);
     res.status(200).json({ status: 'success', data: records });
   } catch (error) {
     next(error);
@@ -18,8 +19,9 @@ export const getQueueCount = async (req, res, next) => {
     const level = req.user?.level || 'SHO';
     const psId = req.user?.psId;
     const districtId = req.user?.districtId;
+    const subDivId = req.user?.sub_div_id;
     
-    const count = await workflowService.getQueueCount(level, psId, districtId);
+    const count = await workflowService.getQueueCount(level, psId, districtId, subDivId);
     res.status(200).json({ status: 'success', data: { count } });
   } catch (error) {
     next(error);
