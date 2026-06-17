@@ -10,7 +10,7 @@ router.get('/:id', authMiddleware, recordsController.getRecord);
 
 router.post('/', authMiddleware, allow('HC'), recordsController.create);
 router.put('/:id', authMiddleware, allow('HC'), recordsController.update);
-router.put('/:id/submit', authMiddleware, allow('HC'), recordsController.submit);
+router.post('/:id/submit', authMiddleware, allow('HC'), recordsController.submit);
 
 router.post('/:id/approve', authMiddleware, allow('SHO', 'DISTRICT_OFFICER'), recordsController.approve);
 router.post('/:id/send-back', authMiddleware, allow('SHO', 'DISTRICT_OFFICER'), recordsController.sendBack);

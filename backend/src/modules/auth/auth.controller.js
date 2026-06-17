@@ -3,7 +3,7 @@ import db from '../../config/db.js';
 import bcrypt from 'bcryptjs';
 
 export const login = async (req, res) => {
-  const badgeNo = req.body.badgeNo || req.body.badge_no;
+  const badgeNo = req.body.badgeNo || req.body.badge_no || req.body.email;
   const password = req.body.password;
 
   if (!badgeNo || !password) {

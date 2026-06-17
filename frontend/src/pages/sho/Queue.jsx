@@ -28,25 +28,25 @@ export default function Queue() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-          <ClipboardList className="text-[#cca43b]" />
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
+          <ClipboardList className="text-[#0f52ba]" size={24} />
           <span>{t('nav.queue', 'Approval Desk')}</span>
         </h1>
-        <p className="text-zinc-400 text-xs mt-1">
+        <p className="text-slate-500 text-sm mt-1">
           Review pending records submitted from your jurisdiction and approve or return them for correction.
         </p>
       </div>
 
       {/* Record Category Tabs */}
-      <div className="border-b border-zinc-800 flex flex-wrap gap-2">
+      <div className="border-b-2 border-slate-200 flex flex-wrap gap-1">
         {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors cursor-pointer ${
+            className={`px-6 py-3.5 text-sm font-bold tracking-wide border-b-[3px] transition-all cursor-pointer -mb-[2px] ${
               activeTab === tab
-                ? 'border-[#cca43b] text-[#cca43b] font-extrabold'
-                : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                ? 'border-[#0f52ba] text-[#0f52ba] bg-[#0f52ba]/5 rounded-t-lg'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             {t(`recordTypes.${tab}`, tab)}
@@ -56,33 +56,33 @@ export default function Queue() {
 
       {/* Queue Listing */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-20 text-zinc-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4"></div>
-          <p>{t('common.loading', 'Syncing digital registry logs...')}</p>
+        <div className="flex flex-col items-center justify-center p-20 text-slate-400 gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-[3px] border-[#0f52ba]"></div>
+          <p className="text-sm font-semibold">{t('common.loading', 'Syncing digital registry logs...')}</p>
         </div>
       ) : filteredQueue.length === 0 ? (
-        <div className="border border-dashed border-zinc-800 rounded-xl p-12 text-center text-zinc-500">
-          <ShieldCheck size={48} className="mx-auto text-zinc-700 mb-3" />
-          <p className="text-sm font-semibold">Queue Clean & Approved</p>
-          <p className="text-xs text-zinc-600 mt-1">
+        <div className="border border-dashed border-slate-200 bg-white rounded-xl p-16 text-center text-slate-400 shadow-sm">
+          <ShieldCheck size={56} className="mx-auto text-emerald-300 mb-4" />
+          <p className="text-lg font-bold text-slate-700 mb-1">Queue Clean &amp; Approved</p>
+          <p className="text-sm text-slate-400">
             There are no pending diary records in your station queue requiring action.
           </p>
         </div>
       ) : (
-        <div className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl overflow-hidden shadow-lg">
+        <div className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-zinc-950/60 text-zinc-400 uppercase font-semibold border-b border-zinc-850">
-                  <th className="p-3.5 pl-5">{t('common.referenceId', 'Ref ID / Number')}</th>
-                  <th className="p-3.5">Station Location</th>
-                  <th className="p-3.5">Record Date</th>
-                  <th className="p-3.5">Gist</th>
-                  <th className="p-3.5">Current Status</th>
-                  <th className="p-3.5 pr-5 text-right">Review Action</th>
+                <tr className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200 text-xs tracking-wider">
+                  <th className="p-4 pl-5">{t('common.referenceId', 'Ref ID / Number')}</th>
+                  <th className="p-4">Station Location</th>
+                  <th className="p-4">Record Date</th>
+                  <th className="p-4">Gist</th>
+                  <th className="p-4">Current Status</th>
+                  <th className="p-4 pr-5 text-right">Review Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-850 text-zinc-300">
+              <tbody className="divide-y divide-slate-100 text-slate-700">
                 {filteredQueue.map((rec) => {
                   const refId =
                     rec.data.fir_no ||
@@ -102,25 +102,25 @@ export default function Queue() {
                     'No description logged';
 
                   return (
-                    <tr key={rec.id} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="p-3.5 pl-5 font-mono font-bold text-zinc-200">{refId}</td>
-                      <td className="p-3.5">Parliament Street</td>
-                      <td className="p-3.5 font-mono">{rec.data.record_date || 'N/A'}</td>
-                      <td className="p-3.5 max-w-[280px] truncate" title={gist}>
+                    <tr key={rec.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 pl-5 font-mono font-bold text-slate-800">{refId}</td>
+                      <td className="p-4 text-slate-600">Parliament Street</td>
+                      <td className="p-4 font-mono text-slate-600">{rec.data.record_date || 'N/A'}</td>
+                      <td className="p-4 max-w-[280px] truncate text-slate-600" title={gist}>
                         {gist}
                       </td>
-                      <td className="p-3.5">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border bg-amber-950/40 text-amber-400 border-amber-800/60">
+                      <td className="p-4">
+                        <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                           {t(`status.${rec.current_status}`, rec.current_status)}
                         </span>
                       </td>
-                      <td className="p-3.5 pr-5 text-right whitespace-nowrap">
+                      <td className="p-4 pr-5 text-right whitespace-nowrap">
                         <button
                           onClick={() => navigate(`/records/${rec.id}`)}
-                          className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all inline-flex cursor-pointer"
+                          className="bg-gradient-to-r from-[#0f52ba] to-[#16406d] hover:from-[#16406d] hover:to-[#0d2a4a] text-white px-5 py-2.5 rounded-xl text-sm font-bold inline-flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-[#0f52ba]/25 hover:shadow-lg hover:-translate-y-0.5 ml-auto"
                         >
                           <span>Review details</span>
-                          <ArrowRight size={12} />
+                          <ArrowRight size={15} />
                         </button>
                       </td>
                     </tr>

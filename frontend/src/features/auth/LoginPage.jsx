@@ -205,9 +205,9 @@ export default function LoginPage() {
       {/* Right Panel: Login Form */}
       <div className="login-form-panel flex-col gap-4">
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ type: "spring", duration: 0.45, bounce: 0 }}
           className="login-card-glass"
         >
           {/* Mobile Crest Header */}
@@ -233,7 +233,7 @@ export default function LoginPage() {
                   onClick={() => setActiveTier(tier.key)}
                   className={`login-tier-tab ${activeTier === tier.key ? 'active' : ''}`}
                 >
-                  <Icon size={14} />
+                  <Icon size={14} aria-hidden="true" />
                   <span>{tier.label}</span>
                 </button>
               );
@@ -245,8 +245,9 @@ export default function LoginPage() {
             {/* Zone Selector */}
             {activeTier === "ZONE" && (
               <div className="login-form-group">
-                <label>Select L&O Zone</label>
+                <label htmlFor="zone-select">Select L&O Zone</label>
                 <select
+                  id="zone-select"
                   value={selectedNodeId}
                   onChange={(e) => setSelectedNodeId(e.target.value)}
                   className="login-select-field"
@@ -261,8 +262,9 @@ export default function LoginPage() {
             {/* Range Selector */}
             {activeTier === "RANGE" && (
               <div className="login-form-group">
-                <label>Select Jt. CP Range</label>
+                <label htmlFor="range-select">Select Jt. CP Range</label>
                 <select
+                  id="range-select"
                   value={selectedNodeId}
                   onChange={(e) => setSelectedNodeId(e.target.value)}
                   className="login-select-field"
@@ -277,8 +279,9 @@ export default function LoginPage() {
             {/* District Selector */}
             {activeTier === "DISTRICT" && (
               <div className="login-form-group">
-                <label>Select District DCP Jurisdiction</label>
+                <label htmlFor="district-select">Select District DCP Jurisdiction</label>
                 <select
+                  id="district-select"
                   value={selectedNodeId}
                   onChange={(e) => setSelectedNodeId(e.target.value)}
                   className="login-select-field"
@@ -294,8 +297,9 @@ export default function LoginPage() {
             {activeTier === "PS" && (
               <>
                 <div className="login-form-group">
-                  <label>Select District</label>
+                  <label htmlFor="ps-district-select">Select District</label>
                   <select
+                    id="ps-district-select"
                     value={selectedDistrictId}
                     onChange={(e) => setSelectedDistrictId(e.target.value)}
                     className="login-select-field"
@@ -307,8 +311,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="login-form-group">
-                  <label>Select Police Station</label>
+                  <label htmlFor="ps-select">Select Police Station</label>
                   <select
+                    id="ps-select"
                     value={selectedNodeId}
                     onChange={(e) => setSelectedNodeId(e.target.value)}
                     className="login-select-field"
@@ -326,7 +331,7 @@ export default function LoginPage() {
           {previewNode && (
             <div className="officer-preview-card">
               <div className="officer-preview-badge">
-                <UserCheck size={16} />
+                <UserCheck size={16} aria-hidden="true" />
               </div>
               <div className="officer-preview-info">
                 <span className="officer-preview-label">{previewNode.rank}</span>
@@ -339,10 +344,11 @@ export default function LoginPage() {
           {/* Email / Password Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
             <div className="login-form-group">
-              <label>Badge No / Official Email</label>
+              <label htmlFor="login-email">Badge No / Official Email</label>
               <input
                 id="login-email"
                 type="text"
+                autoComplete="username"
                 placeholder="HC001 or officer@delhipolice.gov.in"
                 className="login-input-field"
                 {...register('email')}
@@ -351,11 +357,12 @@ export default function LoginPage() {
             </div>
 
             <div className="login-form-group">
-              <label>Security Key / Password</label>
+              <label htmlFor="login-password">Security Key / Password</label>
               <div className="relative">
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   className="login-input-field pr-10"
                   {...register('password')}
@@ -363,9 +370,10 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                 </button>
               </div>
               {errors.password && <span className="text-xs text-red-400">{errors.password.message}</span>}
@@ -373,7 +381,7 @@ export default function LoginPage() {
 
             {/* Audit Warning */}
             <div className="security-notice-box flex gap-2">
-              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>
                 <strong>Warning:</strong> Authorized official access only. All sessions are monitored, audited, and logged under Section 66 of IT Act, 2000.
               </span>
@@ -386,8 +394,8 @@ export default function LoginPage() {
               disabled={loginMutation.isPending}
               className="login-btn-primary mt-2"
             >
-              <Lock size={14} />
-              <span>{loginMutation.isPending ? 'Authorizing Session...' : 'Establish Secure Connection'}</span>
+              <Lock size={14} aria-hidden="true" />
+              <span>{loginMutation.isPending ? 'Authorizing Session…' : 'Establish Secure Connection'}</span>
             </button>
           </form>
 
@@ -395,32 +403,35 @@ export default function LoginPage() {
           <div className="quick-profiles-section">
             <span className="quick-profiles-label">Quick Demo Access</span>
             <div className="quick-profile-grid">
-              <div
+              <button
+                type="button"
                 onClick={() => handleQuickLogin("HQ", null, "HQ")}
                 className="quick-profile-card"
               >
-                <div className="quick-profile-avatar">HQ</div>
+                <div className="quick-profile-avatar" aria-hidden="true">HQ</div>
                 <span className="quick-profile-role">Headquarters</span>
                 <span className="quick-profile-name">DGP Vikram Singh</span>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => handleQuickLogin("DISTRICT", "DIST_CD", "DIST_CD")}
                 className="quick-profile-card"
               >
-                <div className="quick-profile-avatar">DCP</div>
+                <div className="quick-profile-avatar" aria-hidden="true">DCP</div>
                 <span className="quick-profile-role">Central District</span>
                 <span className="quick-profile-name">DCP H. Vardhan</span>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => handleQuickLogin("PS", "DIST_NDD", "PS_NDD_PARLIAMENT_STREET")}
                 className="quick-profile-card"
               >
-                <div className="quick-profile-avatar">PS</div>
+                <div className="quick-profile-avatar" aria-hidden="true">PS</div>
                 <span className="quick-profile-role">Parliament St</span>
                 <span className="quick-profile-name">HC Ramesh Kumar</span>
-              </div>
+              </button>
             </div>
           </div>
         </motion.div>
