@@ -1,6 +1,7 @@
 import * as eventBus from '../eventBus.js';
 import db from '../../config/db.js';
 import { v4 as uuidv4 } from 'uuid';
+import { computeRowHash, getPreviousHash } from '../../utils/hash.js';
 
 export async function init() {
   await eventBus.subscribe('record.*', 'audit-queue', async (payload) => {
@@ -44,18 +45,32 @@ export async function init() {
         .first();
       const nextRevNo = (parseInt(countRow.count, 10) || 0) + 1;
 
+      const prev_hash = await getPreviousHash(recordId, db);
+      const changed_at = new Date().toISOString();
+      const serializedFieldChanges = JSON.stringify(fieldChanges);
+
+      const row_hash = computeRowHash({
+        record_id: recordId,
+        revision_number: nextRevNo,
+        changed_by: changedBy,
+        changed_at,
+        field_changes: serializedFieldChanges
+      }, prev_hash);
+
       // Insert revision row
       await db('record_revisions').insert({
         id: uuidv4(),
         record_id: recordId,
         revision_number: nextRevNo,
         changed_by: changedBy,
-        changed_at: new Date().toISOString(),
+        changed_at,
         level,
         change_type: changeType,
-        field_changes: JSON.stringify(fieldChanges),
+        field_changes: serializedFieldChanges,
         comment,
-        ip_address: ipAddress
+        ip_address: ipAddress,
+        prev_hash,
+        row_hash
       });
 
       console.log(`[AuditHandler] Background revision written for record: ${recordId}, revision_number: ${nextRevNo}, type: ${changeType}`);

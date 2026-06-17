@@ -9,6 +9,8 @@ import { env } from './config/env.js';
 import * as eventBus from './events/eventBus.js';
 import * as auditHandler from './events/handlers/auditHandler.js';
 import * as notifyHandler from './events/handlers/notifyHandler.js';
+import { initScheduler } from './modules/reports/scheduler.js';
+import { ipAllowlistMiddleware, csrfDoubleSubmitMiddleware } from './middleware/security.middleware.js';
 
 // Import routers
 import authRouter from './modules/auth/auth.router.js';
@@ -22,6 +24,9 @@ import hierarchyRouter from './modules/hierarchy/hierarchy.router.js';
 import adminRouter from './modules/admin/admin.router.js';
 import auditRouter from './modules/audit/audit.router.js';
 import compilationRouter from './modules/compilation/compilation.routes.js';
+import legacyRouter from './modules/legacy/legacy.router.js';
+import levelContractsRouter from './modules/level-contracts/levelContracts.router.js';
+import filtersRouter from './modules/filters/filters.router.js';
 
 const app = express();
 
@@ -42,6 +47,8 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(ipAllowlistMiddleware);
+app.use(csrfDoubleSubmitMiddleware);
 app.use(morgan('dev'));
 
 // Rate limiting
@@ -95,6 +102,15 @@ app.use('/api/admin', adminRouter);
 app.use('/api/v1/audit', auditRouter);
 app.use('/api/audit', auditRouter);
 
+app.use('/api/v1/legacy', legacyRouter);
+app.use('/api/legacy', legacyRouter);
+
+app.use('/api/v1/level-contracts', levelContractsRouter);
+app.use('/api/level-contracts', levelContractsRouter);
+
+app.use('/api/v1/filters', filtersRouter);
+app.use('/api/filters', filtersRouter);
+
 // Health check
 app.get('/api/v1/health', (req, res) => {
   return res.status(200).json({ success: true, message: 'PHAROS Backend Operational API online' });
@@ -124,6 +140,7 @@ const startServer = async () => {
   // Start background handlers
   await auditHandler.init();
   await notifyHandler.init();
+  await initScheduler();
 
   app.listen(env.PORT, () => {
     console.log(`===================================================`);

@@ -7,6 +7,9 @@ const router = Router();
 
 const DISTRICT_ROLES = ['DISTRICT_OFFICER', 'HQ_ANALYST', 'HQ_ADMIN', 'SYSTEM_ADMIN'];
 
+// Chain verification: SYSTEM_ADMIN
+router.get('/chain-verify', authMiddleware, allow('SYSTEM_ADMIN'), auditController.verifyAuditChainEndpoint);
+
 // Record revision history: Any auth
 router.get('/record/:recordId', authMiddleware, auditController.getRecordAudit);
 

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../../config/db.js';
 import * as eventBus from '../../events/eventBus.js';
+import { computeRowHash, getPreviousHash } from '../../utils/hash.js';
 
 // Helpers
 const calculateDiff = (oldData, newData) => {
@@ -179,6 +180,18 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
       ip_address: ipAddress
     };
 
+    const prev_hash = null;
+    const row_hash = computeRowHash({
+      record_id: id,
+      revision_number: 1,
+      changed_by: user.id,
+      changed_at: revisionPayload.changed_at,
+      field_changes: revisionPayload.field_changes
+    }, prev_hash);
+
+    revisionPayload.prev_hash = prev_hash;
+    revisionPayload.row_hash = row_hash;
+
     await trx('record_revisions').insert(revisionPayload);
 
     // Write audit log entry
@@ -237,17 +250,31 @@ export const updateRecord = async (id, user, data, ipAddress) => {
       .first();
     const nextRevNo = (parseInt(revCountRow.count, 10) || 0) + 1;
 
+    const prev_hash = await getPreviousHash(id, trx);
+    const changed_at = new Date().toISOString();
+    const field_changes = JSON.stringify(diff);
+    
+    const row_hash = computeRowHash({
+      record_id: id,
+      revision_number: nextRevNo,
+      changed_by: user.id,
+      changed_at,
+      field_changes
+    }, prev_hash);
+
     // Write revision
     await trx('record_revisions').insert({
       id: uuidv4(),
       record_id: id,
       revision_number: nextRevNo,
       changed_by: user.id,
-      changed_at: new Date().toISOString(),
+      changed_at,
       level: record.current_level,
       change_type: 'UPDATE',
-      field_changes: JSON.stringify(diff),
-      ip_address: ipAddress
+      field_changes,
+      ip_address: ipAddress,
+      prev_hash,
+      row_hash
     });
 
     // Write standard audit log
@@ -329,35 +356,97 @@ export const submitRecord = async (id, user) => {
 };
 
 export const transitionRecord = async (id, user, action, comment, targetFields, ipAddress) => {
-  const TRANSITIONS = {
-    PENDING_SHO: {
-      approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT' },
-      send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true }
-    },
-    DISTRICT_REVIEW: {
-      approve: { to: 'HQ_RECEIVED', toLevel: 'HQ' },
-      send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true }
-    }
-  };
-
   await db.transaction(async (trx) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    const stateRules = TRANSITIONS[record.current_status];
-    if (!stateRules || !stateRules[action]) {
-      throw new Error(`Invalid action "${action}" for status "${record.current_status}"`);
+    const fromStatus = record.current_status;
+
+    // Evaluate rule
+    // 1. Try querying DB config
+    let dbRule = await trx('workflow_transitions_config')
+      .where({ from_status: fromStatus, action: action.toUpperCase(), is_active: true })
+      .andWhere(function() {
+        this.where('record_type', record.record_type).orWhere('record_type', '*');
+      })
+      .first();
+
+    let rule = null;
+    if (dbRule) {
+      let allowedRoles = dbRule.allowed_roles;
+      if (typeof allowedRoles === 'string') {
+        try { allowedRoles = JSON.parse(allowedRoles); } catch (e) { allowedRoles = allowedRoles.split(','); }
+      }
+      rule = {
+        to: dbRule.to_status,
+        toLevel: dbRule.to_status === 'DISTRICT_REVIEW' ? 'DISTRICT' :
+                 dbRule.to_status === 'JCP_REVIEW' ? 'JCP' :
+                 dbRule.to_status === 'SCP_REVIEW' ? 'SCP' :
+                 dbRule.to_status === 'HQ_RECEIVED' ? 'HQ' :
+                 dbRule.to_status === 'ARCHIVED' ? 'HQ' :
+                 dbRule.to_status === 'SENT_BACK' ? 'PS' : 'PS',
+        requiresComment: !!dbRule.requires_comment,
+        allowedRoles
+      };
+    } else {
+      // 2. Fallback transitions including JCP / SCP review flows
+      const FALLBACK_TRANSITIONS = {
+        PENDING_SHO: {
+          approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
+          send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true, allowedRoles: ['SHO'] }
+        },
+        DISTRICT_REVIEW: {
+          approve: { to: 'JCP_REVIEW', toLevel: 'JCP', allowedRoles: ['DISTRICT_OFFICER'] },
+          send_back: { to: 'PENDING_SHO', toLevel: 'SHO', requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
+        },
+        JCP_REVIEW: {
+          approve: { to: 'SCP_REVIEW', toLevel: 'SCP', allowedRoles: ['JCP'] },
+          send_back: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', requiresComment: true, allowedRoles: ['JCP'] }
+        },
+        SCP_REVIEW: {
+          approve: { to: 'HQ_RECEIVED', toLevel: 'HQ', allowedRoles: ['SCP'] },
+          send_back: { to: 'JCP_REVIEW', toLevel: 'JCP', requiresComment: true, allowedRoles: ['SCP'] }
+        },
+        HQ_RECEIVED: {
+          seal: { to: 'ARCHIVED', toLevel: 'HQ', allowedRoles: ['HQ_ADMIN'] }
+        }
+      };
+
+      const statusRules = FALLBACK_TRANSITIONS[fromStatus];
+      rule = statusRules ? statusRules[action.toLowerCase()] : null;
     }
 
-    const rule = stateRules[action];
+    if (!rule) {
+      throw new Error(`Invalid action "${action}" for status "${fromStatus}"`);
+    }
+
+    // Server-side RBAC verification for transitions
+    if (rule.allowedRoles && !rule.allowedRoles.includes(user.role)) {
+      throw new Error(`Insufficient permissions: role ${user.role} is not allowed to perform action ${action}`);
+    }
+
     if (rule.requiresComment && (!comment || comment.trim().length === 0)) {
       throw new Error('Comment is required for this action');
     }
 
+    let targetStatus = rule.to;
+    let targetLevel = rule.toLevel;
+
+    // Check level data contract route override for DISTRICT_REVIEW -> approve
+    if (fromStatus === 'DISTRICT_REVIEW' && action.toLowerCase() === 'approve') {
+      const contract = await trx('level_data_contracts')
+        .where({ from_level: 'DISTRICT', to_level: 'HQ', is_active: true })
+        .first();
+      if (contract && contract.route === 'DIRECT_HQ') {
+        targetStatus = 'HQ_RECEIVED';
+        targetLevel = 'HQ';
+      }
+    }
+
     // Update status
     await trx('records').where({ id }).update({
-      current_status: rule.to,
-      current_level: rule.toLevel,
+      current_status: targetStatus,
+      current_level: targetLevel,
       updated_by: user.id,
       updated_at: new Date().toISOString()
     });
@@ -366,10 +455,10 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
     await trx('workflow_transitions').insert({
       id: uuidv4(),
       record_id: id,
-      from_status: record.current_status,
-      to_status: rule.to,
+      from_status: fromStatus,
+      to_status: targetStatus,
       from_level: record.current_level,
-      to_level: rule.toLevel,
+      to_level: targetLevel,
       action: action.toUpperCase(),
       performed_by: user.id,
       performed_at: new Date().toISOString(),
@@ -392,7 +481,7 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
   });
 
   // Publish event
-  const eventName = `record.${action === 'approve' ? 'approved' : 'sent_back'}`;
+  const eventName = `record.${action.toLowerCase() === 'approve' ? 'approved' : action.toLowerCase() === 'send_back' ? 'sent_back' : 'status_changed'}`;
   await eventBus.publish(eventName, {
     record_id: id,
     performed_by: user.id,
@@ -437,18 +526,32 @@ export const overrideCaseHead = async (id, user, newHead, reason, ipAddress) => 
       .first();
     const nextRevNo = (parseInt(revCountRow.count, 10) || 0) + 1;
 
+    const prev_hash = await getPreviousHash(id, trx);
+    const changed_at = new Date().toISOString();
+    const field_changes = JSON.stringify([{ field_key: key, old_value: oldHead || '', new_value: newHead }]);
+
+    const row_hash = computeRowHash({
+      record_id: id,
+      revision_number: nextRevNo,
+      changed_by: user.id,
+      changed_at,
+      field_changes
+    }, prev_hash);
+
     // Write revision (tamper-chained event)
     await trx('record_revisions').insert({
       id: uuidv4(),
       record_id: id,
       revision_number: nextRevNo,
       changed_by: user.id,
-      changed_at: new Date().toISOString(),
+      changed_at,
       level: record.current_level,
       change_type: 'HEAD_OVERRIDE',
-      field_changes: JSON.stringify([{ field_key: key, old_value: oldHead || '', new_value: newHead }]),
+      field_changes,
       reason,
-      ip_address: ipAddress
+      ip_address: ipAddress,
+      prev_hash,
+      row_hash
     });
 
     // Write audit logs
@@ -485,4 +588,363 @@ export const getRecordRevisions = async (record_id) => {
   return await db('record_revisions')
     .where({ record_id })
     .orderBy('revision_number', 'asc');
+};
+
+export const checkDuplicateRecord = async (recordType, firNumber, accusedName, date) => {
+  if (firNumber && firNumber.trim().length > 0) {
+    const client = db.client.config.client;
+    let query = db('records').where('record_type', recordType.toUpperCase());
+    
+    if (client === 'sqlite3') {
+      query = query.andWhere('data', 'like', `%fir_no%${firNumber}%`);
+    } else {
+      query = query.whereRaw("data->>'fir_no' = ?", [firNumber]);
+    }
+    
+    const existing = await query.first();
+    if (existing) {
+      return { isDuplicate: true, existingId: existing.id };
+    }
+  }
+
+  if (accusedName && date) {
+    const client = db.client.config.client;
+    let query = db('records')
+      .where('record_type', recordType.toUpperCase())
+      .andWhere('record_date', date);
+      
+    if (client === 'sqlite3') {
+      query = query.andWhere('data', 'like', `%accused_name%${accusedName}%`);
+    } else {
+      query = query.whereRaw("data->>'accused_name' = ?", [accusedName]);
+    }
+    
+    const existing = await query.first();
+    if (existing) {
+      return { isDuplicate: true, existingId: existing.id };
+    }
+  }
+
+  return { isDuplicate: false };
+};
+
+export const addAttachment = async (recordId, file, user) => {
+  const result = await db.transaction(async (trx) => {
+    const record = await trx('records').where({ id: recordId }).first();
+    if (!record) throw new Error('Record not found');
+
+    if (record.current_status !== 'DRAFT') {
+      throw new Error('Attachments can only be added to DRAFT records');
+    }
+
+    const oldData = parseJsonField(record.data);
+    const attachments = oldData.attachments || [];
+
+    const { uploadToS3 } = await import('../../utils/s3.js');
+    const attachmentInfo = await uploadToS3(file);
+    attachments.push(attachmentInfo);
+
+    const hydratedData = { ...oldData, attachments };
+
+    await trx('records').where({ id: recordId }).update({
+      data: JSON.stringify(hydratedData),
+      updated_by: user.id,
+      updated_at: new Date().toISOString()
+    });
+
+    return attachmentInfo;
+  });
+
+  return result;
+};
+
+export const listAttachments = async (recordId) => {
+  const record = await db('records').where({ id: recordId }).first();
+  if (!record) throw new Error('Record not found');
+
+  const oldData = parseJsonField(record.data);
+  return oldData.attachments || [];
+};
+
+export const removeAttachment = async (recordId, attachmentId, user) => {
+  await db.transaction(async (trx) => {
+    const record = await trx('records').where({ id: recordId }).first();
+    if (!record) throw new Error('Record not found');
+
+    if (record.current_status !== 'DRAFT') {
+      throw new Error('Attachments can only be deleted from DRAFT records');
+    }
+
+    const oldData = parseJsonField(record.data);
+    const attachments = oldData.attachments || [];
+    
+    const index = attachments.findIndex(a => a.id === attachmentId);
+    if (index === -1) throw new Error('Attachment not found');
+
+    const attachment = attachments[index];
+    attachments.splice(index, 1);
+
+    const hydratedData = { ...oldData, attachments };
+
+    await trx('records').where({ id: recordId }).update({
+      data: JSON.stringify(hydratedData),
+      updated_by: user.id,
+      updated_at: new Date().toISOString()
+    });
+
+    const { deleteFromS3 } = await import('../../utils/s3.js');
+    await deleteFromS3(attachment.url);
+  });
+};
+
+const DB_COLUMNS = ['record_type', 'ps_id', 'district_id', 'sub_div_id', 'current_status', 'current_level', 'record_date', 'created_by', 'is_legacy', 'source_system', 'imported_at', 'imported_by', 'legacy_ref', 'created_at', 'updated_at'];
+
+const getJsonFieldExpression = (field) => {
+  const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+  if (isPostgres) {
+    return `records.data->>'${field}'`;
+  } else {
+    return `json_extract(records.data, '$.${field}')`;
+  }
+};
+
+const applyBasicCondition = (builder, columnExpr, op, value) => {
+  switch (op) {
+    case 'EQ':
+      builder.where(columnExpr, '=', value);
+      break;
+    case 'NOT_EQ':
+      builder.where(columnExpr, '!=', value);
+      break;
+    case 'GT':
+      builder.where(columnExpr, '>', value);
+      break;
+    case 'GTE':
+      builder.where(columnExpr, '>=', value);
+      break;
+    case 'LT':
+      builder.where(columnExpr, '<', value);
+      break;
+    case 'LTE':
+      builder.where(columnExpr, '<=', value);
+      break;
+    case 'CONTAINS':
+      builder.where(columnExpr, 'LIKE', `%${value}%`);
+      break;
+    case 'STARTS_WITH':
+      builder.where(columnExpr, 'LIKE', `${value}%`);
+      break;
+    case 'ENDS_WITH':
+      builder.where(columnExpr, 'LIKE', `%${value}`);
+      break;
+    case 'IS_EMPTY':
+      builder.whereNull(columnExpr).orWhere(columnExpr, '=', '');
+      break;
+    case 'IS_NOT_EMPTY':
+      builder.whereNotNull(columnExpr).andWhere(columnExpr, '!=', '');
+      break;
+    case 'IN':
+      builder.whereIn(columnExpr, Array.isArray(value) ? value : [value]);
+      break;
+    case 'NOT_IN':
+      builder.whereNotIn(columnExpr, Array.isArray(value) ? value : [value]);
+      break;
+    case 'BETWEEN':
+      if (Array.isArray(value) && value.length === 2) {
+        builder.whereBetween(columnExpr, value);
+      }
+      break;
+    case 'BEFORE':
+      builder.where(columnExpr, '<', value);
+      break;
+    case 'AFTER':
+      builder.where(columnExpr, '>', value);
+      break;
+    case 'LAST_N_DAYS': {
+      const days = parseInt(value, 10) || 0;
+      const dateLimit = new Date();
+      dateLimit.setDate(dateLimit.getDate() - days);
+      builder.where(columnExpr, '>=', dateLimit.toISOString().split('T')[0]);
+      break;
+    }
+    case 'THIS_WEEK': {
+      const now = new Date();
+      const first = now.getDate() - now.getDay();
+      const last = first + 6;
+      const firstday = new Date(new Date().setDate(first)).toISOString().split('T')[0];
+      const lastday = new Date(new Date().setDate(last)).toISOString().split('T')[0];
+      builder.whereBetween(columnExpr, [firstday, lastday]);
+      break;
+    }
+    case 'THIS_MONTH': {
+      const now = new Date();
+      const firstday = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const lastday = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      builder.whereBetween(columnExpr, [firstday, lastday]);
+      break;
+    }
+    case 'THIS_YEAR': {
+      const now = new Date();
+      const firstday = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+      const lastday = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+      builder.whereBetween(columnExpr, [firstday, lastday]);
+      break;
+    }
+    case 'IS_TRUE':
+      builder.where(columnExpr, '=', true).orWhere(columnExpr, '=', 1).orWhere(columnExpr, '=', 'true');
+      break;
+    case 'IS_FALSE':
+      builder.where(columnExpr, '=', false).orWhere(columnExpr, '=', 0).orWhere(columnExpr, '=', 'false');
+      break;
+    case 'HAS_ATTACHMENT': {
+      // attachments are in record's data JSON array
+      const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+      if (isPostgres) {
+        builder.whereRaw("records.data->'attachments' IS NOT NULL AND jsonb_array_length(records.data->'attachments') > 0");
+      } else {
+        builder.whereRaw("json_extract(records.data, '$.attachments') IS NOT NULL AND json_extract(records.data, '$.attachments') != '[]' AND json_extract(records.data, '$.attachments') != ''");
+      }
+      break;
+    }
+    case 'NO_ATTACHMENT': {
+      const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+      if (isPostgres) {
+        builder.whereRaw("records.data->'attachments' IS NULL OR jsonb_array_length(records.data->'attachments') = 0");
+      } else {
+        builder.whereRaw("json_extract(records.data, '$.attachments') IS NULL OR json_extract(records.data, '$.attachments') = '[]' OR json_extract(records.data, '$.attachments') = ''");
+      }
+      break;
+    }
+    default:
+      builder.where(columnExpr, '=', value);
+  }
+};
+
+const VIRTUAL_FIELD_RESOLVERS = {
+  _status: (builder, operator, value) => {
+    applyBasicCondition(builder, 'records.current_status', operator, value);
+  },
+  _is_legacy: (builder, operator, value) => {
+    const boolVal = value === 'true' || value === true || value === 1 || value === '1';
+    builder.where('records.is_legacy', boolVal ? 1 : 0);
+  },
+  _record_date: (builder, operator, value) => {
+    applyBasicCondition(builder, 'records.record_date', operator, value);
+  },
+  _created_at: (builder, operator, value) => {
+    applyBasicCondition(builder, 'records.created_at', operator, value);
+  },
+  _ps_id: (builder, operator, value) => {
+    applyBasicCondition(builder, 'records.ps_id', operator, value);
+  },
+  _district_id: (builder, operator, value) => {
+    applyBasicCondition(builder, 'records.district_id', operator, value);
+  },
+  _sla_breached: (builder, operator, value) => {
+    const subquery = db('records')
+      .select('records.id')
+      .join('workflow_transitions_config as wt', 'wt.from_status', 'records.current_status')
+      .whereNotNull('wt.sla_hours');
+    
+    const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+    if (isPostgres) {
+      subquery.whereRaw("records.updated_at + (wt.sla_hours || ' hours')::INTERVAL < NOW()");
+    } else {
+      subquery.whereRaw("datetime(records.updated_at, '+' || wt.sla_hours || ' hours') < datetime('now')");
+    }
+
+    const isTrue = value === 'true' || value === true || operator === 'IS_TRUE';
+    if (isTrue) {
+      builder.whereIn('records.id', subquery);
+    } else {
+      builder.whereNotIn('records.id', subquery);
+    }
+  }
+};
+
+const applyCondition = (builder, field, operator, value) => {
+  const op = operator.toUpperCase();
+
+  if (field.startsWith('_')) {
+    const resolver = VIRTUAL_FIELD_RESOLVERS[field];
+    if (resolver) {
+      resolver(builder, op, value);
+    } else {
+      const realField = field.substring(1);
+      if (DB_COLUMNS.includes(realField)) {
+        applyBasicCondition(builder, `records.${realField}`, op, value);
+      } else {
+        const expr = getJsonFieldExpression(realField);
+        applyBasicCondition(builder, db.raw(expr), op, value);
+      }
+    }
+  } else if (DB_COLUMNS.includes(field)) {
+    applyBasicCondition(builder, `records.${field}`, op, value);
+  } else {
+    const expr = getJsonFieldExpression(field);
+    applyBasicCondition(builder, db.raw(expr), op, value);
+  }
+};
+
+export const buildFilterQuery = (builder, spec) => {
+  if (!spec) return;
+  const { logic, conditions } = spec;
+
+  if (!logic || !Array.isArray(conditions)) {
+    return;
+  }
+
+  const isOr = logic.toUpperCase() === 'OR';
+
+  builder.where(function () {
+    const innerBuilder = this;
+    conditions.forEach((cond, index) => {
+      const applyFunc = (isOr && index > 0) ? 'orWhere' : 'where';
+      
+      if (cond.logic && cond.conditions) {
+        innerBuilder[applyFunc](function () {
+          buildFilterQuery(this, cond);
+        });
+      } else {
+        const { field, operator, value } = cond;
+        innerBuilder[applyFunc](function () {
+          applyCondition(this, field, operator, value);
+        });
+      }
+    });
+  });
+};
+
+export const searchRecordsWithSpec = async (recordType, filterSpec, jurisdictionQuery = {}) => {
+  let query = db('records')
+    .select('records.*', 'ps.name_en as ps_name', 'dist.name_en as district_name')
+    .join('hierarchy_nodes as ps', 'records.ps_id', 'ps.id')
+    .join('hierarchy_nodes as dist', 'records.district_id', 'dist.id');
+
+  if (jurisdictionQuery.ps_id) {
+    query = query.where('records.ps_id', jurisdictionQuery.ps_id);
+  }
+  if (jurisdictionQuery.district_id) {
+    query = query.where('records.district_id', jurisdictionQuery.district_id);
+  }
+  if (jurisdictionQuery.sub_div_id) {
+    query = query.where('records.sub_div_id', jurisdictionQuery.sub_div_id);
+  }
+
+  if (recordType) {
+    query = query.where('records.record_type', recordType);
+  }
+
+  if (filterSpec && filterSpec.conditions && filterSpec.conditions.length > 0) {
+    query = query.where(function () {
+      buildFilterQuery(this, filterSpec);
+    });
+  }
+
+  const rawRecords = await query.orderBy('records.created_at', 'desc');
+
+  return rawRecords.map(r => ({
+    ...r,
+    data: parseJsonField(r.data)
+  }));
 };

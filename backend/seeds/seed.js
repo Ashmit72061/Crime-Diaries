@@ -58,6 +58,8 @@ export async function seed(knex) {
   const users = [
     { id: 'U_HC001', username: 'hc_adarsh_nagar', badge_no: 'HC001', name_en: 'Ramesh Kumar', name_hi: 'रमेश कुमार', password_hash: passwordHash, role: 'HC', station_id: 'PS_ADARSH_NAGAR', district_id: 'DISTRICT_NWD', sub_div_id: 'SUBDIV_JAHANGIR_PURI', is_active: true },
     { id: 'U_SHO001', username: 'sho_adarsh_nagar', badge_no: 'SHO001', name_en: 'Vikram Singh', name_hi: 'विक्रम सिंह', password_hash: passwordHash, role: 'SHO', station_id: 'PS_ADARSH_NAGAR', district_id: 'DISTRICT_NWD', sub_div_id: 'SUBDIV_JAHANGIR_PURI', is_active: true },
+    { id: 'U_JCP001', username: 'jcp_north', badge_no: 'JCP001', name_en: 'Northern JCP', name_hi: 'उत्तरी जेसीपी', password_hash: passwordHash, role: 'JCP', district_id: 'DISTRICT_NWD', is_active: true },
+    { id: 'U_SCP001', username: 'scp_north', badge_no: 'SCP001', name_en: 'Northern SCP', name_hi: 'उत्तरी एससीपी', password_hash: passwordHash, role: 'SCP', district_id: 'DISTRICT_NWD', is_active: true },
     { id: 'U_DO001', username: 'dcp_nwd', badge_no: 'DO001', name_en: 'Priya Sharma', name_hi: 'प्रिया शर्मा', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DISTRICT_NWD', is_active: true },
     { id: 'U_HQ001', username: 'hq_analyst', badge_no: 'HQ001', name_en: 'Anita Verma', name_hi: 'अनिता वर्मा', password_hash: passwordHash, role: 'HQ_ANALYST', is_active: true },
     { id: 'U_HQ002', username: 'hq_admin', badge_no: 'HQ002', name_en: 'Suresh Gupta', name_hi: 'सुरेश गुप्ता', password_hash: passwordHash, role: 'HQ_ADMIN', is_active: true },
