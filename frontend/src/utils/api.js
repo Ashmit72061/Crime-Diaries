@@ -44,7 +44,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Check if we are in mock mode (bypass standard network error)
-    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'mock';
+    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'production';
     if (debugMode !== 'production') {
       return Promise.reject(error);
     }
@@ -869,7 +869,7 @@ const formSchemas = {
 // Interceptor helper to inject simulated API responses/errors
 api.interceptors.request.use(
   async (config) => {
-    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'mock';
+    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'production';
     if (debugMode === 'production') {
       return config;
     }
@@ -1505,18 +1505,84 @@ api.interceptors.request.use(
       });
     }
 
-    // Users list
-    if (url.includes('/admin/users') && method === 'GET') {
-      const mockUsers = [
-        { id: 'usr-1', username: 'HC Ramesh Kumar', badgeNo: 'HC001', role: 'PS', psId: 'PS_NDD_PARLIAMENT_STREET', active: true },
-        { id: 'usr-2', username: 'SHO Sanjay Sharma', badgeNo: 'SHO102', role: 'SHO', psId: 'PS_NDD_PARLIAMENT_STREET', active: true },
-        { id: 'usr-3', username: 'DCP Ashok Kumar', badgeNo: 'DCP491', role: 'DISTRICT', districtId: 'DIST_NDD', active: true },
-        { id: 'usr-4', username: 'Director Vikram Singh', badgeNo: 'HQ001', role: 'HQ', active: true },
+    // Users list (support both /users and /admin/users paths)
+    if ((url.includes('/admin/users') || url.match(/\/users$/)) && method === 'GET') {
+      const storedUsers = JSON.parse(localStorage.getItem('prism_mock_users') || 'null');
+      const mockUsers = storedUsers || [
+        { id: 'usr-1', username: 'HC Ramesh Kumar', badge_no: 'HC001', badgeNo: 'HC001', name_en: 'HC Ramesh Kumar', role: 'HC', station_id: 'PS_NDD_PARLIAMENT_STREET', psId: 'PS_NDD_PARLIAMENT_STREET', district_id: 'DIST_NDD', districtId: 'DIST_NDD', is_active: true },
+        { id: 'usr-2', username: 'SHO Sanjay Sharma', badge_no: 'SHO102', badgeNo: 'SHO102', name_en: 'SHO Sanjay Sharma', role: 'SHO', station_id: 'PS_NDD_PARLIAMENT_STREET', psId: 'PS_NDD_PARLIAMENT_STREET', district_id: 'DIST_NDD', districtId: 'DIST_NDD', is_active: true },
+        { id: 'usr-3', username: 'DCP Ashok Kumar', badge_no: 'DCP491', badgeNo: 'DCP491', name_en: 'DCP Ashok Kumar', role: 'DISTRICT_OFFICER', station_id: null, psId: null, district_id: 'DIST_NDD', districtId: 'DIST_NDD', is_active: true },
+        { id: 'usr-4', username: 'Director Vikram Singh', badge_no: 'HQ001', badgeNo: 'HQ001', name_en: 'Director Vikram Singh', role: 'HQ_ADMIN', station_id: null, psId: null, district_id: null, districtId: null, is_active: true },
       ];
-      return Promise.reject({
-        isMock: true,
-        response: createMockResponse(mockUsers)
-      });
+      if (!storedUsers) localStorage.setItem('prism_mock_users', JSON.stringify(mockUsers));
+      return Promise.reject({ isMock: true, response: createMockResponse(mockUsers) });
+    }
+
+    // Create User (POST /users or /admin/users)
+    if ((url.includes('/admin/users') || url.match(/\/users$/)) && method === 'POST') {
+      const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
+      const users = JSON.parse(localStorage.getItem('prism_mock_users') || '[]');
+      const newUser = {
+        id: 'usr-' + Math.random().toString(36).substring(2, 9),
+        username: payload.name_en || payload.username || payload.badgeNo,
+        name_en: payload.name_en || payload.username || payload.badgeNo,
+        badge_no: payload.badgeNo || payload.badge_no,
+        badgeNo: payload.badgeNo || payload.badge_no,
+        role: payload.role || 'HC',
+        station_id: payload.psId || payload.station_id || null,
+        psId: payload.psId || null,
+        district_id: payload.districtId || payload.district_id || null,
+        districtId: payload.districtId || null,
+        is_active: true
+      };
+      users.push(newUser);
+      localStorage.setItem('prism_mock_users', JSON.stringify(users));
+      return Promise.reject({ isMock: true, response: createMockResponse(newUser) });
+    }
+
+    // Update User (PUT /users/:id or /admin/users/:id)
+    if ((url.match(/\/admin\/users\/([A-Za-z0-9-]+)$/) || url.match(/\/users\/([A-Za-z0-9-]+)$/)) && method === 'PUT') {
+      const userId = (url.match(/\/users\/([A-Za-z0-9-]+)$/) || [])[1];
+      const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
+      const users = JSON.parse(localStorage.getItem('prism_mock_users') || '[]');
+      const idx = users.findIndex(u => u.id === userId);
+      if (idx !== -1) {
+        users[idx] = { ...users[idx], ...payload };
+        localStorage.setItem('prism_mock_users', JSON.stringify(users));
+      }
+      return Promise.reject({ isMock: true, response: createMockResponse(idx !== -1 ? users[idx] : { message: 'Updated' }) });
+    }
+
+    // Delete User (DELETE /users/:id)
+    if ((url.match(/\/admin\/users\/([A-Za-z0-9-]+)$/) || url.match(/\/users\/([A-Za-z0-9-]+)$/)) && method === 'DELETE') {
+      const userId = (url.match(/\/users\/([A-Za-z0-9-]+)$/) || [])[1];
+      const users = JSON.parse(localStorage.getItem('prism_mock_users') || '[]');
+      const updated = users.map(u => u.id === userId ? { ...u, is_active: false } : u);
+      localStorage.setItem('prism_mock_users', JSON.stringify(updated));
+      return Promise.reject({ isMock: true, response: createMockResponse({ message: 'User deactivated' }) });
+    }
+
+    // Audit Logs (GET /audit)
+    if (url.match(/\/audit$/) && method === 'GET') {
+      const mockLogs = [
+        { id: 'al-1', action: 'LOGIN', table_name: 'sessions', changed_by_role: 'HC', changed_at: new Date(Date.now() - 3600000).toISOString(), ip_address: '10.0.0.1', field_name: null, reason: null },
+        { id: 'al-2', action: 'CREATE', table_name: 'records', changed_by_role: 'HC', changed_at: new Date(Date.now() - 7200000).toISOString(), ip_address: '10.0.0.1', field_name: 'fir_no', reason: 'Initial FIR entry' },
+        { id: 'al-3', action: 'SUBMIT', table_name: 'records', changed_by_role: 'HC', changed_at: new Date(Date.now() - 5400000).toISOString(), ip_address: '10.0.0.1', field_name: null, reason: 'Submitted for SHO review' },
+        { id: 'al-4', action: 'UPDATE', table_name: 'records', changed_by_role: 'SHO', changed_at: new Date(Date.now() - 1800000).toISOString(), ip_address: '10.0.0.5', field_name: 'current_status', reason: 'Sent back to HC for correction' },
+        { id: 'al-5', action: 'OVERRIDE', table_name: 'records', changed_by_role: 'DISTRICT_OFFICER', changed_at: new Date(Date.now() - 900000).toISOString(), ip_address: '10.0.0.10', field_name: 'fir_no', reason: 'DCP override - FIR number corrected' },
+      ];
+      return Promise.reject({ isMock: true, response: createMockResponse({ logs: mockLogs }) });
+    }
+
+    // Custom Fields listing (GET /admin/custom-fields)
+    if (url.includes('/admin/custom-fields') && method === 'GET') {
+      return Promise.reject({ isMock: true, response: createMockResponse({ customFields: [] }) });
+    }
+
+    // Create Custom Field (POST /admin/custom-fields)
+    if (url.includes('/admin/custom-fields') && method === 'POST') {
+      const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
+      return Promise.reject({ isMock: true, response: createMockResponse({ id: 'cf-' + Date.now(), ...payload }) });
     }
 
     // If no specific mock matched, return empty success response

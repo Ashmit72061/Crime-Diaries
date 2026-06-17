@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { 
+import {
   Shield,
-  FileText, 
-  UserX, 
-  PhoneCall, 
-  Fingerprint, 
-  Search, 
-  ChevronLeft, 
+  FileText,
+  UserX,
+  PhoneCall,
+  Fingerprint,
+  Search,
+  ChevronLeft,
   ChevronRight,
   Plus,
   ClipboardList,
@@ -17,7 +17,8 @@ import {
   Users,
   Network,
   Settings,
-  Building
+  Building,
+  ShieldAlert,
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
@@ -77,9 +78,10 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     // ── Platform System Administrator ─────────────────────────────────────────
     if (role === 'SYSTEM_ADMIN') {
       items.push(
-        { id: "admin-users", label: t('nav.adminUsers', 'Users Register'), icon: Users, to: "/admin/users" },
-        { id: "admin-hierarchy", label: t('nav.adminHierarchy', 'Hierarchy Config'), icon: Network, to: "/admin/hierarchy" },
-        { id: "admin-fields", label: t('nav.adminFields', 'Field Registry'), icon: Settings, to: "/admin/fields" }
+        { id: "admin-users",     label: t('nav.adminUsers',     'Users Register'),   icon: Users,       to: "/admin/users" },
+        { id: "admin-hierarchy", label: t('nav.adminHierarchy', 'Hierarchy Config'), icon: Network,     to: "/admin/hierarchy" },
+        { id: "admin-fields",    label: t('nav.adminFields',    'Field Registry'),   icon: Settings,    to: "/admin/fields" },
+        { id: "admin-audit",     label: t('nav.adminAudit',     'Audit Ledger'),     icon: ShieldAlert, to: "/admin/audit" }
       );
     }
 

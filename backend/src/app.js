@@ -21,6 +21,7 @@ import usersRouter from './modules/users/users.router.js';
 import hierarchyRouter from './modules/hierarchy/hierarchy.router.js';
 import adminRouter from './modules/admin/admin.router.js';
 import auditRouter from './modules/audit/audit.router.js';
+import compilationRouter from './modules/compilation/compilation.routes.js';
 
 const app = express();
 
@@ -73,6 +74,9 @@ app.use('/api/workflow', workflowRouter);
 
 app.use('/api/v1/analytics', analyticsRouter);
 app.use('/api/analytics', analyticsRouter);
+
+app.use('/api/v1/compilations', compilationRouter);
+app.use('/api/compilations', compilationRouter);
 
 app.use('/api/v1/reports', reportsRouter);
 app.use('/api/reports', reportsRouter);

@@ -2394,3 +2394,100 @@ textarea.form-control {
   font-weight: 600 !important;
 }
 
+/* ─── Premium Stripe/Apple Style Extensions ─── */
+
+:root {
+  --shadow-premium: 0 15px 35px rgba(13, 42, 74, 0.08), 0 5px 15px rgba(0, 0, 0, 0.04);
+  --shadow-warm: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  --border-premium: 1px solid rgba(255, 255, 255, 0.85);
+  --gradient-gold-navy: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  --glow-gold: 0 0 20px rgba(204, 164, 59, 0.2);
+  --glow-blue: 0 0 20px rgba(15, 82, 186, 0.15);
+}
+
+/* Premium Card Overlay (Apple glass style) */
+.premium-glass-card {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: var(--shadow-warm) !important;
+  border-radius: var(--radius-lg) !important;
+  transition: transform 0.3s var(--ease-spring-smooth), box-shadow 0.3s var(--ease-spring-smooth), border-color 0.3s var(--ease-spring-smooth);
+}
+
+.premium-glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(15, 82, 186, 0.2) !important;
+  box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 82, 186, 0.08) !important;
+}
+
+/* Subtle Watermark utility using public logo asset reference */
+.police-watermark {
+  position: relative;
+}
+
+.police-watermark::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('./assets/delhi_police_logo.png');
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  background-size: min(280px, 45%) auto;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Spotlights Hover effect */
+.spotlight-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(800px circle at var(--mouse-x, 0) var(--mouse-y, 0), rgba(15, 82, 186, 0.06), transparent 40%);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.spotlight-hover:hover::after {
+  opacity: 1;
+}
+
+/* Premium Delhi Police Branding Frame for Crest */
+.crest-frame {
+  position: relative;
+  display: inline-block;
+  padding: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(204, 164, 59, 0.1) 0%, transparent 70%);
+  box-shadow: var(--glow-gold);
+  border: 1.5px solid rgba(204, 164, 59, 0.15);
+  animation: pulseGoldGlow 4s infinite ease-in-out;
+}
+
+@keyframes pulseGoldGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(204, 164, 59, 0.15);
+    border-color: rgba(204, 164, 59, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(204, 164, 59, 0.35);
+    border-color: rgba(204, 164, 59, 0.4);
+  }
+}
+
+

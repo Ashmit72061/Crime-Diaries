@@ -2,13 +2,28 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { FileText, Plus, FileEdit, Trash2, Send, Filter, CheckCircle2, AlertTriangle, Eye } from 'lucide-react';
+import { FileText, Plus, FileEdit, Trash2, Send, Filter, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
 
+const pageVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12, filter: "blur(3px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 95, damping: 14 } }
+};
+
 export default function MyRecords() {
   const { t, i18n } = useTranslation();
-  const lang = i18n.language || 'en';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -64,118 +79,148 @@ export default function MyRecords() {
   // Render Status Badge
   const renderStatusBadge = (status) => {
     const badges = {
-      DRAFT: 'bg-zinc-800 text-zinc-300 border-zinc-700',
-      PENDING_SHO: 'bg-amber-950/40 text-amber-400 border-amber-800/60',
-      DISTRICT_REVIEW: 'bg-blue-950/40 text-blue-400 border-blue-800/60',
-      SENT_BACK_HC: 'bg-red-950/40 text-red-400 border-red-800/60',
-      COMPILED: 'bg-emerald-950/40 text-emerald-400 border-emerald-800/60',
+      DRAFT: 'bg-slate-100 text-slate-600 border-slate-200/80',
+      PENDING_SHO: 'bg-amber-50 text-amber-700 border-amber-200/60',
+      DISTRICT_REVIEW: 'bg-blue-50 text-blue-700 border-blue-200/60',
+      SENT_BACK_HC: 'bg-rose-50 text-rose-700 border-rose-200/60',
+      COMPILED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+    };
+    const dotColors = {
+      DRAFT: 'bg-slate-400',
+      PENDING_SHO: 'bg-amber-500',
+      DISTRICT_REVIEW: 'bg-blue-500',
+      SENT_BACK_HC: 'bg-rose-500',
+      COMPILED: 'bg-emerald-500',
     };
     return (
-      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${badges[status] || badges.DRAFT}`}>
+      <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${badges[status] || badges.DRAFT}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColors[status] || dotColors.DRAFT}`} />
         {t(`status.${status}`, status)}
       </span>
     );
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      variants={pageVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+      <motion.div 
+        variants={itemVariants}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
-            <FileText className="text-[#0f52ba]" size={22} />
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5 font-display">
+            <div className="crest-frame">
+              <FileText className="text-[#0f52ba]" size={20} />
+            </div>
             <span>{t('nav.records', 'My Records Desk')}</span>
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-slate-500 text-sm mt-1 font-semibold">
             {t('common.recordsSubtitle', 'Create, manage and submit daily diaries for cases, arrests, and PCR incident logs.')}
           </p>
         </div>
 
         {/* Creation actions */}
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-slate-500 font-semibold whitespace-nowrap">{t('actions.createNew', 'Create New:')}</span>
-          <div className="flex gap-2.5 flex-wrap">
+          <span className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">{t('actions.createNew', 'Create New:')}</span>
+          <div className="flex gap-2 flex-wrap">
             {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((type) => (
               <button
                 key={type}
                 onClick={() => navigate(`/records/new/${type}`)}
-                className="bg-[#0f52ba] hover:bg-[#16406d] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-[#0f52ba]/20 hover:shadow-[#0f52ba]/40 hover:-translate-y-0.5 cursor-pointer border-none"
+                className="bg-[#0f52ba] hover:bg-[#16406d] text-white px-4.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-[#0f52ba]/10 hover:shadow-[#0f52ba]/25 hover:-translate-y-0.5 cursor-pointer border-none active:scale-[0.98]"
               >
-                <Plus size={16} />
+                <Plus size={14} className="text-amber-400" />
                 <span>{t(`recordTypes.${type}`, type)}</span>
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Record Category Tabs */}
-      <div className="border-b-2 border-slate-200 flex flex-wrap gap-1">
+      <motion.div 
+        variants={itemVariants}
+        className="bg-slate-100 p-1 rounded-2xl flex gap-1 flex-wrap w-fit border border-slate-200/50"
+      >
         {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3.5 text-sm font-bold tracking-wide border-b-[3px] transition-all cursor-pointer -mb-[2px] ${
+            className={`px-5 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border-none ${
               activeTab === tab
-                ? 'border-[#0f52ba] text-[#0f52ba] bg-[#0f52ba]/5 rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                ? 'bg-white text-[#0f52ba] shadow-sm font-black'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             {t(`recordTypes.${tab}`, tab)}
           </button>
         ))}
-      </div>
+      </motion.div>
 
       {/* Filters Section */}
-      <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4 flex-wrap">
+      <motion.div 
+        variants={itemVariants}
+        className="flex items-center gap-3 bg-white border border-slate-200/60 shadow-sm rounded-2xl p-4 flex-wrap"
+      >
         <Filter size={16} className="text-slate-400 flex-shrink-0" />
-        <span className="text-slate-600 font-bold text-sm">{t('actions.filterStatus', 'Status:')}</span>
+        <span className="text-slate-500 font-extrabold text-xs uppercase tracking-wider">{t('actions.filterStatus', 'Status:')}</span>
         <div className="flex gap-2.5 flex-wrap">
           {['ALL', 'DRAFT', 'PENDING_SHO', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED'].map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === st
-                  ? 'bg-[#0f52ba] text-white shadow-md shadow-[#0f52ba]/25'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-[#0f52ba] hover:text-[#0f52ba] hover:bg-[#0f52ba]/5 shadow-sm'
+                  ? 'bg-[#0f52ba] text-white shadow-md shadow-[#0f52ba]/20'
+                  : 'bg-slate-50 border border-slate-100 text-slate-600 hover:border-[#0f52ba] hover:text-[#0f52ba] hover:bg-[#0f52ba]/5'
               }`}
             >
               {st === 'ALL' ? t('common.all', 'All') : t(`status.${st}`, st)}
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Records Listing Grid */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-20 text-zinc-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4"></div>
-          <p>{t('common.loading', 'Syncing digital registry logs...')}</p>
+        <div className="flex flex-col items-center justify-center p-20 text-slate-400">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0f52ba] mb-4"></div>
+          <p className="text-xs font-semibold">{t('common.loading', 'Syncing digital registry logs...')}</p>
         </div>
       ) : filteredRecords.length === 0 ? (
-        <div className="border border-dashed border-zinc-800 rounded-xl p-12 text-center text-zinc-500">
-          <FileText size={48} className="mx-auto text-zinc-700 mb-3" />
-          <p className="text-sm font-semibold">{t('common.noRecords', 'No Daily Log Entries Found')}</p>
-          <p className="text-xs text-zinc-600 mt-1">
+        <motion.div 
+          variants={itemVariants}
+          className="border border-dashed border-slate-200 bg-white rounded-2xl p-16 text-center text-slate-400 shadow-sm"
+        >
+          <FileText size={40} className="mx-auto text-slate-300 mb-3" />
+          <p className="text-sm font-bold text-slate-700">{t('common.noRecords', 'No Daily Log Entries Found')}</p>
+          <p className="text-xs text-slate-400 mt-1 font-medium">
             {t('common.noRecordsDetail', 'Select a creation form above to enter your daily general diary records.')}
           </p>
-        </div>
+        </motion.div>
       ) : (
-        <div className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
+        <motion.div 
+          variants={itemVariants}
+          className="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200 text-xs tracking-wider">
-                  <th className="p-4 pl-5">{t('common.referenceId', 'Ref ID / Number')}</th>
+                <tr className="bg-slate-50 text-slate-400 uppercase font-bold border-b border-slate-200 text-xs tracking-wider">
+                  <th className="p-4 pl-6">{t('common.referenceId', 'Ref ID / Number')}</th>
                   <th className="p-4">{t('common.recordDate', 'Record Date')}</th>
                   <th className="p-4">{t('common.details', 'Brief Gist')}</th>
                   <th className="p-4">{t('common.status', 'Status')}</th>
-                  <th className="p-4 pr-5 text-right">{t('common.actions', 'Console Operations')}</th>
+                  <th className="p-4 pr-6 text-right">{t('common.actions', 'Console Operations')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredRecords.map((rec) => {
+                {filteredRecords.map((rec, index) => {
                   const refId =
                     rec.data.fir_no ||
                     rec.data.gd_no ||
@@ -196,31 +241,37 @@ export default function MyRecords() {
                   const isEditable = rec.current_status === 'DRAFT' || rec.current_status === 'SENT_BACK_HC';
 
                   return (
-                    <tr key={rec.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 pl-5 font-mono font-bold text-slate-800 text-sm">{refId}</td>
-                      <td className="p-4 font-mono text-slate-600">{rec.data.record_date || 'N/A'}</td>
-                      <td className="p-4 max-w-[280px] truncate text-slate-600" title={gist}>
+                    <motion.tr 
+                      key={rec.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02, duration: 0.3 }}
+                      className="hover:bg-slate-50/60 transition-colors"
+                    >
+                      <td className="p-4 pl-6 font-mono font-bold text-slate-800 text-sm">{refId}</td>
+                      <td className="p-4 font-mono text-slate-500 font-semibold">{rec.data.record_date || 'N/A'}</td>
+                      <td className="p-4 max-w-[280px] truncate text-slate-500 font-medium" title={gist}>
                         {gist}
                       </td>
                       <td className="p-4">{renderStatusBadge(rec.current_status)}</td>
-                      <td className="p-3.5 pr-5 text-right space-x-2 whitespace-nowrap">
+                      <td className="p-3.5 pr-6 text-right space-x-2 whitespace-nowrap">
                         {/* View Action */}
                         <button
                           onClick={() => navigate(`/records/${rec.id}`)}
-                          className="bg-slate-100 hover:bg-[#0f52ba] text-slate-500 hover:text-white p-2.5 rounded-lg transition-all inline-flex items-center gap-1.5 cursor-pointer border border-slate-200 hover:border-[#0f52ba] hover:shadow-md"
+                          className="bg-slate-50 hover:bg-[#0f52ba] text-slate-500 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-slate-200 hover:border-[#0f52ba] hover:shadow-md active:scale-95"
                           title="View Details"
                         >
-                          <Eye size={15} />
+                          <Eye size={14} />
                         </button>
 
                         {/* Edit Action */}
                         {isEditable && (
                           <button
                             onClick={() => navigate(`/records/new/${rec.record_type}?edit=${rec.id}`)}
-                            className="bg-amber-50 hover:bg-[#cca43b] text-amber-600 hover:text-white p-2.5 rounded-lg transition-all inline-flex items-center gap-1.5 cursor-pointer border border-amber-200 hover:border-[#cca43b] hover:shadow-md"
+                            className="bg-amber-50 hover:bg-[#cca43b] text-amber-700 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-amber-200 hover:border-[#cca43b] hover:shadow-md active:scale-95"
                             title="Edit Record"
                           >
-                            <FileEdit size={15} />
+                            <FileEdit size={14} />
                           </button>
                         )}
 
@@ -232,10 +283,10 @@ export default function MyRecords() {
                                 submitMutation.mutate(rec.id);
                               }
                             }}
-                            className="bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white p-2.5 rounded-lg transition-all inline-flex items-center gap-1.5 cursor-pointer border border-emerald-200 hover:border-emerald-500 hover:shadow-md"
+                            className="bg-emerald-50 hover:bg-emerald-500 text-emerald-700 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-emerald-200 hover:border-emerald-500 hover:shadow-md active:scale-95"
                             title="Submit to SHO"
                           >
-                            <Send size={15} />
+                            <Send size={14} />
                           </button>
                         )}
 
@@ -247,21 +298,21 @@ export default function MyRecords() {
                                 deleteMutation.mutate(rec.id);
                               }
                             }}
-                            className="bg-red-50 hover:bg-red-500 text-red-500 hover:text-white p-2.5 rounded-lg transition-all inline-flex items-center gap-1.5 cursor-pointer border border-red-200 hover:border-red-500 hover:shadow-md"
+                            className="bg-rose-50 hover:bg-rose-500 text-rose-700 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-rose-200 hover:border-rose-500 hover:shadow-md active:scale-95"
                             title="Delete Draft"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         )}
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

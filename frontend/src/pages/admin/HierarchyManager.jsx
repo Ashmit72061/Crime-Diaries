@@ -7,7 +7,7 @@ export default function HierarchyManager() {
   const { data: hierarchy = {}, isLoading } = useQuery({
     queryKey: ['admin', 'hierarchy'],
     queryFn: async () => {
-      const res = await api.get('/admin/hierarchy');
+      const res = await api.get('/hierarchy');
       return res.data.data;
     },
   });

@@ -17,7 +17,7 @@ export default function Queue() {
     queryKey: ['workflow', 'queue'],
     queryFn: async () => {
       const res = await api.get('/workflow/queue');
-      return res.data.data;
+      return res.data.data?.queue || res.data.data || [];
     },
   });
 

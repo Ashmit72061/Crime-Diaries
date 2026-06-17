@@ -52,6 +52,12 @@ const SECTION_TITLES = {
 export const getFieldsForForm = async (req, res) => {
   const { record_type } = req.params;
 
+  let normalizedType = record_type.toUpperCase();
+  if (normalizedType === 'CASES') normalizedType = 'CASE';
+  if (normalizedType === 'ARRESTS') normalizedType = 'ARREST';
+  if (normalizedType === 'PCR' || normalizedType === 'PCR_CALLS') normalizedType = 'PCR_CALL';
+  if (normalizedType === 'MISSING_PERSONS' || normalizedType === 'MISSING_PERSON') normalizedType = 'MISSING';
+
   try {
     const rawFields = await db('field_registry')
       .where({ is_active: true })
@@ -59,8 +65,15 @@ export const getFieldsForForm = async (req, res) => {
 
     // Filter fields applicable to record_type
     const filteredFields = rawFields.filter(f => {
-      const types = parseJsonField(f.applicable_record_types) || [];
-      return types.map(t => t.toUpperCase()).includes(record_type.toUpperCase());
+      const types = (parseJsonField(f.applicable_record_types) || []).map(t => {
+        let ut = t.toUpperCase();
+        if (ut === 'CASES') ut = 'CASE';
+        if (ut === 'ARRESTS') ut = 'ARREST';
+        if (ut === 'PCR' || ut === 'PCR_CALLS') ut = 'PCR_CALL';
+        if (ut === 'MISSING_PERSONS' || ut === 'MISSING_PERSON') ut = 'MISSING';
+        return ut;
+      });
+      return types.includes(normalizedType);
     }).map(f => ({
       id: f.id,
       field_key: f.field_key,

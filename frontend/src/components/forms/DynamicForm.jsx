@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
-import { message, notification } from 'antd';
+import toast from 'react-hot-toast';
 
 import { useFormSchema } from '../../hooks/useFormSchema.js';
 import { useAutosave } from '../../hooks/useAutosave.js';
@@ -95,6 +95,16 @@ export default function DynamicForm({
     }
   }, [savedRecord]);
 
+  const initialValuesStr = JSON.stringify(initialValues || {});
+  const userStr = user ? JSON.stringify({
+    id: user.id,
+    role: user.role,
+    psId: user.psId,
+    districtId: user.districtId,
+    stationName: user.stationName,
+    districtKey: user.districtKey
+  }) : '';
+
   /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
     const seed = initialValues?.data || initialValues || {};
@@ -158,7 +168,7 @@ export default function DynamicForm({
     if (initialValues?.id) {
       activeRecordIdRef.current = initialValues.id;
     }
-  }, [initialValues, user]);
+  }, [initialValuesStr, userStr]);
 
   /* ── Validate a single section (step) ─────────────────────────────────── */
   const validateSection = useCallback((stepIdx, currentValues = values) => {
@@ -234,7 +244,7 @@ export default function DynamicForm({
       section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
       setTouched((prev) => ({ ...prev, ...newTouched }));
       
-      message.error(lang === 'hi'
+      toast.error(lang === 'hi'
         ? 'कृपया सभी आवश्यक फ़ील्ड भरें।'
         : 'Please fill all required fields before continuing.');
       return;
@@ -292,7 +302,7 @@ export default function DynamicForm({
       });
       setCurrentStep(firstErrStep);
 
-      message.error(lang === 'hi'
+      toast.error(lang === 'hi'
         ? 'कृपया सभी आवश्यक फ़ील्ड भरें।'
         : 'Please complete all required fields.');
 
@@ -310,12 +320,7 @@ export default function DynamicForm({
   /* ── Manual save draft (button click) ────────────────────────────────────*/
   const handleManualSave = () => {
     saveImmediately(values, activeRecordIdRef.current);
-    notification.success({
-      message: lang === 'hi' ? 'सफलता' : 'Draft Saved',
-      description: lang === 'hi' ? 'ड्राफ्ट सहेज लिया गया है।' : 'Draft saved successfully.',
-      placement: 'topRight',
-      duration: 3,
-    });
+    toast.success(lang === 'hi' ? 'ड्राफ्ट सहेज लिया गया है।' : 'Draft saved successfully.');
   };
 
   /* ── Render states ─────────────────────────────────────────────────────── */
