@@ -17,7 +17,22 @@ export const initScheduler = async () => {
   } catch (error) {
     console.error('[Scheduler] Failed to initialize scheduled reports:', error.message);
   }
+
+  // Refresh analytics materialized view nightly at 02:00 AM (PostgreSQL only)
+  const isPg = db.client.config.client === 'pg';
+  if (isPg) {
+    cron.schedule('0 2 * * *', async () => {
+      try {
+        await db.raw('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_record_stats');
+        console.log('[Scheduler] mv_record_stats refreshed successfully.');
+      } catch (err) {
+        console.error('[Scheduler] mv_record_stats refresh failed:', err.message);
+      }
+    });
+    console.log('[Scheduler] Analytics materialized view refresh scheduled (nightly 02:00).');
+  }
 };
+
 
 export const startScheduledJob = async (schedule) => {
   const { id, template_id, cron_expr, format, filter_spec, scope_ps_id, scope_district_id, recipients } = schedule;
