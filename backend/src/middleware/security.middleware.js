@@ -36,9 +36,33 @@ export const ipAllowlistMiddleware = (req, res, next) => {
   next();
 };
 
+import crypto from 'crypto';
+
 export const csrfDoubleSubmitMiddleware = (req, res, next) => {
   const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+  
+  let csrfTokenCookie = req.cookies ? req.cookies['csrfToken'] : null;
+
+  // 1. Always provision a CSRF token if the user doesn't have one
+  if (!csrfTokenCookie) {
+    csrfTokenCookie = crypto.randomUUID();
+    res.cookie('csrfToken', csrfTokenCookie, {
+      httpOnly: false, // Frontend needs to read this for double-submit
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
+  }
+
+  // 2. Safe methods are always allowed
   if (safeMethods.includes(req.method)) {
+    return next();
+  }
+
+  // 3. Exempt initial Authentication endpoints because the browser won't 
+  // have the token to send in the header yet (it gets provisioned on this response)
+  const exemptPaths = ['/api/v1/auth/login', '/api/v1/auth/refresh', '/api/auth/login', '/api/auth/refresh'];
+  if (exemptPaths.includes(req.path)) {
     return next();
   }
 
@@ -46,9 +70,9 @@ export const csrfDoubleSubmitMiddleware = (req, res, next) => {
     return next();
   }
 
-  const csrfTokenCookie = req.cookies ? req.cookies['csrfToken'] : null;
   const csrfTokenHeader = req.headers['x-csrf-token'];
 
+  // 4. Validate Double-Submit matching
   if (!csrfTokenCookie || !csrfTokenHeader || csrfTokenCookie !== csrfTokenHeader) {
     return res.status(403).json({
       status: 'error',

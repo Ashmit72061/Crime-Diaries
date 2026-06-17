@@ -82,7 +82,7 @@ export const initSubscriptions = async () => {
   try {
     await subscribe('record.status_changed', handleRecordStatusChanged);
     await subscribe('compilation.submitted', handleCompilationSubmitted);
-    logger.info('Notification event subscriptions initialized');
+    logger.info('✅ Notification event subscriptions initialized');
   } catch (error) {
     logger.error('Failed to initialize notification subscriptions:', error.message);
   }

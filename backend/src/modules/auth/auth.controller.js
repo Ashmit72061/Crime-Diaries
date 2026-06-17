@@ -94,8 +94,9 @@ export const me = async (req, res) => {
     }
 
     const user = await db('users')
-      .select('users.*', 'ps.name_en as ps_name_en', 'ps.name_hi as ps_name_hi', 'dist.name_en as district_name_en', 'dist.name_hi as district_name_hi')
+      .select('users.*', 'ps.name_en as ps_name_en', 'ps.name_hi as ps_name_hi', 'subdiv.name_en as sub_div_name_en', 'subdiv.name_hi as sub_div_name_hi', 'dist.name_en as district_name_en', 'dist.name_hi as district_name_hi')
       .leftJoin('hierarchy_nodes as ps', 'users.station_id', 'ps.id')
+      .leftJoin('hierarchy_nodes as subdiv', 'users.sub_div_id', 'subdiv.id')
       .leftJoin('hierarchy_nodes as dist', 'users.district_id', 'dist.id')
       .where('users.id', userId)
       .first();
@@ -111,6 +112,7 @@ export const me = async (req, res) => {
 
     const getLevelFromRole = (role) => {
       if (['HC', 'SHO'].includes(role)) return 'PS';
+      if (role === 'ACP') return 'ACP';
       if (role === 'DISTRICT_OFFICER') return 'DISTRICT';
       return 'HQ';
     };
@@ -141,11 +143,14 @@ export const me = async (req, res) => {
           last_login: user.last_login,
           ps_name_en: user.ps_name_en || null,
           ps_name_hi: user.ps_name_hi || null,
+          sub_div_name_en: user.sub_div_name_en || null,
+          sub_div_name_hi: user.sub_div_name_hi || null,
           district_name_en: user.district_name_en || null,
           district_name_hi: user.district_name_hi || null
         },
         jurisdiction: {
           station: user.station_id ? { id: user.station_id, name_en: user.ps_name_en, name_hi: user.ps_name_hi, code: user.ps_code } : null,
+          sub_division: user.sub_div_id ? { id: user.sub_div_id, name_en: user.sub_div_name_en, name_hi: user.sub_div_name_hi } : null,
           district: user.district_id ? { id: user.district_id, name_en: user.district_name_en, name_hi: user.district_name_hi, code: user.district_code } : null
         }
       }
