@@ -37,6 +37,10 @@ const HierarchyManager  = lazy(() => import('../pages/admin/HierarchyManager.jsx
 const FieldManager      = lazy(() => import('../pages/admin/FieldManager.jsx'));
 const AuditPage         = lazy(() => import('../pages/admin/AuditPage.jsx'));
 
+// Station Wise Views (Unified Components)
+const StationPerformanceDashboard = lazy(() => import('../pages/shared/StationPerformanceDashboard.jsx'));
+const StationDetailView = lazy(() => import('../pages/shared/StationDetailView.jsx'));
+
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
     <Spinner size="lg" />
@@ -110,6 +114,12 @@ export const AppRouter = () => (
             <Route path="/admin/hierarchy" element={<HierarchyManager />} />
             <Route path="/admin/fields" element={<FieldManager />} />
             <Route path="/admin/audit" element={<AuditPage />} />
+
+            {/* Station Wise Views */}
+            <Route path="/district/stations" element={<StationPerformanceDashboard />} />
+            <Route path="/district/stations/:id" element={<StationDetailView />} />
+            <Route path="/hq/stations" element={<StationPerformanceDashboard />} />
+            <Route path="/hq/stations/:id" element={<StationDetailView />} />
           </Route>
         </Route>
 

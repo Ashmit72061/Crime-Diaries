@@ -128,38 +128,33 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
       </div>
 
       <div className="navbar-right">
-        {/* Terminal Authorization Scope Selector (Interactive Dropdown) */}
-        <div className="console-switcher-container">
+        {/* Terminal Authorization Scope Badge (Read-Only) */}
+        <div className="console-switcher-container cursor-default" style={{ borderColor: 'var(--border-light)' }}>
           <Shield size={14} className="text-amber-500" />
-          <span className="console-switcher-label" translate="no">Authorized Terminal:</span>
-          <select
-            className="console-switcher-select"
-            value={activeNodeId}
-            onChange={handleScopeChange}
-            translate="no"
-          >
-            <optgroup label="Headquarters">
-              {options.hq.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.name}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Districts (DCP)">
-              {options.districts.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.name}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Police Stations (SHO/HC)">
-              {options.stations.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          <span className="text-xs font-bold text-amber-600 tracking-wide uppercase select-none" style={{ fontFamily: 'var(--font-sans)' }}>
+            {(() => {
+              if (!user) return "";
+              const roleUpper = user.role.toUpperCase();
+              if (roleUpper === 'SYSTEM_ADMIN') {
+                return "SYSTEM ADMIN VIEW";
+              }
+              const node = findNodeById(activeNodeId);
+              if (!node) {
+                if (roleUpper === 'HC' || roleUpper === 'SHO') return `PS VIEW | PS ${user.stationName?.toUpperCase() || 'NARELA'}`;
+                if (roleUpper === 'DISTRICT_OFFICER') return `DISTRICT VIEW | ${user.districtKey?.toUpperCase() || 'OUTER NORTH DISTRICT'}`;
+                return "HEADQUARTERS VIEW | DELHI POLICE HQ";
+              }
+              if (node.type === 'PS') {
+                const cleanName = node.name.replace('PS: ', 'PS ').toUpperCase();
+                return `PS VIEW | ${cleanName}`;
+              }
+              if (node.type === 'DISTRICT') {
+                const cleanName = node.name.replace(/\s*\([^)]*\)/g, "").toUpperCase();
+                return `DISTRICT VIEW | ${cleanName}`;
+              }
+              return "HEADQUARTERS VIEW | DELHI POLICE HQ";
+            })()}
+          </span>
         </div>
 
         {/* Localized Time Display */}
@@ -231,10 +226,13 @@ export default function PoliceNavbar({ notifications, removeNotification }) {
             <div className="officer-avatar" aria-hidden="true">
               <User size={16} />
             </div>
-            <div className="officer-details text-left font-sans">
+            <div className="officer-details text-left font-sans flex flex-col justify-center leading-tight">
               <span className="officer-name block text-sm font-semibold">{user?.username || "HC Ramesh Kumar"}</span>
-              <span className="officer-rank block text-xs text-slate-400">
-                {user?.rank || "Station Operator"}{user?.stationName ? ` (PS ${user.stationName})` : user?.districtKey ? ` (${user.districtKey})` : ""}
+              <span className="officer-rank block text-[11px] text-slate-400 font-medium">{user?.rank || "Station Operator"}</span>
+              <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5">
+                {user?.role === 'SYSTEM_ADMIN' ? 'Central Administration' : 
+                 (findNodeById(activeNodeId)?.name ? findNodeById(activeNodeId).name.replace('PS: ', 'PS ').replace(/\s*\([^)]*\)/g, "") : 
+                  (user?.stationName ? `PS ${user.stationName}` : (user?.districtKey ? user.districtKey.replace(/\s*\([^)]*\)/g, "") : "Delhi Police HQ")))}
               </span>
             </div>
           </button>
