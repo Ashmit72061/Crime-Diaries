@@ -5,6 +5,7 @@ process.env.NODE_ENV = 'development';
 
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import db from '../src/config/db.js';
 
 async function run() {
   console.log('[Test P2] Starting automated verification of Level Contracts and Filter Engine...');
@@ -15,6 +16,9 @@ async function run() {
   
   await eventBus.connect();
   await auditHandler.init();
+  
+  // Clean up database tables for test isolation
+  await db('level_data_contracts').del();
   
   const server = app.listen(39997);
   const localBaseURL = 'http://localhost:39997/api/v1';
