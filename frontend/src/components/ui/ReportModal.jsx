@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import { Printer, ShieldCheck, X } from "lucide-react";
+import { motion } from "framer-motion";
+import useAuthStore from "../../store/authStore.js";
 
 export default function ReportModal({ isOpen, onClose, title, data, type }) {
+  const { user } = useAuthStore();
+  
   // Close on Escape key press as per accessibility rules
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -39,28 +43,31 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
 
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
-      <div 
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 15, filter: "blur(3px)" }}
+        animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ type: "spring", stiffness: 95, damping: 14 }}
         className="modal-content report-modal transition-standard" 
         onClick={(e) => e.stopPropagation()}
         style={{ overscrollBehavior: "contain" }}
       >
         <div className="modal-header">
-          <h2 id="report-modal-title" className="flex items-center gap-2">
-            <ShieldCheck size={22} className="badge-icon text-amber-500" aria-hidden="true" />
+          <h2 id="report-modal-title" className="flex items-center gap-2 font-display text-slate-800">
+            <ShieldCheck size={20} className="badge-icon text-amber-500" aria-hidden="true" />
             <span translate="no">Auto-Generated Official Docket</span>
           </h2>
           <button 
             type="button" 
-            className="nav-icon-btn" 
+            className="nav-icon-btn active:scale-95 transition-all duration-150" 
             onClick={onClose} 
             aria-label="Close report preview"
           >
-            <X size={20} aria-hidden="true" />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
         <div className="modal-body">
-          <div className="report-document text-black">
+          <div className="report-document text-black shadow-lg rounded-xl border border-slate-100 p-8">
             <div className="report-watermark" aria-hidden="true">DELHI POLICE</div>
             
             <div className="report-header-section text-center mb-6 border-b-2 border-double border-black pb-4">
@@ -325,14 +332,22 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
             <div className="report-sign-area flex justify-between gap-8 mt-12">
               <div className="report-signature border-t border-black pt-2 w-[220px] text-xs text-center">
                 <span>Prepared & Submitted By:</span><br />
-                <strong className="report-signature-title" translate="no">HC Ramesh Kumar</strong><br />
-                <span>Station Operator, PS Parliament St.</span>
+                <strong className="report-signature-title" translate="no">
+                  {data.ioName || user?.username || "HC Ramesh Kumar"}
+                </strong><br />
+                <span>
+                  {user?.rank || "Station Operator"}, PS {data.policeStation || user?.stationName || "Parliament St."}
+                </span>
               </div>
               
               <div className="report-signature border-t border-black pt-2 w-[220px] text-xs text-center">
                 <span>Approved & Verified:</span><br />
-                <strong className="report-signature-title" translate="no">Dr. Vikram Singh, IPS</strong><br />
-                <span>DCP New Delhi District</span>
+                <strong className="report-signature-title" translate="no">
+                  {user?.role === 'HQ' ? "Dr. Vikram Singh, IPS" : (user?.role === 'DISTRICT' ? user?.username : "Dr. Vikram Singh, IPS")}
+                </strong><br />
+                <span>
+                  {user?.role === 'HQ' ? "DGP Delhi Police" : `DCP ${data.district || user?.districtKey || "New Delhi District"}`}
+                </span>
               </div>
             </div>
           </div>
@@ -341,28 +356,28 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
         <div className="modal-footer">
           <button 
             type="button" 
-            className="btn btn-secondary" 
+            className="btn btn-secondary flex items-center gap-1.5 transition-all duration-200 active:scale-[0.98]" 
             onClick={handlePrint}
             aria-label="Print official report copy"
           >
-            <Printer size={16} aria-hidden="true" />
+            <Printer size={15} aria-hidden="true" />
             <span>Print Docket</span>
           </button>
           
           <button 
             type="button" 
-            className="btn btn-primary" 
+            className="btn btn-primary flex items-center gap-1.5 transition-all duration-200 active:scale-[0.98]" 
             onClick={() => {
               alert("Dispatching report to District Analytics Server…");
               onClose();
             }}
             aria-label="Approve and dispatch report"
           >
-            <ShieldCheck size={16} aria-hidden="true" />
+            <ShieldCheck size={15} aria-hidden="true" />
             <span>Approve & Dispatch</span>
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

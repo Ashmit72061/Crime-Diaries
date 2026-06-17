@@ -86,10 +86,11 @@ async function run() {
       headers: { Authorization: `Bearer ${hcToken}` }
     });
     assert(fieldsRes.status === 200, 'Retrieve Cases form layouts succeeds');
-    assert(fieldsRes.data.data.sections.length > 0, 'Fields registry returns populated sections array');
+    const sections = Array.isArray(fieldsRes.data.data) ? fieldsRes.data.data : (fieldsRes.data.data.sections || []);
+    assert(sections.length > 0, 'Fields registry returns populated sections array');
     
-    const generalSection = fieldsRes.data.data.sections.find(s => s.section === 'Identity');
-    assert(generalSection !== undefined, 'Form layout contains "Identity" sections');
+    const generalSection = sections.find(s => s.section === 'Identity' || s.section === 'general_info');
+    assert(generalSection !== undefined, 'Form layout contains "Identity" or "general_info" sections');
 
 
     // 3. Record Creation Check

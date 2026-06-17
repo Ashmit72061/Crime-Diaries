@@ -226,8 +226,8 @@ export const updateRecord = async (id, user, data, ipAddress) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK') {
-      throw new Error('This record is locked. Only DRAFT or SENT_BACK records can be edited.');
+    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
+      throw new Error('This record is locked. Only DRAFT or SENT_BACK_HC records can be edited.');
     }
 
     const oldData = parseJsonField(record.data);
@@ -312,7 +312,7 @@ export const submitRecord = async (id, user) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK') {
+    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
       throw new Error('Record is already submitted');
     }
 
@@ -500,7 +500,14 @@ export const overrideCaseHead = async (id, user, newHead, reason, ipAddress) => 
     if (!record) throw new Error('Record not found');
 
     const oldData = parseJsonField(record.data);
-    const key = record.record_type === 'CASES' ? 'case_head' : 'crime_head';
+    let key = 'crime_head';
+    if ('case_head' in oldData) {
+      key = 'case_head';
+    } else if ('local_head' in oldData) {
+      key = 'local_head';
+    } else if (record.record_type === 'CASE' || record.record_type === 'CASES') {
+      key = 'local_head';
+    }
     const oldHead = oldData[key];
 
     const hydratedData = { ...oldData, [key]: newHead };

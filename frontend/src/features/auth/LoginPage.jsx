@@ -18,6 +18,8 @@ import { loginSchema } from '../../utils/validators.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { POLICE_HIERARCHY, findNodeById } from '../../utils/hierarchyData.js';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore.js';
 
 // Dynamic email generator based on officer name
 const getEmailForNode = (node) => {
@@ -37,6 +39,15 @@ const getEmailForNode = (node) => {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { loginMutation } = useAuth();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   
   // Login hierarchy states
   const [activeTier, setActiveTier] = useState("PS"); // HQ, ZONE, RANGE, DISTRICT, PS
@@ -92,13 +103,16 @@ export default function LoginPage() {
     }
   }, [selectedDistrictId]);
 
-  // Sync email & password when selectedNodeId changes
+  // Sync email & password when selectedNodeId changes (only in mock mode)
   useEffect(() => {
-    const node = findNodeById(selectedNodeId);
-    if (node) {
-      const email = getEmailForNode(node);
-      setValue('email', email);
-      setValue('password', 'Password123'); // Demo password
+    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'production';
+    if (debugMode !== 'production') {
+      const node = findNodeById(selectedNodeId);
+      if (node) {
+        const email = getEmailForNode(node);
+        setValue('email', email);
+        setValue('password', 'Password123'); // Demo password
+      }
     }
   }, [selectedNodeId, setValue]);
 
@@ -147,7 +161,9 @@ export default function LoginPage() {
       {/* Left Panel: Branding */}
       <div className="login-branding-panel">
         <div className="branding-header">
-          <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
+          <div className="crest-frame">
+            <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
+          </div>
           <div className="branding-org">
             <span className="branding-org-govt">Govt. of NCT of Delhi</span>
             <span className="branding-org-name">Delhi Police</span>
@@ -191,25 +207,27 @@ export default function LoginPage() {
       {/* Right Panel: Login Form */}
       <div className="login-form-panel flex-col gap-4">
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="login-card-glass"
+          initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ type: "spring", stiffness: 85, damping: 14 }}
+          className="login-card-glass premium-glass-card"
         >
-          {/* Mobile Crest Header */}
-          <div className="login-header-logo-mobile">
-            <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="w-16 h-16 mb-2" />
-            <h2 className="text-xl font-bold text-white">PRISM</h2>
-            <span className="text-xs text-slate-400">Police Reporting, Intelligence & Statistics Management</span>
-          </div>
-
-          <div className="text-center">
+          {/* Centered Crest Branding in Card */}
+          <div className="flex flex-col items-center mb-2">
+            <div className="crest-frame mb-3">
+              <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="w-16 h-16 object-contain" />
+            </div>
             <h1 className="login-card-title">PRISM Authorization Console</h1>
             <p className="login-card-subtitle mt-1">Select your command tier to authorize terminal</p>
           </div>
 
           {/* Tier Tabs Selector */}
-          <div className="login-tier-tabs">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="login-tier-tabs"
+          >
             {tierConfig.map((tier) => {
               const Icon = tier.icon;
               return (
@@ -219,20 +237,26 @@ export default function LoginPage() {
                   onClick={() => setActiveTier(tier.key)}
                   className={`login-tier-tab ${activeTier === tier.key ? 'active' : ''}`}
                 >
-                  <Icon size={14} />
+                  <Icon size={14} aria-hidden="true" />
                   <span>{tier.label}</span>
                 </button>
               );
             })}
-          </div>
+          </motion.div>
 
           {/* Dynamic Hierarchy Dropdowns */}
-          <div className="flex flex-col gap-3">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="flex flex-col gap-3"
+          >
             {/* Zone Selector */}
             {activeTier === "ZONE" && (
               <div className="login-form-group">
-                <label>Select L&O Zone</label>
+                <label htmlFor="zone-select">Select L&O Zone</label>
                 <select
+                  id="zone-select"
                   value={selectedNodeId}
                   onChange={(e) => setSelectedNodeId(e.target.value)}
                   className="login-select-field"
@@ -247,8 +271,9 @@ export default function LoginPage() {
             {/* Range Selector */}
             {activeTier === "RANGE" && (
               <div className="login-form-group">
-                <label>Select Jt. CP Range</label>
+                <label htmlFor="range-select">Select Jt. CP Range</label>
                 <select
+                  id="range-select"
                   value={selectedNodeId}
                   onChange={(e) => setSelectedNodeId(e.target.value)}
                   className="login-select-field"
@@ -263,8 +288,9 @@ export default function LoginPage() {
             {/* District Selector */}
             {activeTier === "DISTRICT" && (
               <div className="login-form-group">
-                <label>Select District DCP Jurisdiction</label>
+                <label htmlFor="district-select">Select District DCP Jurisdiction</label>
                 <select
+                  id="district-select"
                   value={selectedNodeId}
                   onChange={(e) => setSelectedNodeId(e.target.value)}
                   className="login-select-field"
@@ -280,8 +306,9 @@ export default function LoginPage() {
             {activeTier === "PS" && (
               <>
                 <div className="login-form-group">
-                  <label>Select District</label>
+                  <label htmlFor="ps-district-select">Select District</label>
                   <select
+                    id="ps-district-select"
                     value={selectedDistrictId}
                     onChange={(e) => setSelectedDistrictId(e.target.value)}
                     className="login-select-field"
@@ -293,8 +320,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="login-form-group">
-                  <label>Select Police Station</label>
+                  <label htmlFor="ps-select">Select Police Station</label>
                   <select
+                    id="ps-select"
                     value={selectedNodeId}
                     onChange={(e) => setSelectedNodeId(e.target.value)}
                     className="login-select-field"
@@ -306,43 +334,55 @@ export default function LoginPage() {
                 </div>
               </>
             )}
-          </div>
+          </motion.div>
 
           {/* Officer Profile Live Preview */}
           {previewNode && (
-            <div className="officer-preview-card">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 100, damping: 15 }}
+              className="officer-preview-card"
+            >
               <div className="officer-preview-badge">
-                <UserCheck size={16} />
+                <UserCheck size={16} aria-hidden="true" />
               </div>
               <div className="officer-preview-info">
                 <span className="officer-preview-label">{previewNode.rank}</span>
                 <span className="officer-preview-name">{previewNode.officerName}</span>
                 <span className="officer-preview-sub">ID: {previewNode.pis} · {previewNode.name}</span>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Email / Password Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+          <motion.form 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            onSubmit={handleSubmit(onSubmit)} 
+            className="flex flex-col gap-3"
+          >
             <div className="login-form-group">
-              <label>Official Email</label>
+              <label htmlFor="login-email">Badge No / Official Email</label>
               <input
                 id="login-email"
-                type="email"
-                readOnly
-                placeholder="officer@delhipolice.gov.in"
-                className="login-input-field cursor-not-allowed opacity-80"
+                type="text"
+                autoComplete="username"
+                placeholder="HC001 or officer@delhipolice.gov.in"
+                className="login-input-field"
                 {...register('email')}
               />
               {errors.email && <span className="text-xs text-red-400">{errors.email.message}</span>}
             </div>
 
             <div className="login-form-group">
-              <label>Security Key / Password</label>
+              <label htmlFor="login-password">Security Key / Password</label>
               <div className="relative">
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   className="login-input-field pr-10"
                   {...register('password')}
@@ -350,9 +390,10 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                 </button>
               </div>
               {errors.password && <span className="text-xs text-red-400">{errors.password.message}</span>}
@@ -360,7 +401,7 @@ export default function LoginPage() {
 
             {/* Audit Warning */}
             <div className="security-notice-box flex gap-2">
-              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>
                 <strong>Warning:</strong> Authorized official access only. All sessions are monitored, audited, and logged under Section 66 of IT Act, 2000.
               </span>
@@ -373,43 +414,51 @@ export default function LoginPage() {
               disabled={loginMutation.isPending}
               className="login-btn-primary mt-2"
             >
-              <Lock size={14} />
-              <span>{loginMutation.isPending ? 'Authorizing Session...' : 'Establish Secure Connection'}</span>
+              <Lock size={14} aria-hidden="true" />
+              <span>{loginMutation.isPending ? 'Authorizing Session…' : 'Establish Secure Connection'}</span>
             </button>
-          </form>
+          </motion.form>
 
           {/* Quick-Access Demo Profiles */}
-          <div className="quick-profiles-section">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="quick-profiles-section"
+          >
             <span className="quick-profiles-label">Quick Demo Access</span>
             <div className="quick-profile-grid">
-              <div
+              <button
+                type="button"
                 onClick={() => handleQuickLogin("HQ", null, "HQ")}
                 className="quick-profile-card"
               >
-                <div className="quick-profile-avatar">HQ</div>
+                <div className="quick-profile-avatar" aria-hidden="true">HQ</div>
                 <span className="quick-profile-role">Headquarters</span>
                 <span className="quick-profile-name">DGP Vikram Singh</span>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => handleQuickLogin("DISTRICT", "DIST_CD", "DIST_CD")}
                 className="quick-profile-card"
               >
-                <div className="quick-profile-avatar">DCP</div>
+                <div className="quick-profile-avatar" aria-hidden="true">DCP</div>
                 <span className="quick-profile-role">Central District</span>
                 <span className="quick-profile-name">DCP H. Vardhan</span>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 onClick={() => handleQuickLogin("PS", "DIST_NDD", "PS_NDD_PARLIAMENT_STREET")}
                 className="quick-profile-card"
               >
-                <div className="quick-profile-avatar">PS</div>
+                <div className="quick-profile-avatar" aria-hidden="true">PS</div>
                 <span className="quick-profile-role">Parliament St</span>
                 <span className="quick-profile-name">HC Ramesh Kumar</span>
-              </div>
+              </button>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Portal Footer */}

@@ -1,25 +1,8 @@
-<<<<<<< HEAD
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
-import { AuthProvider } from './context/AuthContext.jsx';
-import './i18n/config.js'; // Initialize translation engine
-import './index.css';     // Load custom dark UI styling
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
-  </React.StrictMode>
-=======
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import './i18n/index.js';
 import App from './App.jsx';
 import './index.css';
 
@@ -57,5 +40,4 @@ createRoot(document.getElementById('root')).render(
       />
     </QueryClientProvider>
   </StrictMode>
->>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
 );

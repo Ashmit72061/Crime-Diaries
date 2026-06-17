@@ -1,10 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-<<<<<<< HEAD
-
-export default defineConfig({
-  plugins: [react()],
-=======
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -26,16 +21,11 @@ export default defineConfig({
       '@utils': path.resolve(__dirname, './src/utils'),
     },
   },
->>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
   server: {
     port: 5173,
     proxy: {
       '/api': {
-<<<<<<< HEAD
-        target: 'http://localhost:3000',
-=======
         target: 'http://localhost:5000',
->>>>>>> 050d70686de07c389fe62cdcf8820253124b8856
         changeOrigin: true,
       },
     },

@@ -23,6 +23,7 @@ import usersRouter from './modules/users/users.router.js';
 import hierarchyRouter from './modules/hierarchy/hierarchy.router.js';
 import adminRouter from './modules/admin/admin.router.js';
 import auditRouter from './modules/audit/audit.router.js';
+import compilationRouter from './modules/compilation/compilation.routes.js';
 import legacyRouter from './modules/legacy/legacy.router.js';
 import levelContractsRouter from './modules/level-contracts/levelContracts.router.js';
 import filtersRouter from './modules/filters/filters.router.js';
@@ -31,7 +32,18 @@ const app = express();
 
 // Base middleware
 app.use(helmet());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+const isDevMode = env.NODE_ENV === 'development';
+app.use(cors({
+  origin: (origin, callback) => {
+    // In development allow any localhost/127.0.0.1 port; in prod use explicit allowlist
+    if (!origin || isDevMode && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    if (origin === env.FRONTEND_URL) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -69,6 +81,9 @@ app.use('/api/workflow', workflowRouter);
 
 app.use('/api/v1/analytics', analyticsRouter);
 app.use('/api/analytics', analyticsRouter);
+
+app.use('/api/v1/compilations', compilationRouter);
+app.use('/api/compilations', compilationRouter);
 
 app.use('/api/v1/reports', reportsRouter);
 app.use('/api/reports', reportsRouter);
@@ -135,7 +150,7 @@ const startServer = async () => {
   });
 };
 
-if (process.env.PHAROS_TEST !== 'true') {
+if (process.env.PHAROS_TEST !== 'true' && process.argv[1] && (process.argv[1].endsWith('app.js') || process.argv[1].endsWith('app'))) {
   startServer().catch(err => {
     console.error('[App] Failed to start server:', err.message);
     process.exit(1);

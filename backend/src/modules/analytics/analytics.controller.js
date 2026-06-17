@@ -15,7 +15,7 @@ const getJsonPathSql = (column, path) => {
   if (isSqlite) {
     return `json_extract(${column}, '$.${path}')`;
   }
-  return `${column}->>'${path}'`;
+  return `(${column})::jsonb->>'${path}'`;
 };
 
 export const getSummary = async (req, res) => {
@@ -63,10 +63,13 @@ export const getTrends = async (req, res) => {
 
   try {
     const jsonPath = getJsonPathSql('data', classificationKey);
+    const isPg = db.client.config.client === 'pg';
+    const monthExpr = isPg ? `to_char(record_date, 'YYYY-MM')` : `strftime('%Y-%m', record_date)`;
+
     let query = db('records')
       .select(
         db.raw(`${jsonPath} as classification`),
-        db.raw(`strftime('%Y-%m', record_date) as month`), // fallback works on sqlite
+        db.raw(`${monthExpr} as month`),
         db.raw('count(*) as count')
       )
       .where({ record_type: typeUpper })
@@ -76,24 +79,8 @@ export const getTrends = async (req, res) => {
     if (jq.district_id) query = query.where('district_id', jq.district_id);
     if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
 
-    const isPg = db.client.config.client === 'pg';
-    if (isPg) {
-      query = db('records')
-        .select(
-          db.raw(`${jsonPath} as classification`),
-          db.raw(`to_char(record_date, 'YYYY-MM') as month`),
-          db.raw('count(*) as count')
-        )
-        .where({ record_type: typeUpper })
-        .whereIn('current_status', ['submitted', 'PENDING_SHO', 'DISTRICT_REVIEW', 'HQ_RECEIVED', 'CLOSED']);
-      
-      if (jq.ps_id) query = query.where('ps_id', jq.ps_id);
-      if (jq.district_id) query = query.where('district_id', jq.district_id);
-      if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
-    }
-
     const trends = await query
-      .groupBy(db.raw('classification'), db.raw('month'))
+      .groupBy([db.raw(jsonPath), db.raw(monthExpr)])
       .orderBy('month', 'asc');
 
     return res.status(200).json({
@@ -165,6 +152,124 @@ export const getCompare = async (req, res) => {
   }
 };
 
+export const getOverview = async (req, res) => {
+  const jq = req.jurisdictionQuery;
+  try {
+    let query = db('records').select('record_type').count('* as count');
+    if (jq.ps_id) query = query.where('ps_id', jq.ps_id);
+    if (jq.district_id) query = query.where('district_id', jq.district_id);
+    if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
+    const counts = await query.groupBy('record_type');
+
+    const data = { cases_today: 0, pcr_today: 0, arrests_today: 0, missing_today: 0, uidb_today: 0 };
+    counts.forEach(c => {
+      const type = (c.record_type || '').toUpperCase();
+      const count = parseInt(c.count, 10) || 0;
+      if (type === 'CASE') data.cases_today = count;
+      else if (type === 'PCR_CALL') data.pcr_today = count;
+      else if (type === 'ARREST') data.arrests_today = count;
+      else if (type === 'MISSING') data.missing_today = count;
+      else if (type === 'UIDB') data.uidb_today = count;
+    });
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getByPs = async (req, res) => {
+  const jq = req.jurisdictionQuery;
+  try {
+    let query = db('records')
+      .select('hn.name_en as station', 'records.record_type')
+      .count('* as count')
+      .join('hierarchy_nodes as hn', 'records.ps_id', 'hn.id');
+
+    if (jq.ps_id) query = query.where('records.ps_id', jq.ps_id);
+    if (jq.district_id) query = query.where('records.district_id', jq.district_id);
+    if (jq.sub_div_id) query = query.where('records.sub_div_id', jq.sub_div_id);
+
+    const rows = await query.groupBy('hn.name_en', 'records.record_type').orderBy('hn.name_en');
+
+    const stationMap = {};
+    rows.forEach(r => {
+      const station = r.station || 'Unknown PS';
+      if (!stationMap[station]) stationMap[station] = { station, cases: 0, pcr: 0, arrests: 0 };
+      const type = (r.record_type || '').toUpperCase();
+      const count = parseInt(r.count, 10) || 0;
+      if (type === 'CASE') stationMap[station].cases = count;
+      else if (type === 'PCR_CALL') stationMap[station].pcr = count;
+      else if (type === 'ARREST') stationMap[station].arrests = count;
+    });
+    return res.status(200).json({ success: true, data: Object.values(stationMap) });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getByCrimeHead = async (req, res) => {
+  const jq = req.jurisdictionQuery;
+  try {
+    const jsonPath = getJsonPathSql('data', 'crime_head');
+    let query = db('records')
+      .select(db.raw(`${jsonPath} as crime_head`))
+      .count('* as count')
+      .where('record_type', 'CASE');
+
+    if (jq.ps_id) query = query.where('ps_id', jq.ps_id);
+    if (jq.district_id) query = query.where('district_id', jq.district_id);
+    if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
+
+    const rows = await query.groupBy(db.raw('crime_head')).orderBy('count', 'desc').limit(10);
+    const data = rows.map(r => ({
+      name: r.crime_head || 'UNCATEGORIZED',
+      count: parseInt(r.count, 10) || 0
+    }));
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getCombinedTrends = async (req, res) => {
+  const jq = req.jurisdictionQuery;
+  try {
+    const isPg = db.client.config.client === 'pg';
+    const dateExpr = isPg
+      ? `to_char(record_date, 'YYYY-MM-DD')`
+      : `strftime('%Y-%m-%d', record_date)`;
+
+    let query = db('records')
+      .select(db.raw(`${dateExpr} as day`), 'record_type')
+      .count('* as count');
+
+    if (jq.ps_id) query = query.where('ps_id', jq.ps_id);
+    if (jq.district_id) query = query.where('district_id', jq.district_id);
+    if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
+
+    const rows = await query
+      .groupBy(db.raw('day'), 'record_type')
+      .orderBy('day', 'desc')
+      .limit(42);
+
+    const dayMap = {};
+    rows.forEach(r => {
+      const name = r.day || 'Unknown';
+      if (!dayMap[name]) dayMap[name] = { name, cases: 0, pcr: 0, arrests: 0 };
+      const type = (r.record_type || '').toUpperCase();
+      const count = parseInt(r.count, 10) || 0;
+      if (type === 'CASE') dayMap[name].cases = count;
+      else if (type === 'PCR_CALL') dayMap[name].pcr = count;
+      else if (type === 'ARREST') dayMap[name].arrests = count;
+    });
+
+    const data = Object.values(dayMap).sort((a, b) => a.name.localeCompare(b.name));
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const exportSpreadsheet = async (req, res) => {
   const { recordType } = req.query;
   const jq = req.jurisdictionQuery;
@@ -222,3 +327,26 @@ export const exportSpreadsheet = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const getStatusBreakdown = async (req, res) => {
+  const jq = req.jurisdictionQuery;
+  try {
+    let query = db('records')
+      .select('current_status')
+      .count('* as count');
+
+    if (jq.ps_id) query = query.where('ps_id', jq.ps_id);
+    if (jq.district_id) query = query.where('district_id', jq.district_id);
+    if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
+
+    const rows = await query.groupBy('current_status');
+    const data = rows.map(r => ({
+      status: r.current_status,
+      count: parseInt(r.count, 10) || 0
+    }));
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
