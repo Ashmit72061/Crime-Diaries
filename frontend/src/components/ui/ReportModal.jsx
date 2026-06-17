@@ -1,7 +1,9 @@
 import React, { useEffect } from "react";
 import { Printer, ShieldCheck, X } from "lucide-react";
+import useAuthStore from "../../store/authStore.js";
 
 export default function ReportModal({ isOpen, onClose, title, data, type }) {
+  const { user } = useAuthStore();
   // Close on Escape key press as per accessibility rules
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -325,14 +327,22 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
             <div className="report-sign-area flex justify-between gap-8 mt-12">
               <div className="report-signature border-t border-black pt-2 w-[220px] text-xs text-center">
                 <span>Prepared & Submitted By:</span><br />
-                <strong className="report-signature-title" translate="no">HC Ramesh Kumar</strong><br />
-                <span>Station Operator, PS Parliament St.</span>
+                <strong className="report-signature-title" translate="no">
+                  {data.ioName || user?.username || "HC Ramesh Kumar"}
+                </strong><br />
+                <span>
+                  {user?.rank || "Station Operator"}, PS {data.policeStation || user?.stationName || "Parliament St."}
+                </span>
               </div>
               
               <div className="report-signature border-t border-black pt-2 w-[220px] text-xs text-center">
                 <span>Approved & Verified:</span><br />
-                <strong className="report-signature-title" translate="no">Dr. Vikram Singh, IPS</strong><br />
-                <span>DCP New Delhi District</span>
+                <strong className="report-signature-title" translate="no">
+                  {user?.role === 'HQ' ? "Dr. Vikram Singh, IPS" : (user?.role === 'DISTRICT' ? user?.username : "Dr. Vikram Singh, IPS")}
+                </strong><br />
+                <span>
+                  {user?.role === 'HQ' ? "DGP Delhi Police" : `DCP ${data.district || user?.districtKey || "New Delhi District"}`}
+                </span>
               </div>
             </div>
           </div>

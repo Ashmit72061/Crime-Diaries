@@ -7,6 +7,7 @@ import { message, notification } from 'antd';
 import { useFormSchema } from '../../hooks/useFormSchema.js';
 import { useAutosave } from '../../hooks/useAutosave.js';
 import useAuthStore from '../../store/authStore.js';
+import { findNodeById } from '../../utils/hierarchyData.js';
 
 import FormSection from './FormSection.jsx';
 import FormToolbar from './FormToolbar.jsx';
@@ -98,12 +99,58 @@ export default function DynamicForm({
   useEffect(() => {
     const seed = initialValues?.data || initialValues || {};
     
+    // Resolve station and district dynamically based on record metadata or active user node
+    const recordPsId = initialValues?.ps_id || initialValues?.psId;
+    const recordDistId = initialValues?.district_id || initialValues?.districtId;
+
+    let resolvedStation = seed.police_station;
+    let resolvedDistrict = seed.district;
+
+    if (!resolvedStation) {
+      if (recordPsId) {
+        const node = findNodeById(recordPsId);
+        if (node && node.type === 'PS') {
+          resolvedStation = node.stationName || node.name;
+        }
+      } else if (user?.stationName) {
+        resolvedStation = user.stationName;
+      } else if (user?.psId) {
+        const node = findNodeById(user.psId);
+        if (node && node.type === 'PS') {
+          resolvedStation = node.stationName || node.name;
+        }
+      } else {
+        // Fallback only for Police Station level roles
+        const isPsLevel = user?.role === 'PS' || user?.role === 'HC' || user?.role === 'SHO';
+        resolvedStation = isPsLevel ? 'Parliament Street' : '';
+      }
+    }
+
+    if (!resolvedDistrict) {
+      if (recordDistId) {
+        const node = findNodeById(recordDistId);
+        if (node) {
+          resolvedDistrict = node.districtKey || node.name;
+        }
+      } else if (user?.districtKey) {
+        resolvedDistrict = user.districtKey;
+      } else if (user?.districtId) {
+        const node = findNodeById(user.districtId);
+        if (node) {
+          resolvedDistrict = node.districtKey || node.name;
+        }
+      } else {
+        const isHqLevel = user?.role === 'HQ' || user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN';
+        resolvedDistrict = isHqLevel ? '' : 'New Delhi District (NDD)';
+      }
+    }
+
     // Auto-populate readonly system fields from session/metadata
     const updatedSeed = {
       ...seed,
       uid: initialValues?.id || seed.uid || 'NEW_DRAFT_PENDING',
-      district: seed.district || user?.districtKey || user?.districtId || 'DIST_NDD',
-      police_station: seed.police_station || user?.stationName || user?.psId || 'PS_NDD_PARLIAMENT_STREET',
+      district: resolvedDistrict,
+      police_station: resolvedStation,
       submission_status: initialValues?.current_status || seed.submission_status || 'DRAFT'
     };
     

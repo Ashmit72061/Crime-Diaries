@@ -26,7 +26,18 @@ const app = express();
 
 // Base middleware
 app.use(helmet());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+const isDevMode = env.NODE_ENV === 'development';
+app.use(cors({
+  origin: (origin, callback) => {
+    // In development allow any localhost/127.0.0.1 port; in prod use explicit allowlist
+    if (!origin || isDevMode && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    if (origin === env.FRONTEND_URL) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());

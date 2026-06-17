@@ -82,7 +82,8 @@ export const useAuth = () => {
       navigate('/dashboard');
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Login failed');
+      const msg = err.response?.data?.message || err.message || 'Login failed';
+      toast.error(msg, { duration: 6000 });
     },
   });
 
