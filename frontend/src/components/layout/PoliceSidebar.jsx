@@ -19,6 +19,8 @@ import {
   Settings,
   Building,
   ShieldAlert,
+  FileContract,
+  Archive,
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
@@ -73,17 +75,20 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "hq", label: t('nav.hq', 'Command Center'), icon: Building, to: "/hq" },
         { id: "station-wise", label: t('nav.stationWise', 'Station Wise View'), icon: Building, to: "/hq/stations" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
-        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" }
+        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" },
+        { id: "legacy", label: t('nav.legacy', 'Legacy Data'), icon: Archive, to: "/admin/legacy" }
       );
     }
 
     // ── Platform System Administrator ─────────────────────────────────────────
     if (role === 'SYSTEM_ADMIN') {
       items.push(
-        { id: "admin-users",     label: t('nav.adminUsers',     'Users Register'),   icon: Users,       to: "/admin/users" },
-        { id: "admin-hierarchy", label: t('nav.adminHierarchy', 'Hierarchy Config'), icon: Network,     to: "/admin/hierarchy" },
-        { id: "admin-fields",    label: t('nav.adminFields',    'Field Registry'),   icon: Settings,    to: "/admin/fields" },
-        { id: "admin-audit",     label: t('nav.adminAudit',     'Audit Ledger'),     icon: ShieldAlert, to: "/admin/audit" }
+        { id: "admin-users",           label: t('nav.adminUsers',         'Users Register'),    icon: Users,         to: "/admin/users" },
+        { id: "admin-hierarchy",       label: t('nav.adminHierarchy',     'Hierarchy Config'),  icon: Network,       to: "/admin/hierarchy" },
+        { id: "admin-fields",          label: t('nav.adminFields',        'Field Registry'),    icon: Settings,      to: "/admin/fields" },
+        { id: "admin-audit",           label: t('nav.adminAudit',         'Audit Ledger'),      icon: ShieldAlert,   to: "/admin/audit" },
+        { id: "admin-level-contracts", label: t('nav.levelContracts',     'Level Contracts'),   icon: FileContract,  to: "/admin/level-contracts" },
+        { id: "admin-legacy",          label: t('nav.legacyData',         'Legacy Data'),       icon: Archive,       to: "/admin/legacy" }
       );
     }
 

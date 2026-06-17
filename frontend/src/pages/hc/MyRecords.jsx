@@ -6,6 +6,7 @@ import { FileText, Plus, FileEdit, Trash2, Send, Filter, Eye } from 'lucide-reac
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
+import FilterPresetsPanel from '../../components/common/FilterPresetsPanel.jsx';
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -190,6 +191,17 @@ export default function MyRecords() {
             </button>
           ))}
         </div>
+      </motion.div>
+
+      {/* Saved Filter Presets */}
+      <motion.div variants={itemVariants}>
+        <FilterPresetsPanel
+          currentFilters={{ recordType: activeTab, status: statusFilter }}
+          onLoadPreset={(saved) => {
+            if (saved.recordType) setActiveTab(saved.recordType);
+            if (saved.status)     setStatusFilter(saved.status);
+          }}
+        />
       </motion.div>
 
       {/* Records Listing Grid */}

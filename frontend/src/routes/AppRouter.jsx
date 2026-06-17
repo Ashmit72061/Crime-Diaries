@@ -35,7 +35,9 @@ const ReportBuilder     = lazy(() => import('../pages/reports/ReportBuilder.jsx'
 const Users             = lazy(() => import('../pages/admin/Users.jsx'));
 const HierarchyManager  = lazy(() => import('../pages/admin/HierarchyManager.jsx'));
 const FieldManager      = lazy(() => import('../pages/admin/FieldManager.jsx'));
-const AuditPage         = lazy(() => import('../pages/admin/AuditPage.jsx'));
+const AuditPage            = lazy(() => import('../pages/admin/AuditPage.jsx'));
+const LevelContractsPage   = lazy(() => import('../pages/admin/LevelContractsPage.jsx'));
+const LegacyDataPage       = lazy(() => import('../pages/admin/LegacyDataPage.jsx'));
 
 // Station Wise Views (Unified Components)
 const StationPerformanceDashboard = lazy(() => import('../pages/shared/StationPerformanceDashboard.jsx'));
@@ -115,6 +117,8 @@ export const AppRouter = () => (
             <Route path="/admin/hierarchy" element={<HierarchyManager />} />
             <Route path="/admin/fields" element={<FieldManager />} />
             <Route path="/admin/audit" element={<AuditPage />} />
+            <Route path="/admin/level-contracts" element={<LevelContractsPage />} />
+            <Route path="/admin/legacy" element={<LegacyDataPage />} />
 
             {/* Station Wise Views */}
             <Route path="/district/stations" element={<StationPerformanceDashboard />} />
