@@ -362,3 +362,55 @@ export function getMockLogsForNode(id) {
   // Filter logs where the station belongs to the active node's child station list
   return allLogs.filter(log => stationNamesSet.has(log.station));
 }
+
+// Helper to recursively resolve and map database user properties to visual hierarchy tree nodes
+export function findNodeByDbUser(user) {
+  if (!user) return null;
+  
+  // 1. Map by station_id if present
+  if (user.station_id) {
+    const cleanDbPs = user.station_id.replace(/^PS_/, '').replace(/_/g, '').toUpperCase();
+    const searchPs = (node = POLICE_HIERARCHY) => {
+      if (node.type === "PS") {
+        let name = node.stationName || "";
+        name = name.replace(/^PS\s*:?\s*/i, '');
+        const cleanNodePs = name.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        if (cleanDbPs === cleanNodePs) {
+          return node;
+        }
+      }
+      if (node.children) {
+        for (let child of node.children) {
+          const found = searchPs(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    const foundPsNode = searchPs();
+    if (foundPsNode) return foundPsNode;
+  }
+
+  // 2. Map by district_id if present
+  if (user.district_id) {
+    const dbDistCode = user.district_id.replace(/^(DISTRICT_|DIST_)/, '').toUpperCase();
+    const searchDist = (node = POLICE_HIERARCHY) => {
+      if (node.type === "DISTRICT" && (node.id === `DIST_${dbDistCode}` || node.id === dbDistCode)) {
+        return node;
+      }
+      if (node.children) {
+        for (let child of node.children) {
+          const found = searchDist(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    const foundDistNode = searchDist();
+    if (foundDistNode) return foundDistNode;
+  }
+
+  // 3. Fallback to HQ
+  return findNodeById("HQ");
+}
+

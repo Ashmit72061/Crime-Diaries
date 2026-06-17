@@ -24,6 +24,7 @@ export async function seed(knex) {
     { id: 'ZONE_NORTH', node_type: 'SCP', name_en: 'Northern Zone', name_hi: 'उत्तरी क्षेत्र', code: 'DP_ZN', parent_id: 'HQ', is_active: true },
     { id: 'RANGE_NORTH', node_type: 'JCP', name_en: 'Northern Range', name_hi: 'उत्तरी रेंज', code: 'DP_RN', parent_id: 'ZONE_NORTH', is_active: true },
     { id: 'DISTRICT_NWD', node_type: 'DISTRICT', name_en: 'North West District (NWD)', name_hi: 'उत्तर पश्चिम जिला (एनडब्ल्यूडी)', code: 'DP_NWD', parent_id: 'RANGE_NORTH', is_active: true },
+    { id: 'DISTRICT_OND', node_type: 'DISTRICT', name_en: 'Outer North District (OND)', name_hi: 'बाहरी उत्तर जिला (ओएनडी)', code: 'DP_OND', parent_id: 'RANGE_NORTH', is_active: true },
 
     // Sub-divisions
     { id: 'SUBDIV_ASHOK_VIHAR', node_type: 'SUB_DIVISION', name_en: 'Ashok Vihar Sub-Division', name_hi: 'अशोक विहार सब-डिवीजन', code: 'AV_SD', parent_id: 'DISTRICT_NWD', is_active: true },
@@ -31,6 +32,8 @@ export async function seed(knex) {
     { id: 'SUBDIV_SHALIMAR_BAGH', node_type: 'SUB_DIVISION', name_en: 'Shalimar Bagh Sub-Division', name_hi: 'शालीमार बाग सब-डिवीजन', code: 'SB_SD', parent_id: 'DISTRICT_NWD', is_active: true },
     { id: 'SUBDIV_JAHANGIR_PURI', node_type: 'SUB_DIVISION', name_en: 'Jahangir Puri Sub-Division', name_hi: 'जहांगीर पुरी सब-डिवीजन', code: 'JP_SD', parent_id: 'DISTRICT_NWD', is_active: true },
     { id: 'SUBDIV_MODEL_TOWN', node_type: 'SUB_DIVISION', name_en: 'Model Town Sub-Division', name_hi: 'मॉडल टाउन सब-डिवीजन', code: 'MT_SD', parent_id: 'DISTRICT_NWD', is_active: true },
+    { id: 'SUBDIV_NARELA', node_type: 'SUB_DIVISION', name_en: 'Narela Sub-Division', name_hi: 'नरेला सब-डिवीजन', code: 'NL_SD', parent_id: 'DISTRICT_OND', is_active: true },
+    { id: 'SUBDIV_BAWANA', node_type: 'SUB_DIVISION', name_en: 'Bawana Sub-Division', name_hi: 'बवाना सब-डिवीजन', code: 'BW_SD', parent_id: 'DISTRICT_OND', is_active: true },
 
     // Police Stations
     { id: 'PS_ASHOK_VIHAR', node_type: 'PS', name_en: 'PS Ashok Vihar', name_hi: 'थाना अशोक विहार', code: 'PS_AV', parent_id: 'SUBDIV_ASHOK_VIHAR', is_active: true },
@@ -49,6 +52,9 @@ export async function seed(knex) {
     { id: 'PS_MODEL_TOWN', node_type: 'PS', name_en: 'PS Model Town', name_hi: 'थाना मॉडल टाउन', code: 'PS_MT', parent_id: 'SUBDIV_MODEL_TOWN', is_active: true },
     { id: 'PS_MUKHARJEE_NAGAR', node_type: 'PS', name_en: 'PS Mukherjee Nagar', name_hi: 'थाना मुखर्जी नगर', code: 'PS_MN', parent_id: 'SUBDIV_MODEL_TOWN', is_active: true },
     { id: 'PS_CYBER_CRIME', node_type: 'PS', name_en: 'PS Cyber Crime', name_hi: 'थाना साइबर क्राइम', code: 'PS_CC', parent_id: 'SUBDIV_MODEL_TOWN', is_active: true },
+
+    { id: 'PS_NARELA', node_type: 'PS', name_en: 'PS Narela', name_hi: 'थाना नरेला', code: 'PS_NL', parent_id: 'SUBDIV_NARELA', is_active: true },
+    { id: 'PS_BAWANA', node_type: 'PS', name_en: 'PS Bawana', name_hi: 'थाना बवाना', code: 'PS_BW', parent_id: 'SUBDIV_BAWANA', is_active: true },
   ];
 
   await knex('hierarchy_nodes').insert(nodes);
@@ -61,8 +67,11 @@ export async function seed(knex) {
     { id: 'U_DO001', username: 'dcp_nwd', badge_no: 'DO001', name_en: 'Priya Sharma', name_hi: 'प्रिया शर्मा', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DISTRICT_NWD', is_active: true },
     { id: 'U_HQ001', username: 'hq_analyst', badge_no: 'HQ001', name_en: 'Anita Verma', name_hi: 'अनिता वर्मा', password_hash: passwordHash, role: 'HQ_ANALYST', is_active: true },
     { id: 'U_HQ002', username: 'hq_admin', badge_no: 'HQ002', name_en: 'Suresh Gupta', name_hi: 'सुरेश गुप्ता', password_hash: passwordHash, role: 'HQ_ADMIN', is_active: true },
-    { id: 'U_SA001', username: 'system_admin', badge_no: 'SA001', name_en: 'System Admin', name_hi: 'सिस्टम व्यवस्थापक', password_hash: passwordHash, role: 'SYSTEM_ADMIN', is_active: true }
+    { id: 'U_SA001', username: 'system_admin', badge_no: 'SA001', name_en: 'System Admin', name_hi: 'सिस्टम व्यवस्थापक', password_hash: passwordHash, role: 'SYSTEM_ADMIN', is_active: true },
+    { id: 'U_HC002', username: 'hc_narela', badge_no: 'HC002', name_en: 'Sunil Dutt', name_hi: 'सुनील दत्त', password_hash: passwordHash, role: 'HC', station_id: 'PS_NARELA', district_id: 'DISTRICT_OND', sub_div_id: 'SUBDIV_NARELA', is_active: true },
+    { id: 'U_DO002', username: 'dcp_ond', badge_no: 'DO002', name_en: 'Outer North DCP', name_hi: 'बाहरी उत्तर डीसीपी', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DISTRICT_OND', is_active: true }
   ];
+
 
   await knex('users').insert(users);
 

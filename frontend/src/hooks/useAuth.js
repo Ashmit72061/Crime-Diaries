@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 export const useAuth = () => {
-  const { user, isAuthenticated, login, logout, setLoading } = useAuthStore();
+  const { user, isAuthenticated, login, logout, setLoading, activeNodeId } = useAuthStore();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -34,9 +34,10 @@ export const useAuth = () => {
   // Safe side-effect sync
   useEffect(() => {
     if (userData) {
-      login(userData);
+      login(userData, activeNodeId);
     }
   }, [userData]);
+
 
   // Handle query errors
   useEffect(() => {
