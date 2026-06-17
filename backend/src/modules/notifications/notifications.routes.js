@@ -1,113 +1,52 @@
 import express from 'express';
 import * as notificationsController from './notifications.controller.js';
+import { registerClient, removeClient, getConnectedCount } from './sse.js';
+import { authMiddleware, sseAuthMiddleware } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 /**
- * @swagger
- * tags:
- *   name: Notifications
- *   description: System notifications generated dynamically from RabbitMQ Event Bus hooks.
- * 
- * /api/notifications:
- *   get:
- *     summary: Get user notifications
- *     description: Fetches a paginated list of notifications for the logged-in user.
- *     tags: [Notifications]
- *     responses:
- *       200:
- *         description: A list of notifications
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                       message:
- *                         type: string
- *                         example: Record ARREST submitted for review
- *                       is_read:
- *                         type: boolean
- *                       created_at:
- *                         type: string
- *                         format: date-time
- *                       metadata:
- *                         type: object
- *                         nullable: true
- * 
- * /api/notifications/count:
- *   get:
- *     summary: Get unread notification count
- *     description: Returns the total number of unread notifications for the user's badge icon.
- *     tags: [Notifications]
- *     responses:
- *       200:
- *         description: Notification count integer
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: integer
- *                   example: 4
- * 
- * /api/notifications/{id}/read:
- *   patch:
- *     summary: Mark a notification as read
- *     description: Marks a specific notification as read.
- *     tags: [Notifications]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Notification marked as read successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- * 
- * /api/notifications/read-all:
- *   patch:
- *     summary: Mark all notifications as read
- *     description: Bulk updates all unread notifications for the logged-in user to 'read'.
- *     tags: [Notifications]
- *     responses:
- *       200:
- *         description: All notifications marked as read
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
+ * GET /notifications/stream
+ * Server-Sent Events endpoint. The browser opens a persistent connection here.
+ * Authentication uses ?token= query param because EventSource cannot set headers.
+ * CSRF is not required because this is a GET request and SSE is read-only.
  */
+router.get('/stream', sseAuthMiddleware, (req, res) => {
+  const userId = req.user?.id || req.user?.userId;
 
-router.get('/', notificationsController.getNotifications);
-router.get('/count', notificationsController.getNotificationCount);
-router.patch('/:id/read', notificationsController.markAsRead);
-router.patch('/read-all', notificationsController.markAllAsRead);
+  // Set SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+  res.flushHeaders();
+
+  // Send initial connection confirmation event
+  res.write(`event: connected\ndata: ${JSON.stringify({ userId, ts: new Date().toISOString() })}\n\n`);
+
+  // Register this response in the SSE registry
+  registerClient(userId, res);
+
+  // Heartbeat every 25 seconds to keep connection alive through proxies/load balancers
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(':heartbeat\n\n');
+    } catch (_) {
+      clearInterval(heartbeat);
+    }
+  }, 25000);
+
+  // Cleanup on client disconnect
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    removeClient(userId, res);
+  });
+});
+
+// REST routes — all require standard Bearer auth
+router.get('/', authMiddleware, notificationsController.getNotifications);
+router.get('/count', authMiddleware, notificationsController.getNotificationCount);
+router.patch('/:id/read', authMiddleware, notificationsController.markAsRead);
+router.patch('/read-all', authMiddleware, notificationsController.markAllAsRead);
 
 export default router;

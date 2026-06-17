@@ -27,6 +27,8 @@ export const QUERY_KEYS = {
   ME: ['auth', 'me'],
   USERS: ['users'],
   USER: (id) => ['users', id],
+  NOTIFICATIONS: ['notifications'],
+  NOTIFICATION_COUNT: ['notifications', 'count'],
 };
 
 export const MAX_AVATAR_SIZE_MB = 5;

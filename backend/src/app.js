@@ -27,6 +27,7 @@ import compilationRouter from './modules/compilation/compilation.routes.js';
 import legacyRouter from './modules/legacy/legacy.router.js';
 import levelContractsRouter from './modules/level-contracts/levelContracts.router.js';
 import filtersRouter from './modules/filters/filters.router.js';
+import notificationsRouter from './modules/notifications/notifications.routes.js';
 
 const app = express();
 
@@ -110,6 +111,9 @@ app.use('/api/level-contracts', levelContractsRouter);
 
 app.use('/api/v1/filters', filtersRouter);
 app.use('/api/filters', filtersRouter);
+
+app.use('/api/v1/notifications', notificationsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
