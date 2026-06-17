@@ -1505,6 +1505,29 @@ api.interceptors.request.use(
       });
     }
 
+    if (url.includes('/hierarchy/nodes') && method === 'GET') {
+      const list = [];
+      const traverse = (node, parentId = null) => {
+        list.push({
+          id: node.id,
+          node_type: node.type,
+          name_en: node.name,
+          name_hi: node.name,
+          code: node.id,
+          parent_id: parentId,
+          is_active: true
+        });
+        if (node.children) {
+          node.children.forEach(child => traverse(child, node.id));
+        }
+      };
+      traverse(POLICE_HIERARCHY);
+      return Promise.reject({
+        isMock: true,
+        response: createMockResponse(list)
+      });
+    }
+
     // Users list (support both /users and /admin/users paths)
     if ((url.includes('/admin/users') || url.match(/\/users$/)) && method === 'GET') {
       const storedUsers = JSON.parse(localStorage.getItem('prism_mock_users') || 'null');

@@ -59,6 +59,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     if (role === 'DISTRICT' || role === 'DISTRICT_OFFICER') {
       items.push(
         { id: "district", label: t('nav.district', 'District View'), icon: Shield, to: "/district" },
+        { id: "station-wise", label: t('nav.stationWise', 'Station Wise View'), icon: Building, to: "/district/stations" },
         { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" },
         { id: "compile", label: t('nav.compile', 'Compile Records'), icon: FileSpreadsheet, to: "/compile" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
@@ -70,6 +71,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     if (role === 'HQ' || role === 'HQ_ANALYST' || role === 'HQ_ADMIN') {
       items.push(
         { id: "hq", label: t('nav.hq', 'Command Center'), icon: Building, to: "/hq" },
+        { id: "station-wise", label: t('nav.stationWise', 'Station Wise View'), icon: Building, to: "/hq/stations" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
         { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" }
       );
