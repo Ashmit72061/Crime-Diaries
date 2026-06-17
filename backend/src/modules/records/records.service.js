@@ -411,7 +411,14 @@ export const overrideCaseHead = async (id, user, newHead, reason, ipAddress) => 
     if (!record) throw new Error('Record not found');
 
     const oldData = parseJsonField(record.data);
-    const key = record.record_type === 'CASE' ? 'local_head' : 'crime_head';
+    let key = 'crime_head';
+    if ('case_head' in oldData) {
+      key = 'case_head';
+    } else if ('local_head' in oldData) {
+      key = 'local_head';
+    } else if (record.record_type === 'CASE' || record.record_type === 'CASES') {
+      key = 'local_head';
+    }
     const oldHead = oldData[key];
 
     const hydratedData = { ...oldData, [key]: newHead };

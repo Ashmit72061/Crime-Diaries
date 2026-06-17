@@ -61,7 +61,7 @@ export const useAuth = () => {
         return user;
       } catch (err) {
         if (!err.response) {
-          const debugMode = localStorage.getItem('prism_debug_api_mode') || 'mock';
+          const debugMode = localStorage.getItem('prism_debug_api_mode') || 'production';
           if (debugMode === 'production') {
             throw new Error('Cannot reach the server. Start the backend with npm run dev.');
           }

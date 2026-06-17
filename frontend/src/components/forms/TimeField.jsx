@@ -1,17 +1,18 @@
 import React from 'react';
-import { TimePicker } from 'antd';
-import dayjs from 'dayjs';
+
+const base = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[#0f52ba] transition-colors placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
+const err  = "border-red-400 focus:border-red-500 bg-red-50";
 
 export default function TimeField({ id, disabled, value, onChange, status, placeholder }) {
   return (
-    <TimePicker
+    <input
       id={id}
+      type="time"
       disabled={disabled}
-      value={value ? dayjs(value, 'HH:mm:ss') : null}
-      onChange={(time, timeString) => onChange(timeString)}
-      status={status}
-      placeholder={placeholder}
-      className="w-full"
+      value={value ? value.slice(0, 5) : ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder || ''}
+      className={`${base} ${status === 'error' ? err : ''}`}
     />
   );
 }

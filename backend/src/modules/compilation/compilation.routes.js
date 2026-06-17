@@ -1,5 +1,6 @@
 import express from 'express';
 import * as compilationController from './compilation.controller.js';
+import { authMiddleware } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -134,15 +135,15 @@ const router = express.Router();
  */
 
 // GET /api/compilations
-router.get('/', compilationController.getCompilations);
+router.get('/', authMiddleware, compilationController.getCompilations);
 
 // POST /api/compilations
-router.post('/', compilationController.createCompilation);
+router.post('/', authMiddleware, compilationController.createCompilation);
 
 // GET /api/compilations/:id
-router.get('/:id', compilationController.getCompilation);
+router.get('/:id', authMiddleware, compilationController.getCompilation);
 
 // POST /api/compilations/:id/submit
-router.post('/:id/submit', compilationController.submitCompilation);
+router.post('/:id/submit', authMiddleware, compilationController.submitCompilation);
 
 export default router;

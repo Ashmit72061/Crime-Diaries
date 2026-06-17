@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Database, Wifi, AlertTriangle } from 'lucide-react';
 
 export default function DebugBar() {
-  const [mode, setMode] = useState(() => localStorage.getItem('prism_debug_api_mode') || 'mock');
+  const [mode, setMode] = useState(() => localStorage.getItem('prism_debug_api_mode') || 'production');
 
   const handleModeChange = (newMode) => {
     const currentMode = localStorage.getItem('prism_debug_api_mode') || 'mock';

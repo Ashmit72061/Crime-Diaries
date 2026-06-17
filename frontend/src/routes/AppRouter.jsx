@@ -35,6 +35,7 @@ const ReportBuilder     = lazy(() => import('../pages/reports/ReportBuilder.jsx'
 const Users             = lazy(() => import('../pages/admin/Users.jsx'));
 const HierarchyManager  = lazy(() => import('../pages/admin/HierarchyManager.jsx'));
 const FieldManager      = lazy(() => import('../pages/admin/FieldManager.jsx'));
+const AuditPage         = lazy(() => import('../pages/admin/AuditPage.jsx'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -108,6 +109,7 @@ export const AppRouter = () => (
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/hierarchy" element={<HierarchyManager />} />
             <Route path="/admin/fields" element={<FieldManager />} />
+            <Route path="/admin/audit" element={<AuditPage />} />
           </Route>
         </Route>
 

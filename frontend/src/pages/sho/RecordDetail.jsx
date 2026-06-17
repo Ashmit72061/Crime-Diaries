@@ -74,14 +74,9 @@ export default function RecordDetail() {
   // DCP Override Mutation
   const overrideMutation = useMutation({
     mutationFn: async (payload) => {
-      // For mock mode we simulate updating the field registry and record
-      // In NestJS, this overrides Case/Crime Head
-      const res = await api.put(`/records/${id}`, {
-        data: {
-          ...record.data,
-          local_head: payload.new_value,
-          crime_head: payload.new_value
-        }
+      const res = await api.patch(`/records/${id}/override`, {
+        caseHeadId: payload.new_value,
+        reason: payload.reason
       });
       return res.data.data;
     },

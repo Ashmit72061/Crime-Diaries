@@ -105,7 +105,7 @@ export default function LoginPage() {
 
   // Sync email & password when selectedNodeId changes (only in mock mode)
   useEffect(() => {
-    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'mock';
+    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'production';
     if (debugMode !== 'production') {
       const node = findNodeById(selectedNodeId);
       if (node) {
@@ -161,7 +161,9 @@ export default function LoginPage() {
       {/* Left Panel: Branding */}
       <div className="login-branding-panel">
         <div className="branding-header">
-          <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
+          <div className="crest-frame">
+            <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
+          </div>
           <div className="branding-org">
             <span className="branding-org-govt">Govt. of NCT of Delhi</span>
             <span className="branding-org-name">Delhi Police</span>
@@ -205,25 +207,27 @@ export default function LoginPage() {
       {/* Right Panel: Login Form */}
       <div className="login-form-panel flex-col gap-4">
         <motion.div
-          initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+          initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ type: "spring", duration: 0.45, bounce: 0 }}
-          className="login-card-glass"
+          transition={{ type: "spring", stiffness: 85, damping: 14 }}
+          className="login-card-glass premium-glass-card"
         >
-          {/* Mobile Crest Header */}
-          <div className="login-header-logo-mobile">
-            <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="w-16 h-16 mb-2" />
-            <h2 className="text-xl font-bold text-white">PRISM</h2>
-            <span className="text-xs text-slate-400">Police Reporting, Intelligence & Statistics Management</span>
-          </div>
-
-          <div className="text-center">
+          {/* Centered Crest Branding in Card */}
+          <div className="flex flex-col items-center mb-2">
+            <div className="crest-frame mb-3">
+              <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="w-16 h-16 object-contain" />
+            </div>
             <h1 className="login-card-title">PRISM Authorization Console</h1>
             <p className="login-card-subtitle mt-1">Select your command tier to authorize terminal</p>
           </div>
 
           {/* Tier Tabs Selector */}
-          <div className="login-tier-tabs">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="login-tier-tabs"
+          >
             {tierConfig.map((tier) => {
               const Icon = tier.icon;
               return (
@@ -238,10 +242,15 @@ export default function LoginPage() {
                 </button>
               );
             })}
-          </div>
+          </motion.div>
 
           {/* Dynamic Hierarchy Dropdowns */}
-          <div className="flex flex-col gap-3">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="flex flex-col gap-3"
+          >
             {/* Zone Selector */}
             {activeTier === "ZONE" && (
               <div className="login-form-group">
@@ -325,11 +334,16 @@ export default function LoginPage() {
                 </div>
               </>
             )}
-          </div>
+          </motion.div>
 
           {/* Officer Profile Live Preview */}
           {previewNode && (
-            <div className="officer-preview-card">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 100, damping: 15 }}
+              className="officer-preview-card"
+            >
               <div className="officer-preview-badge">
                 <UserCheck size={16} aria-hidden="true" />
               </div>
@@ -338,11 +352,17 @@ export default function LoginPage() {
                 <span className="officer-preview-name">{previewNode.officerName}</span>
                 <span className="officer-preview-sub">ID: {previewNode.pis} · {previewNode.name}</span>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Email / Password Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+          <motion.form 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            onSubmit={handleSubmit(onSubmit)} 
+            className="flex flex-col gap-3"
+          >
             <div className="login-form-group">
               <label htmlFor="login-email">Badge No / Official Email</label>
               <input
@@ -397,10 +417,15 @@ export default function LoginPage() {
               <Lock size={14} aria-hidden="true" />
               <span>{loginMutation.isPending ? 'Authorizing Session…' : 'Establish Secure Connection'}</span>
             </button>
-          </form>
+          </motion.form>
 
           {/* Quick-Access Demo Profiles */}
-          <div className="quick-profiles-section">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="quick-profiles-section"
+          >
             <span className="quick-profiles-label">Quick Demo Access</span>
             <div className="quick-profile-grid">
               <button
@@ -433,7 +458,7 @@ export default function LoginPage() {
                 <span className="quick-profile-name">HC Ramesh Kumar</span>
               </button>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Portal Footer */}

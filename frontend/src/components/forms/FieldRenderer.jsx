@@ -1,242 +1,93 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Input, Upload, Button } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
 
-// Import individual field components
-import TextField from './TextField.jsx';
+import TextField     from './TextField.jsx';
 import TextAreaField from './TextAreaField.jsx';
-import NumberField from './NumberField.jsx';
-import DateField from './DateField.jsx';
-import TimeField from './TimeField.jsx';
-import SelectField from './SelectField.jsx';
+import NumberField   from './NumberField.jsx';
+import DateField     from './DateField.jsx';
+import TimeField     from './TimeField.jsx';
+import SelectField   from './SelectField.jsx';
 import CheckboxField from './CheckboxField.jsx';
-import RadioField from './RadioField.jsx';
+import RadioField    from './RadioField.jsx';
 
-/**
- * FieldRenderer - Renders a single dynamic form field using Ant Design components.
- *
- * @param {object}   field       - Field definition from schema
- * @param {*}        value       - Current value from form state
- * @param {function} onChange    - (key, value) => void
- * @param {boolean}  readOnly    - Disable all inputs
- * @param {boolean}  hasError    - Show error styling
- * @param {string}   lang        - 'en' or 'hi'
- */
+const inputBase = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[#0f52ba] transition-colors placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
+
 export default function FieldRenderer({ field, value, onChange, readOnly, hasError, lang }) {
-  const { t } = useTranslation();
-  const key   = field.field_key;
-  const type  = (field.field_type || 'TEXT').toUpperCase();
+  const key     = field.field_key;
+  const type    = (field.field_type || 'TEXT').toUpperCase();
+  const status  = hasError ? 'error' : '';
+  const placeholder = lang === 'hi' ? field.placeholder_hi : field.placeholder_en;
 
-  // Parse options safely (can be JSON string or array)
   let options = field.options;
   if (typeof options === 'string') {
     try { options = JSON.parse(options); } catch { options = []; }
   }
   options = options || [];
 
-  const getLabel = (opt) => lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en;
+  const handleChange = (val) => onChange(key, val);
 
-  const handleChange = (val) => {
-    onChange(key, val);
-  };
-
-  const status = hasError ? 'error' : '';
-  const placeholder = lang === 'hi' ? field.placeholder_hi : field.placeholder_en;
-
-  /* ─── TEXT / DEFAULT ──────────────────────────────────────────────────────── */
   if (type === 'TEXT') {
-    return (
-      <TextField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-      />
-    );
+    return <TextField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
   }
 
-  /* ─── NUMBER ─────────────────────────────────────────────────────────────── */
   if (type === 'NUMBER') {
-    return (
-      <NumberField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-      />
-    );
+    return <NumberField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
   }
 
-  /* ─── DATE ───────────────────────────────────────────────────────────────── */
   if (type === 'DATE') {
-    return (
-      <DateField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-        showTime={false}
-      />
-    );
+    return <DateField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} showTime={false} />;
   }
 
-  /* ─── TIME ───────────────────────────────────────────────────────────────── */
-  if (type === 'TIME') {
-    return (
-      <TimeField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-      />
-    );
-  }
-
-  /* ─── DATETIME ───────────────────────────────────────────────────────────── */
   if (type === 'DATETIME') {
-    return (
-      <DateField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-        showTime={true}
-      />
-    );
+    return <DateField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} showTime={true} />;
   }
 
-  /* ─── TEXTAREA ────────────────────────────────────────────────────────────── */
+  if (type === 'TIME') {
+    return <TimeField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
+  }
+
   if (type === 'TEXTAREA') {
-    return (
-      <TextAreaField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-      />
-    );
+    return <TextAreaField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
   }
 
-  /* ─── PHONE ──────────────────────────────────────────────────────────────── */
-  if (type === 'PHONE') {
-    return (
-      <Input
-        id={`field-${key}`}
-        type="tel"
-        maxLength={15}
-        disabled={readOnly}
-        value={value || ''}
-        onChange={(e) => handleChange(e.target.value)}
-        status={status}
-        placeholder={placeholder || "e.g. 98765 43210"}
-      />
-    );
-  }
-
-  /* ─── SELECT / DROPDOWN ──────────────────────────────────────────────────── */
   if (type === 'SELECT' || type === 'DROPDOWN') {
-    return (
-      <SelectField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        status={status}
-        placeholder={placeholder}
-        options={options}
-        lang={lang}
-      />
-    );
+    return <SelectField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} options={options} lang={lang} />;
   }
 
-  /* ─── RADIO ──────────────────────────────────────────────────────────────── */
   if (type === 'RADIO') {
-    return (
-      <RadioField
-        id={`field-${key}`}
-        disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        options={options}
-        lang={lang}
-      />
-    );
+    return <RadioField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} options={options} lang={lang} />;
   }
 
-  /* ─── BOOLEAN / CHECKBOX ─────────────────────────────────────────────────── */
   if (type === 'BOOLEAN' || type === 'CHECKBOX') {
     const chkLabel = lang === 'hi' ? 'हाँ / सत्य' : 'Yes / True';
+    return <CheckboxField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} label={chkLabel} />;
+  }
+
+  if (type === 'PHONE' || type === 'EMAIL') {
     return (
-      <CheckboxField
+      <input
         id={`field-${key}`}
+        type={type === 'PHONE' ? 'tel' : 'email'}
         disabled={readOnly}
-        value={value}
-        onChange={handleChange}
-        label={chkLabel}
+        value={value ?? ''}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder={placeholder || ''}
+        className={`${inputBase} ${status === 'error' ? 'border-red-400 bg-red-50' : ''}`}
       />
     );
   }
 
-  /* ─── FILE UPLOAD ────────────────────────────────────────────────────────── */
   if (type === 'FILE') {
     return (
-      <Upload
+      <input
         id={`field-${key}`}
+        type="file"
         disabled={readOnly}
-        beforeUpload={() => false}
-        onChange={(info) => {
-          if (info.fileList.length > 0) {
-            handleChange(info.file.name);
-          } else {
-            handleChange('');
-          }
-        }}
-        maxCount={1}
-      >
-        <Button disabled={readOnly} icon={<UploadOutlined />} className="bg-white border-slate-300 text-slate-700 shadow-sm hover:text-[#0f52ba] hover:border-[#0f52ba]">
-          {lang === 'hi' ? 'फ़ाइल अपलोड करें' : 'Choose File'}
-        </Button>
-      </Upload>
-    );
-  }
-
-  /* ─── EMAIL ──────────────────────────────────────────────────────────────── */
-  if (type === 'EMAIL') {
-    return (
-      <Input
-        id={`field-${key}`}
-        type="email"
-        disabled={readOnly}
-        value={value || ''}
-        onChange={(e) => handleChange(e.target.value)}
-        status={status}
-        placeholder={placeholder}
+        onChange={(e) => handleChange(e.target.files?.[0]?.name || '')}
+        className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#0f52ba]/10 file:text-[#0f52ba] hover:file:bg-[#0f52ba]/20 file:cursor-pointer cursor-pointer disabled:opacity-50"
       />
     );
   }
 
-  /* ─── FALLBACK: render as text ───────────────────────────────────────────── */
-  return (
-    <TextField
-      id={`field-${key}`}
-      disabled={readOnly}
-      value={value}
-      onChange={handleChange}
-      status={status}
-      placeholder={placeholder}
-    />
-  );
+  // Fallback — render as plain text input
+  return <TextField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
 }
