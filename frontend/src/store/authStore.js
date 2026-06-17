@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
-import { findNodeById } from '../utils/hierarchyData.js';
+import { findNodeById, findNodeByDbUser } from '../utils/hierarchyData.js';
 
 const useAuthStore = create(
   devtools(
@@ -15,9 +15,23 @@ const useAuthStore = create(
 
         setLoading: (isLoading) => set({ isLoading }),
 
-        login: (user, selectedNodeId = "PS_NDD_PARLIAMENT_STREET") => {
+        login: (user, selectedNodeId) => {
           // Merge user with chosen command profile
-          const initialNode = findNodeById(selectedNodeId) || findNodeById("PS_NDD_PARLIAMENT_STREET");
+          let initialNode = null;
+          if (selectedNodeId && selectedNodeId !== "PS_NDD_PARLIAMENT_STREET") {
+            initialNode = findNodeById(selectedNodeId);
+          }
+          if (!initialNode && user) {
+            initialNode = findNodeByDbUser(user);
+          }
+          if (!initialNode && selectedNodeId) {
+            initialNode = findNodeById(selectedNodeId);
+          }
+          if (!initialNode) {
+            initialNode = findNodeById("PS_NDD_PARLIAMENT_STREET");
+          }
+
+
           let mergedRole = user?.role || initialNode.type;
           const specificRoles = ['HC', 'SHO', 'DISTRICT_OFFICER', 'HQ_ANALYST', 'HQ_ADMIN', 'SYSTEM_ADMIN'];
           if (user?.role && specificRoles.includes(user.role)) {
@@ -26,15 +40,16 @@ const useAuthStore = create(
 
           const mergedUser = {
             ...user,
-            username: initialNode.officerName,
-            rank: initialNode.rank,
-            pis: initialNode.pis,
+            username: user.name_en || initialNode.officerName,
+            rank: user.role === 'HC' ? 'Head Constable' : (user.role === 'SHO' ? 'Station House Officer' : (user.role === 'DISTRICT_OFFICER' ? 'Deputy Commissioner of Police' : (user.role === 'SYSTEM_ADMIN' ? 'System Administrator' : initialNode.rank))),
+            pis: user.badge_no || initialNode.pis,
             role: mergedRole,
             stationName: initialNode.stationName || "",
             districtKey: initialNode.districtKey || ""
           };
           set({ user: mergedUser, isAuthenticated: true, activeNodeId: initialNode.id });
         },
+
 
         logout: () => {
           localStorage.removeItem('access_token');

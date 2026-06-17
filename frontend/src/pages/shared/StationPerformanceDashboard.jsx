@@ -280,7 +280,9 @@ export default function StationPerformanceDashboard() {
         filters={filters}
         setFilters={setFilters}
         isHq={isHq}
+        allNodes={nodes}
       />
+
 
       {/* Main Comparative Grid */}
       <StationPerformanceTable

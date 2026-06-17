@@ -6,6 +6,7 @@ export default function StationFilters({
   filters = {},
   setFilters,
   isHq = false,
+  allNodes = [],
 }) {
   const handleChange = (key, value) => {
     setFilters((prev) => {
@@ -21,40 +22,44 @@ export default function StationFilters({
   // Filter stations based on selected district
   const visibleStations = React.useMemo(() => {
     if (!filters.districtId) return stations;
-    // Find subdivisions of the district
-    // In our hierarchy, a station node's parent is a subdivision.
-    // The subdivision's parent is the district.
-    // Since our stations list from API already lists all PS nodes,
-    // let's check: in mock data and tree hierarchy, how are districts and stations linked?
-    // We can filter by matching s.parent_id's parent, or in static data node.districtKey matches district name.
-    // Let's filter stations list by district parent_id or name.
-    // Wait, let's check if node has districtKey. If s.districtKey matches district name, or we can use parent_id.
-    // Let's match by districtKey or parent relationships if nodes are populated.
-    // To be safe, if node parent_id matches the districtId, or if parent matches subdivision:
-    // We can just filter by parent matching district subdivision nodes, or matching district code.
+
+    const isStationUnderDistrict = (stationNode, districtId) => {
+      let current = stationNode;
+      const visited = new Set();
+      while (current && current.parent_id && !visited.has(current.id)) {
+        visited.add(current.id);
+        if (current.parent_id === districtId) return true;
+        
+        const cleanParent = current.parent_id.replace(/^DISTRICT_/, "DIST_");
+        const cleanDistrict = districtId.replace(/^DISTRICT_/, "DIST_");
+        if (cleanParent === cleanDistrict) return true;
+
+        let parent = allNodes.find((n) => n.id === current.parent_id);
+        if (!parent) {
+          parent = districts.find((d) => d.id === current.parent_id);
+        }
+        current = parent;
+      }
+      return false;
+    };
+
     return stations.filter((s) => {
-      if (!filters.districtId) return true;
-      // In the API nodes list:
-      // District has id like 'DISTRICT_NWD' or 'DIST_NDD'
-      // Station has parent_id like 'SUBDIV_JAHANGIR_PURI' which has parent_id 'DISTRICT_NWD'
-      // If we don't have the parent relationship mapped, we can look at s.parent_id or s.districtKey
-      // Let's build a safe filter:
+      const cleanDistrictId = filters.districtId.replace("DISTRICT_", "DIST_");
+      const shortCode = filters.districtId.replace(/^(DISTRICT_|DIST_)/, "");
+      
+      if (s.id.includes(cleanDistrictId) || s.id.includes(`_${shortCode}_`)) return true;
+      if (s.district_id === filters.districtId) return true;
+      
       const distNode = districts.find(d => d.id === filters.districtId);
-      if (!distNode) return true;
-      
-      // Try comparing parent_id or district key
-      const distName = distNode.name_en || "";
-      const sDistKey = s.districtKey || "";
-      const sParentId = s.parent_id || "";
-      
-      // If parent_id is subdivision, check if subdivision's parent matches districtId
-      // Alternatively, check if s.district_id matches districtId
-      return s.district_id === filters.districtId || 
-             sDistKey === distName || 
-             sParentId.startsWith(filters.districtId) || 
-             s.id.includes(filters.districtId.replace("DIST_", ""));
+      if (distNode) {
+        const distName = distNode.name_en || distNode.name || "";
+        if (s.districtKey && distName.includes(s.districtKey)) return true;
+      }
+
+      return isStationUnderDistrict(s, filters.districtId);
     });
-  }, [filters.districtId, stations, districts]);
+  }, [filters.districtId, stations, districts, allNodes]);
+
 
   return (
     <div className="card p-4 mb-6" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-card)' }}>
