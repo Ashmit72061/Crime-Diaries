@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  FileContract, Plus, Edit2, Save, X, Loader2, AlertTriangle,
+  FileSignature, Plus, Edit2, Save, X, Loader2, AlertTriangle,
   ChevronDown, ChevronUp, CheckCircle2, Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -207,7 +207,7 @@ export default function LevelContractsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-            <FileContract className="text-[#cca43b]" />
+            <FileSignature className="text-[#cca43b]" />
             <span>Level Contracts</span>
           </h1>
           <p className="text-zinc-400 text-xs mt-1">
@@ -270,7 +270,7 @@ export default function LevelContractsPage() {
         </div>
       ) : contracts.length === 0 ? (
         <div className="border border-dashed border-zinc-800 rounded-xl p-16 text-center text-zinc-600">
-          <FileContract size={48} className="mx-auto opacity-20 mb-3" />
+          <FileSignature size={48} className="mx-auto opacity-20 mb-3" />
           <p className="text-sm font-semibold text-zinc-500">No level contracts defined yet</p>
           <p className="text-xs mt-1">Click <strong className="text-amber-400">New Contract</strong> to define your first SLA.</p>
         </div>

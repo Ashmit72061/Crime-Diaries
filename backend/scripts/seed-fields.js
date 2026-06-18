@@ -193,7 +193,9 @@ function generateFields(recordType, headers) {
       validation_rules: JSON.stringify(isRequired ? { required: true } : {}),
       section: section,
       options: options ? JSON.stringify(options) : null,
-      sort_order: (index + 1) * 10
+      sort_order: (index + 1) * 10,
+      visible_to_levels: JSON.stringify(['PS', 'DISTRICT', 'HQ']),
+      editable_by_levels: JSON.stringify(['PS'])
     };
   }).filter(Boolean);
 }

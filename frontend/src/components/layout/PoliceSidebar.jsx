@@ -19,7 +19,7 @@ import {
   Settings,
   Building,
   ShieldAlert,
-  FileContract,
+  FileSignature,
   Archive,
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
@@ -87,7 +87,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "admin-hierarchy",       label: t('nav.adminHierarchy',     'Hierarchy Config'),  icon: Network,       to: "/admin/hierarchy" },
         { id: "admin-fields",          label: t('nav.adminFields',        'Field Registry'),    icon: Settings,      to: "/admin/fields" },
         { id: "admin-audit",           label: t('nav.adminAudit',         'Audit Ledger'),      icon: ShieldAlert,   to: "/admin/audit" },
-        { id: "admin-level-contracts", label: t('nav.levelContracts',     'Level Contracts'),   icon: FileContract,  to: "/admin/level-contracts" },
+        { id: "admin-level-contracts", label: t('nav.levelContracts',     'Level Contracts'),   icon: FileSignature, to: "/admin/level-contracts" },
         { id: "admin-legacy",          label: t('nav.legacyData',         'Legacy Data'),       icon: Archive,       to: "/admin/legacy" }
       );
     }
