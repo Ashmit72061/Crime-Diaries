@@ -66,6 +66,14 @@ async function removeRefreshToken(userId) {
   memoryTokenCache.delete(userId);
 }
 
+export async function resolveDistrictId(user) {
+  if (user.district_id) return user.district_id;
+  if (!user.station_id) return null;
+  // PS node's parent is the district node
+  const psNode = await db('hierarchy_nodes').where({ id: user.station_id }).first();
+  return psNode?.parent_id || null;
+}
+
 export const loginUser = async (badgeNo, password) => {
   let normalizedBadgeNo = String(badgeNo).trim();
   const lowerBadge = normalizedBadgeNo.toLowerCase();
@@ -125,6 +133,7 @@ export const loginUser = async (badgeNo, password) => {
   };
 
   const level = getLevelFromRole(user.role);
+  const districtId = await resolveDistrictId(user);
 
   // Generate tokens with BOTH camelCase and snake_case properties
   const payload = {
@@ -138,8 +147,8 @@ export const loginUser = async (badgeNo, password) => {
     level: level,
     ps_id: user.station_id || null,
     psId: user.station_id || null,
-    district_id: user.district_id || null,
-    districtId: user.district_id || null,
+    district_id: districtId,
+    districtId: districtId,
     sub_div_id: user.sub_div_id || null
   };
 
@@ -171,8 +180,8 @@ export const loginUser = async (badgeNo, password) => {
       level: level,
       ps_id: user.station_id || null,
       psId: user.station_id || null,
-      district_id: user.district_id || null,
-      districtId: user.district_id || null,
+      district_id: districtId,
+      districtId: districtId,
       sub_div_id: user.sub_div_id || null
     }
   };
@@ -199,6 +208,7 @@ export const refreshUserToken = async (token) => {
     };
 
     const level = getLevelFromRole(user.role);
+    const districtId = await resolveDistrictId(user);
 
     const payload = {
       id: user.id,
@@ -211,8 +221,8 @@ export const refreshUserToken = async (token) => {
       level: level,
       ps_id: user.station_id || null,
       psId: user.station_id || null,
-      district_id: user.district_id || null,
-      districtId: user.district_id || null,
+      district_id: districtId,
+      districtId: districtId,
       sub_div_id: user.sub_div_id || null
     };
 

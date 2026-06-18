@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Plus, X, ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Globe, Pencil } from 'lucide-react';
+import { Layers, Plus, X, ToggleLeft, ToggleRight, Pencil, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
+import useAuthStore from '../../store/authStore.js';
 
 const ensureArray = (val) => (Array.isArray(val) ? val : []);
 
@@ -17,19 +18,6 @@ const TYPE_COLORS = {
   UIDB:     'text-zinc-400 border-zinc-600/40 bg-zinc-800/30',
 };
 
-function sectionsFromFields(fieldList, selectedTypes) {
-  const seen = new Set();
-  const upperTypes = selectedTypes.map((t) => t.toUpperCase());
-  const relevant = upperTypes.length > 0
-    ? fieldList.filter((f) =>
-        ensureArray(f.applicable_record_types).some((rt) => upperTypes.includes(rt.toUpperCase()))
-      )
-    : fieldList;
-  return relevant
-    .map((f) => ({ key: f.section, label: f.section_label_en || f.section }))
-    .filter((s) => s.key && !seen.has(s.key) && seen.add(s.key));
-}
-
 const emptyForm = () => ({
   field_key: '', label_en: '', label_hi: '', field_type: 'TEXT',
   section: '', section_label_en: '', section_label_hi: '',
@@ -39,54 +27,72 @@ const emptyForm = () => ({
   options: [],
 });
 
-export default function FieldManager() {
+// Extracts unique {key, label} section pairs from a flat field list,
+// filtered to those matching the selected record types.
+function sectionsFromFields(fieldList, selectedTypes) {
+  const seen = new Set();
+  const upperTypes = selectedTypes.map((t) => t.toUpperCase());
+
+  const relevant = upperTypes.length > 0
+    ? fieldList.filter((f) =>
+        ensureArray(f.applicable_record_types).some((rt) => upperTypes.includes(rt.toUpperCase()))
+      )
+    : fieldList;
+
+  return relevant
+    .map((f) => ({ key: f.section, label: f.section_label_en || f.section }))
+    .filter((s) => s.key && !seen.has(s.key) && seen.add(s.key));
+}
+
+export default function CustomFieldsPage() {
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
-  const [activeTab,        setActiveTab]        = useState('global');
-  const [filterType,       setFilterType]        = useState('ALL');
-  const [expandedSections, setExpandedSections]  = useState({});
-  const [showModal,        setShowModal]         = useState(false);
-  const [form,             setForm]              = useState(emptyForm());
-  const [editTarget,       setEditTarget]        = useState(null);
+  const [showModal,  setShowModal]  = useState(false);
+  const [form,       setForm]       = useState(emptyForm());
+  const [editTarget, setEditTarget] = useState(null);
+  const [filterType, setFilterType] = useState('ALL');
 
-  // ── Data ──────────────────────────────────────────────────────────────────
-  const { data: allFields = [], isLoading } = useQuery({
-    queryKey: ['admin', 'fields', 'all'],
+  // District-scoped fields — shown in the management table
+  const { data: fields = [], isLoading } = useQuery({
+    queryKey: ['district', 'fields', user?.district_id],
     queryFn: async () => {
       const res = await api.get('/fields');
       return res.data?.data?.fields || [];
     },
     staleTime: 60_000,
+    enabled: !!user,
   });
 
-  const globalFields   = useMemo(() => allFields.filter((f) => f.scope_level === 'global' || !f.scope_level), [allFields]);
-  const districtFields = useMemo(() => allFields.filter((f) => f.scope_level === 'district'), [allFields]);
-  const displayFields  = activeTab === 'global' ? globalFields : districtFields;
+  // Global fields — used only for section discovery in the modal
+  const { data: globalFields = [] } = useQuery({
+    queryKey: ['district', 'fields', 'global-sections'],
+    queryFn: async () => {
+      const res = await api.get('/fields?scope=global');
+      return res.data?.data?.fields || [];
+    },
+    staleTime: 5 * 60_000,
+    enabled: !!user,
+  });
 
-  const filteredFields = filterType === 'ALL'
-    ? displayFields
-    : displayFields.filter((f) => ensureArray(f.applicable_record_types).map((t) => t.toUpperCase()).includes(filterType));
+  const filtered = filterType === 'ALL'
+    ? fields
+    : fields.filter((f) => ensureArray(f.applicable_record_types).map((t) => t.toUpperCase()).includes(filterType));
 
-  const grouped = useMemo(() => filteredFields.reduce((acc, f) => {
-    const key = f.section || 'general_info';
-    if (!acc[key]) acc[key] = { fields: [], title_en: f.section_label_en || key };
-    acc[key].fields.push(f);
-    return acc;
-  }, {}), [filteredFields]);
-
-  // Sections filtered by currently selected record types in the modal form
-  const knownSections = useMemo(
-    () => sectionsFromFields(globalFields, form.applicable_record_types),
-    [globalFields, form.applicable_record_types]
-  );
+  // Sections come from the global registry (primary) + existing district fields (secondary),
+  // filtered to the record types currently selected in the form.
+  const knownSections = useMemo(() => {
+    const combined = [...globalFields, ...fields];
+    return sectionsFromFields(combined, form.applicable_record_types);
+  }, [globalFields, fields, form.applicable_record_types]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (payload) => api.post('/fields', payload),
     onSuccess: () => {
-      toast.success('Field published to registry');
+      toast.success('Custom field published for your district');
       closeModal();
-      queryClient.invalidateQueries({ queryKey: ['admin', 'fields', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['district', 'fields'] });
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to create field'),
   });
@@ -96,14 +102,14 @@ export default function FieldManager() {
     onSuccess: () => {
       toast.success('Field updated');
       closeModal();
-      queryClient.invalidateQueries({ queryKey: ['admin', 'fields', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['district', 'fields'] });
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to update field'),
   });
 
   const toggleMutation = useMutation({
     mutationFn: (id) => api.patch(`/fields/${id}/toggle`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'fields', 'all'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['district', 'fields'] }),
     onError: (err) => toast.error(err.response?.data?.message || 'Toggle failed'),
   });
 
@@ -134,15 +140,15 @@ export default function FieldManager() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.applicable_record_types.length) { toast.error('Select at least one record type'); return; }
-    if (form.isNewSection && !form.section)   { toast.error('Section key is required for new section'); return; }
+    if (form.isNewSection && !form.section)   { toast.error('Section key is required'); return; }
 
     const payload = {
       label_en:                form.label_en,
       label_hi:                form.label_hi,
       field_type:              form.field_type,
-      section:                 form.section || 'general_info',
-      section_label_en:        form.isNewSection ? form.section_label_en : undefined,
-      section_label_hi:        form.isNewSection ? form.section_label_hi : undefined,
+      section:                 form.section || 'district_custom',
+      section_label_en:        form.section_label_en || undefined,
+      section_label_hi:        form.section_label_hi || undefined,
       applicable_record_types: form.applicable_record_types,
       is_required:             form.is_required,
       sort_order:              form.sort_order,
@@ -161,7 +167,7 @@ export default function FieldManager() {
       const next = f.applicable_record_types.includes(rt)
         ? f.applicable_record_types.filter((t) => t !== rt)
         : [...f.applicable_record_types, rt];
-      // Reset section when record types change so the filtered list is fresh
+      // Reset section when record types change so filtered list is fresh
       return { ...f, applicable_record_types: next, section: '', isNewSection: false };
     });
   };
@@ -171,9 +177,6 @@ export default function FieldManager() {
   const updateOption = (i, key, val) =>
     setForm((f) => ({ ...f, options: f.options.map((o, idx) => idx === i ? { ...o, [key]: val } : o) }));
 
-  const toggleSection    = (key) => setExpandedSections((p) => ({ ...p, [key]: !p[key] }));
-  const isSectionExpanded = (key) => expandedSections[key] !== false;
-
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -182,42 +185,35 @@ export default function FieldManager() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-            <Settings className="text-[#cca43b]" />
-            Field Registry Manager
+            <Layers className="text-[#cca43b]" />
+            District Custom Fields
           </h1>
-          <p className="text-zinc-400 text-xs mt-1">
-            Define form fields for all police stations or specific districts — no code changes required.
+          <p className="text-zinc-400 text-xs mt-1 flex items-center gap-1">
+            <MapPin size={11} className="text-[#cca43b]" />
+            Fields defined here are visible only within your district jurisdiction.
           </p>
         </div>
-        {activeTab === 'global' && (
-          <button onClick={openCreate}
-            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
-            <Plus size={14} /> Add Global Field
-          </button>
-        )}
+        <button onClick={openCreate}
+          className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
+          <Plus size={14} /> Add District Field
+        </button>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-zinc-800 flex gap-1">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { key: 'global',   label: 'Global Field Registry', icon: <Globe size={12} /> },
-          { key: 'district', label: 'District Extensions' },
-        ].map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-3 text-xs font-bold tracking-wide border-b-2 transition-all -mb-[2px] flex items-center gap-1.5 cursor-pointer ${
-              activeTab === tab.key
-                ? 'border-[#cca43b] text-[#cca43b]'
-                : 'border-transparent text-zinc-500 hover:text-zinc-300'
-            }`}>
-            {tab.icon}{tab.label}
-            <span className="ml-1 text-[9px] bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded font-mono">
-              {tab.key === 'global' ? globalFields.length : districtFields.length}
-            </span>
-          </button>
+          { label: 'Total Fields', value: fields.length },
+          { label: 'Active',       value: fields.filter((f) => f.is_active).length },
+          { label: 'Inactive',     value: fields.filter((f) => !f.is_active).length },
+        ].map((s) => (
+          <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-zinc-100">{s.value}</div>
+            <div className="text-zinc-500 text-xs mt-0.5">{s.label}</div>
+          </div>
         ))}
       </div>
 
-      {/* Record type filter */}
+      {/* Filter */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-zinc-500 text-xs font-semibold">Filter:</span>
         {['ALL', ...RECORD_TYPES].map((type) => (
@@ -232,108 +228,92 @@ export default function FieldManager() {
         ))}
       </div>
 
-      {/* Field list */}
+      {/* Table */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center p-12 text-zinc-500">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4" />
-          <p className="text-sm">Loading field registry…</p>
+          <p className="text-sm">Loading district fields…</p>
         </div>
-      ) : Object.keys(grouped).length === 0 ? (
-        <div className="text-center text-zinc-500 py-12 border border-dashed border-zinc-800 rounded-xl">
-          <Settings size={40} className="mx-auto mb-3 text-zinc-700" />
-          <p className="text-sm">No fields found</p>
+      ) : filtered.length === 0 ? (
+        <div className="border border-dashed border-zinc-800 rounded-xl p-16 text-center text-zinc-500">
+          <Layers size={48} className="mx-auto text-zinc-700 mb-3" />
+          <p className="text-sm font-semibold">No district fields defined</p>
+          <p className="text-xs text-zinc-600 mt-1">Click "Add District Field" to extend forms for your jurisdiction.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {Object.entries(grouped).map(([sectionKey, { fields, title_en }]) => (
-            <div key={sectionKey} className="border border-zinc-800/80 bg-zinc-900/40 rounded-xl overflow-hidden shadow-sm">
-              <button onClick={() => toggleSection(sectionKey)}
-                className="w-full flex items-center justify-between px-5 py-3 bg-zinc-950/60 hover:bg-zinc-900/60 transition-colors cursor-pointer">
-                <span className="text-xs font-bold text-zinc-200 tracking-wide uppercase">{title_en || sectionKey}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded font-mono">
-                    {fields.length} fields
-                  </span>
-                  {isSectionExpanded(sectionKey)
-                    ? <ChevronDown size={14} className="text-zinc-500" />
-                    : <ChevronRight size={14} className="text-zinc-500" />}
-                </div>
-              </button>
-
-              {isSectionExpanded(sectionKey) && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="text-zinc-500 uppercase font-semibold border-b border-zinc-800 tracking-wider">
-                        <th className="p-3 pl-5">Field Key</th>
-                        <th className="p-3">Type</th>
-                        <th className="p-3">English Label</th>
-                        <th className="p-3">Hindi Label</th>
-                        <th className="p-3">Applies To</th>
-                        <th className="p-3">Req</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/40">
-                      {fields.map((f) => (
-                        <tr key={f.id} className="hover:bg-zinc-800/20 transition-colors">
-                          <td className="p-3 pl-5 font-mono font-bold text-zinc-300 text-[11px]">{f.field_key}</td>
-                          <td className="p-3">
-                            <span className="bg-zinc-800 border border-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono">
-                              {f.field_type}
-                            </span>
-                          </td>
-                          <td className="p-3 text-zinc-200">{f.label_en}</td>
-                          <td className="p-3 text-zinc-400 font-sans">{f.label_hi || '—'}</td>
-                          <td className="p-3">
-                            <div className="flex flex-wrap gap-1">
-                              {ensureArray(f.applicable_record_types).map((rt) => (
-                                <span key={rt} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${TYPE_COLORS[rt] || 'text-zinc-400 border-zinc-700'}`}>
-                                  {rt}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                              f.validation_rules?.required
-                                ? 'text-red-400 bg-red-950/30 border-red-800/40'
-                                : 'text-zinc-500 bg-zinc-900 border-zinc-800'
-                            }`}>
-                              {f.validation_rules?.required ? 'REQ' : 'OPT'}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
-                              f.is_active
-                                ? 'text-emerald-400 border-emerald-800/40 bg-emerald-950/30'
-                                : 'text-zinc-500 border-zinc-700 bg-zinc-800'
-                            }`}>
-                              {f.is_active ? 'ACTIVE' : 'INACTIVE'}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => openEdit(f)} title="Edit"
-                                className="text-zinc-500 hover:text-[#cca43b] transition-colors cursor-pointer">
-                                <Pencil size={13} />
-                              </button>
-                              <button onClick={() => toggleMutation.mutate(f.id)}
-                                title={f.is_active ? 'Deactivate' : 'Activate'}
-                                className={`transition-colors cursor-pointer ${f.is_active ? 'text-emerald-500 hover:text-red-400' : 'text-zinc-600 hover:text-emerald-400'}`}>
-                                {f.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="border border-zinc-800/80 bg-zinc-900/40 rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="bg-zinc-950/60 text-zinc-400 uppercase font-semibold border-b border-zinc-800 tracking-wider">
+                  <th className="p-3.5 pl-5">Field Key</th>
+                  <th className="p-3.5">English Label</th>
+                  <th className="p-3.5">Hindi Label</th>
+                  <th className="p-3.5">Type</th>
+                  <th className="p-3.5">Section</th>
+                  <th className="p-3.5">Applies To</th>
+                  <th className="p-3.5">Req</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+                {filtered.map((f) => (
+                  <tr key={f.id} className="hover:bg-zinc-800/30 transition-colors">
+                    <td className="p-3.5 pl-5 font-mono font-bold text-zinc-200 text-[11px]">{f.field_key}</td>
+                    <td className="p-3.5">{f.label_en}</td>
+                    <td className="p-3.5 text-zinc-400 font-sans">{f.label_hi || '—'}</td>
+                    <td className="p-3.5">
+                      <span className="bg-zinc-800 border border-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono">
+                        {f.field_type}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-zinc-400 text-[11px] font-mono">{f.section}</td>
+                    <td className="p-3.5">
+                      <div className="flex flex-wrap gap-1">
+                        {ensureArray(f.applicable_record_types).map((rt) => (
+                          <span key={rt} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${TYPE_COLORS[rt] || 'text-zinc-400 border-zinc-700'}`}>
+                            {rt}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="p-3.5">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                        f.validation_rules?.required
+                          ? 'text-red-400 bg-red-950/30 border-red-800/40'
+                          : 'text-zinc-500 border-zinc-700'
+                      }`}>
+                        {f.validation_rules?.required ? 'REQ' : 'OPT'}
+                      </span>
+                    </td>
+                    <td className="p-3.5">
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
+                        f.is_active
+                          ? 'text-emerald-400 border-emerald-800/40 bg-emerald-950/30'
+                          : 'text-zinc-500 border-zinc-700 bg-zinc-800'
+                      }`}>
+                        {f.is_active ? 'ACTIVE' : 'INACTIVE'}
+                      </span>
+                    </td>
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEdit(f)} title="Edit"
+                          className="text-zinc-500 hover:text-[#cca43b] transition-colors cursor-pointer">
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => toggleMutation.mutate(f.id)}
+                          title={f.is_active ? 'Deactivate' : 'Activate'}
+                          className={`transition-colors cursor-pointer ${f.is_active ? 'text-emerald-500 hover:text-red-400' : 'text-zinc-600 hover:text-emerald-400'}`}>
+                          {f.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -343,11 +323,10 @@ export default function FieldManager() {
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-2xl shadow-2xl">
 
-              {/* Modal header */}
               <div className="flex justify-between items-center bg-zinc-950/80 border-b border-zinc-800 px-5 py-3.5">
                 <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-2">
                   <Plus size={14} className="text-[#cca43b]" />
-                  {editTarget ? 'Edit Field' : 'Add Global Field'}
+                  {editTarget ? 'Edit District Field' : 'Add District Field'}
                 </h3>
                 <button onClick={closeModal} className="text-zinc-500 hover:text-zinc-200 cursor-pointer">
                   <X size={16} />
@@ -360,12 +339,12 @@ export default function FieldManager() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-zinc-400 font-semibold">
-                      Field Key * <span className="text-zinc-600 font-normal">(snake_case, globally unique)</span>
+                      Field Key * <span className="text-zinc-600 font-normal">(globally unique)</span>
                     </label>
                     <input type="text" required disabled={!!editTarget}
                       value={form.field_key}
                       onChange={(e) => setForm({ ...form, field_key: e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') })}
-                      placeholder="e.g. court_hearing_date"
+                      placeholder="e.g. central_court_date"
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-200 outline-none focus:border-[#cca43b] font-mono disabled:opacity-50" />
                   </div>
                   <div className="space-y-1.5">
@@ -377,25 +356,23 @@ export default function FieldManager() {
                   </div>
                 </div>
 
-                {/* Row 2: Labels */}
+                {/* Labels */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-zinc-400 font-semibold">English Label *</label>
                     <input type="text" required value={form.label_en}
                       onChange={(e) => setForm({ ...form, label_en: e.target.value })}
-                      placeholder="e.g. Court Hearing Date"
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-200 outline-none focus:border-[#cca43b]" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-zinc-400 font-semibold">Hindi Label</label>
                     <input type="text" value={form.label_hi}
                       onChange={(e) => setForm({ ...form, label_hi: e.target.value })}
-                      placeholder="e.g. न्यायालय सुनवाई तिथि"
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-zinc-200 outline-none focus:border-[#cca43b] font-sans" />
                   </div>
                 </div>
 
-                {/* Step 1: Pick record types FIRST so sections can filter */}
+                {/* Step 1: Record types first */}
                 <div className="space-y-1.5">
                   <label className="text-zinc-400 font-semibold">
                     Applicable Record Types * <span className="text-zinc-600 font-normal">(select first — sections will filter accordingly)</span>
@@ -414,7 +391,7 @@ export default function FieldManager() {
                   </div>
                 </div>
 
-                {/* Step 2: Section — options filtered by selected record types */}
+                {/* Step 2: Section — filtered by selected record types */}
                 <div className="space-y-1.5">
                   <label className="text-zinc-400 font-semibold">Section</label>
                   {form.applicable_record_types.length === 0 ? (
@@ -425,7 +402,7 @@ export default function FieldManager() {
                     <select value={form.isNewSection ? '__new__' : form.section}
                       onChange={(e) => {
                         if (e.target.value === '__new__') {
-                          setForm({ ...form, isNewSection: true, section: '' });
+                          setForm({ ...form, isNewSection: true, section: '', section_label_en: '', section_label_hi: '' });
                         } else {
                           setForm({ ...form, isNewSection: false, section: e.target.value });
                         }
@@ -445,37 +422,32 @@ export default function FieldManager() {
 
                 {form.isNewSection && (
                   <div className="border border-zinc-700/60 rounded-lg p-3 bg-zinc-950/40 space-y-3">
-                    <p className="text-zinc-400 font-semibold text-[11px] uppercase tracking-wide">New Section Details</p>
+                    <p className="text-zinc-400 font-semibold text-[11px] uppercase tracking-wide">New Section</p>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <label className="text-zinc-500">Key (snake_case) *</label>
-                        <input type="text" required={form.isNewSection}
-                          value={form.section}
+                        <input type="text" required={form.isNewSection} value={form.section}
                           onChange={(e) => setForm({ ...form, section: e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') })}
-                          placeholder="court_details"
+                          placeholder="district_legal"
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-zinc-200 outline-none focus:border-[#cca43b] font-mono" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-zinc-500">English Name *</label>
-                        <input type="text" required={form.isNewSection}
-                          value={form.section_label_en}
+                        <input type="text" required={form.isNewSection} value={form.section_label_en}
                           onChange={(e) => setForm({ ...form, section_label_en: e.target.value })}
-                          placeholder="Court Details"
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-zinc-200 outline-none focus:border-[#cca43b]" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-zinc-500">Hindi Name</label>
-                        <input type="text"
-                          value={form.section_label_hi}
+                        <input type="text" value={form.section_label_hi}
                           onChange={(e) => setForm({ ...form, section_label_hi: e.target.value })}
-                          placeholder="न्यायालय विवरण"
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-zinc-200 outline-none focus:border-[#cca43b] font-sans" />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Options for SELECT type */}
+                {/* SELECT options */}
                 {form.field_type === 'SELECT' && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -487,7 +459,7 @@ export default function FieldManager() {
                     </div>
                     {form.options.map((opt, i) => (
                       <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
-                        <input type="text" placeholder="value (stored)" value={opt.value}
+                        <input type="text" placeholder="value" value={opt.value}
                           onChange={(e) => updateOption(i, 'value', e.target.value)}
                           className="bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 outline-none focus:border-[#cca43b] font-mono" />
                         <input type="text" placeholder="English label" value={opt.label_en}
@@ -497,9 +469,7 @@ export default function FieldManager() {
                           onChange={(e) => updateOption(i, 'label_hi', e.target.value)}
                           className="bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 outline-none focus:border-[#cca43b] font-sans" />
                         <button type="button" onClick={() => removeOption(i)}
-                          className="text-zinc-600 hover:text-red-400 cursor-pointer">
-                          <X size={14} />
-                        </button>
+                          className="text-zinc-600 hover:text-red-400 cursor-pointer"><X size={14} /></button>
                       </div>
                     ))}
                   </div>
@@ -521,7 +491,6 @@ export default function FieldManager() {
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div className="flex justify-end gap-3 pt-3 border-t border-zinc-800">
                   <button type="button" onClick={closeModal}
                     className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg font-semibold cursor-pointer">
@@ -529,9 +498,7 @@ export default function FieldManager() {
                   </button>
                   <button type="submit" disabled={isPending}
                     className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-5 py-2 rounded-lg font-bold shadow-md cursor-pointer disabled:opacity-60">
-                    {isPending
-                      ? (editTarget ? 'Saving…' : 'Publishing…')
-                      : (editTarget ? 'Save Changes' : 'Publish Field')}
+                    {isPending ? 'Saving…' : (editTarget ? 'Save Changes' : 'Publish Field')}
                   </button>
                 </div>
 

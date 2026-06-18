@@ -157,6 +157,17 @@ const runMigrations = async () => {
     `);
     logger.info('Table notifications created or verified');
 
+    // 10. Extend field_registry with scope + section-label columns
+    await db.raw(`ALTER TABLE field_registry ADD COLUMN IF NOT EXISTS scope_level    VARCHAR NOT NULL DEFAULT 'global';`);
+    await db.raw(`ALTER TABLE field_registry ADD COLUMN IF NOT EXISTS scope_id       TEXT;`);
+    await db.raw(`ALTER TABLE field_registry ADD COLUMN IF NOT EXISTS created_by     TEXT;`);
+    await db.raw(`ALTER TABLE field_registry ADD COLUMN IF NOT EXISTS section_label_en VARCHAR;`);
+    await db.raw(`ALTER TABLE field_registry ADD COLUMN IF NOT EXISTS section_label_hi VARCHAR;`);
+    // Idempotent: if a previous run created scope_id/created_by as UUID, convert to TEXT so string node IDs work
+    await db.raw(`ALTER TABLE field_registry ALTER COLUMN scope_id    TYPE TEXT USING scope_id::TEXT;`);
+    await db.raw(`ALTER TABLE field_registry ALTER COLUMN created_by  TYPE TEXT USING created_by::TEXT;`);
+    logger.info('field_registry: scope + section_label columns verified');
+
     logger.info('All migrations ran successfully.');
   } catch (err) {
     logger.error(`Migration failed: ${err.message}`);

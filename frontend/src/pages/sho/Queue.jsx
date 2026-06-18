@@ -10,7 +10,7 @@ export default function Queue() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('CASE'); // CASE, ARREST, PCR_CALL, MISSING, UIDB
+  const [activeTab, setActiveTab] = useState('ALL');
 
   // Fetch pending review records queue
   const { data: queue = [], isLoading } = useQuery({
@@ -21,8 +21,10 @@ export default function Queue() {
     },
   });
 
+  const countFor = (tab) => tab === 'ALL' ? queue.length : queue.filter(r => r.record_type === tab).length;
+
   // Filter queue records based on type
-  const filteredQueue = queue.filter(r => r.record_type === activeTab);
+  const filteredQueue = activeTab === 'ALL' ? queue : queue.filter(r => r.record_type === activeTab);
 
   return (
     <div className="space-y-6">
@@ -39,19 +41,29 @@ export default function Queue() {
 
       {/* Record Category Tabs */}
       <div className="border-b-2 border-slate-200 flex flex-wrap gap-1">
-        {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3.5 text-sm font-bold tracking-wide border-b-[3px] transition-all cursor-pointer -mb-[2px] ${
-              activeTab === tab
-                ? 'border-[#0f52ba] text-[#0f52ba] bg-[#0f52ba]/5 rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            {t(`recordTypes.${tab}`, tab)}
-          </button>
-        ))}
+        {['ALL', 'CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => {
+          const count = countFor(tab);
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-3.5 text-sm font-bold tracking-wide border-b-[3px] transition-all cursor-pointer -mb-[2px] flex items-center gap-2 ${
+                activeTab === tab
+                  ? 'border-[#0f52ba] text-[#0f52ba] bg-[#0f52ba]/5 rounded-t-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              {t(`recordTypes.${tab}`, tab)}
+              {count > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  activeTab === tab ? 'bg-[#0f52ba] text-white' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Queue Listing */}

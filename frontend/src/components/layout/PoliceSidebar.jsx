@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   FileSignature,
   Archive,
+  Layers,
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
@@ -65,7 +66,8 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" },
         { id: "compile", label: t('nav.compile', 'Compile Records'), icon: FileSpreadsheet, to: "/compile" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
-        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" }
+        { id: "reports",        label: t('nav.reports',       'Excel Export Manager'),    icon: FileSpreadsheet, to: "/reports" },
+        { id: "custom-fields",  label: t('nav.customFields',  'District Custom Fields'),   icon: Layers,          to: "/district/custom-fields" }
       );
     }
 

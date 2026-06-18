@@ -7,16 +7,13 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const dbClient = process.env.DB_CLIENT || 'sqlite3'; // 'pg' or 'sqlite3'
+const dbClient = process.env.DB_CLIENT || 'pg';
 const databaseUrl = process.env.DATABASE_URL || 'postgresql://pharos:pharos@localhost:5432/pharos_db';
 
 const config = {
   client: dbClient,
-  connection: dbClient === 'sqlite3' ? {
-    filename: process.env.SQLITE_DB_PATH || path.resolve(__dirname, 'database.sqlite')
-  } : databaseUrl,
-  useNullAsDefault: dbClient === 'sqlite3',
-  pool: dbClient === 'sqlite3' ? undefined : {
+  connection: databaseUrl,
+  pool: {
     min: 2,
     max: 10
   },
@@ -33,9 +30,7 @@ export default {
   development: config,
   test: {
     ...config,
-    connection: dbClient === 'sqlite3' ? {
-      filename: ':memory:'
-    } : databaseUrl
+    connection: databaseUrl
   },
   production: config
 };
