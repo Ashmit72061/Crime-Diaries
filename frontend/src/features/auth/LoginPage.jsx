@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { 
-  Shield, 
-  Building, 
-  Compass, 
-  MapPin, 
-  UserCheck, 
-  AlertTriangle, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  Activity
+import {
+  Shield,
+  Building,
+  Compass,
+  MapPin,
+  UserCheck,
+  AlertTriangle,
+  Lock,
+  Eye,
+  EyeOff,
+  Activity,
+  Loader2
 } from 'lucide-react';
 import { loginSchema } from '../../utils/validators.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -48,7 +49,7 @@ export default function LoginPage() {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
-  
+
   // Login hierarchy states
   const [activeTier, setActiveTier] = useState("PS"); // HQ, ZONE, RANGE, DISTRICT, PS
   const [selectedNodeId, setSelectedNodeId] = useState("PS_NDD_PARLIAMENT_STREET");
@@ -131,7 +132,7 @@ export default function LoginPage() {
       setSelectedDistrictId(districtId);
     }
     setSelectedNodeId(nodeId);
-    
+
     // Tiny delay to ensure states propagate and React Hook Form values sync before submit
     setTimeout(() => {
       const node = findNodeById(nodeId);
@@ -157,253 +158,210 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="login-split-container">
-      {/* Left Panel: Branding */}
-      <div className="login-branding-panel">
-        <div className="branding-header">
-          <div className="crest-frame">
-            <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
-          </div>
-          <div className="branding-org">
-            <span className="branding-org-govt">Govt. of NCT of Delhi</span>
-            <span className="branding-org-name">Delhi Police</span>
-          </div>
-        </div>
+    <div className="login-page-bg">
+      <div className="login-card-container grid grid-cols-1 md:grid-cols-12">
 
-        <div className="branding-hero-center">
-          <h2 className="branding-title-sub" style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--accent-gold)', marginBottom: '0.25rem' }}>PRISM</h2>
-          <p className="text-xs font-bold text-slate-300 mb-4 tracking-wider">
-            POLICE REPORTING, INTELLIGENCE & STATISTICS MANAGEMENT
-          </p>
-          <p className="branding-desc">
-            PRISM enables single-point data entry, automated report generation, hierarchical approvals, and district-wide analytics.
-          </p>
-          <div className="branding-features-list">
-            <div className="branding-feature-item">
-              <span className="branding-feature-dot" />
-              <span>Hierarchical 5-Tier Data Integration</span>
+        {/* Left Panel: Crest, Title, Role Selector, Preview */}
+        <div className="login-left-col md:col-span-5 flex flex-col justify-between items-center gap-6">
+          <div className="flex flex-col items-center">
+            <div className="crest-frame-light">
+              <img
+                src={delhiPoliceLogo}
+                alt="Delhi Police Crest"
+                className="w-18 h-18 object-contain"
+              />
             </div>
-            <div className="branding-feature-item">
-              <span className="branding-feature-dot" />
-              <span>Daily Morning Diary Compilation for Districts</span>
-            </div>
-            <div className="branding-feature-item">
-              <span className="branding-feature-dot" />
-              <span>Interactive Crime Trend Filtering for Headquarters</span>
-            </div>
-            <div className="branding-feature-item">
-              <span className="branding-feature-dot" />
-              <span>Fortnightly Command Report Analytics</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="branding-footer">
-          <span>Security Level: Command Authorization Required</span>
-          <span className="branding-motto">SHANTI · SEVA · NYAYA</span>
-        </div>
-      </div>
-
-      {/* Right Panel: Login Form */}
-      <div className="login-form-panel flex-col gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ type: "spring", stiffness: 85, damping: 14 }}
-          className="login-card-glass premium-glass-card"
-        >
-          {/* Centered Crest Branding in Card */}
-          <div className="flex flex-col items-center mb-2">
-            <div className="crest-frame mb-3">
-              <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="w-16 h-16 object-contain" />
-            </div>
-            <h1 className="login-card-title">PRISM Authorization Console</h1>
-            <p className="login-card-subtitle mt-1">Select your command tier to authorize terminal</p>
+            <h1 className="login-main-title">PHARO Authorizations</h1>
+            <p className="login-main-subtitle">Set of your credentials to authenticate yourself</p>
           </div>
 
-          {/* Tier Tabs Selector */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="login-tier-tabs"
-          >
+          {/* Tier Tabs Selector (Horizontal Grid) */}
+          <div role="tablist" className="login-tabs-row">
             {tierConfig.map((tier) => {
               const Icon = tier.icon;
               return (
                 <button
                   key={tier.key}
                   type="button"
+                  role="tab"
+                  aria-selected={activeTier === tier.key}
                   onClick={() => setActiveTier(tier.key)}
-                  className={`login-tier-tab ${activeTier === tier.key ? 'active' : ''}`}
+                  className={`login-tab-btn ${activeTier === tier.key ? 'active' : ''}`}
                 >
-                  <Icon size={14} aria-hidden="true" />
+                  <Icon size={16} aria-hidden="true" />
                   <span>{tier.label}</span>
                 </button>
               );
             })}
-          </motion.div>
+          </div>
 
-          {/* Dynamic Hierarchy Dropdowns */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="flex flex-col gap-3"
-          >
-            {/* Zone Selector */}
-            {activeTier === "ZONE" && (
-              <div className="login-form-group">
-                <label htmlFor="zone-select">Select L&O Zone</label>
-                <select
-                  id="zone-select"
-                  value={selectedNodeId}
-                  onChange={(e) => setSelectedNodeId(e.target.value)}
-                  className="login-select-field"
-                >
-                  {zones.map(z => (
-                    <option key={z.id} value={z.id}>{z.name}</option>
-                  ))}
-                </select>
+          {/* Dynamic Selection Preview Box */}
+          {previewNode ? (
+            <div className="login-preview-box">
+              <div className="login-preview-avatar">
+                <UserCheck size={18} aria-hidden="true" />
               </div>
-            )}
-
-            {/* Range Selector */}
-            {activeTier === "RANGE" && (
-              <div className="login-form-group">
-                <label htmlFor="range-select">Select Jt. CP Range</label>
-                <select
-                  id="range-select"
-                  value={selectedNodeId}
-                  onChange={(e) => setSelectedNodeId(e.target.value)}
-                  className="login-select-field"
-                >
-                  {ranges.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+              <div className="login-preview-content">
+                <span className="login-preview-title">
+                  Selected {activeTier === 'PS' ? 'Police Station' : activeTier === 'DISTRICT' ? 'District' : activeTier === 'RANGE' ? 'Range' : activeTier === 'ZONE' ? 'Zone' : 'HQ'}
+                </span>
+                <span className="login-preview-name">{previewNode.name}</span>
+                <span className="login-preview-subtext">
+                  {previewNode.rank} {previewNode.officerName} · PIS: {previewNode.pis}
+                </span>
               </div>
-            )}
-
-            {/* District Selector */}
-            {activeTier === "DISTRICT" && (
-              <div className="login-form-group">
-                <label htmlFor="district-select">Select District DCP Jurisdiction</label>
-                <select
-                  id="district-select"
-                  value={selectedNodeId}
-                  onChange={(e) => setSelectedNodeId(e.target.value)}
-                  className="login-select-field"
-                >
-                  {districts.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
+            </div>
+          ) : (
+            <div className="login-preview-box" style={{ opacity: 0.5 }}>
+              <div className="login-preview-avatar">
+                <UserCheck size={18} aria-hidden="true" />
               </div>
-            )}
+              <div className="login-preview-content">
+                <span className="login-preview-title">No Selection</span>
+                <span className="login-preview-name">Select Command Unit</span>
+                <span className="login-preview-subtext">Credentials will auto-populate</span>
+              </div>
+            </div>
+          )}
+        </div>
 
-            {/* Police Station Selector */}
-            {activeTier === "PS" && (
-              <>
-                <div className="login-form-group">
-                  <label htmlFor="ps-district-select">Select District</label>
+        {/* Right Panel: Form Inputs, Warning, Submit, Quick Sign In */}
+        <div className="login-right-col md:col-span-7 flex flex-col justify-between">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4.5 w-full">
+
+            {/* Dynamic Dropdowns based on activeTier */}
+            <div className="flex flex-col gap-4">
+              {/* Zone Selector */}
+              {activeTier === "ZONE" && (
+                <div className="light-form-group">
+                  <label htmlFor="zone-select">Select L&O Zone *</label>
                   <select
-                    id="ps-district-select"
-                    value={selectedDistrictId}
-                    onChange={(e) => setSelectedDistrictId(e.target.value)}
-                    className="login-select-field"
+                    id="zone-select"
+                    value={selectedNodeId}
+                    onChange={(e) => setSelectedNodeId(e.target.value)}
+                    className="light-select-field"
+                  >
+                    {zones.map(z => (
+                      <option key={z.id} value={z.id}>{z.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Range Selector */}
+              {activeTier === "RANGE" && (
+                <div className="light-form-group">
+                  <label htmlFor="range-select">Select Jt. CP Range *</label>
+                  <select
+                    id="range-select"
+                    value={selectedNodeId}
+                    onChange={(e) => setSelectedNodeId(e.target.value)}
+                    className="light-select-field"
+                  >
+                    {ranges.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* District Selector */}
+              {activeTier === "DISTRICT" && (
+                <div className="light-form-group">
+                  <label htmlFor="district-select">Select District DCP Jurisdiction *</label>
+                  <select
+                    id="district-select"
+                    value={selectedNodeId}
+                    onChange={(e) => setSelectedNodeId(e.target.value)}
+                    className="light-select-field"
                   >
                     {districts.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
                 </div>
+              )}
 
-                <div className="login-form-group">
-                  <label htmlFor="ps-select">Select Police Station</label>
-                  <select
-                    id="ps-select"
-                    value={selectedNodeId}
-                    onChange={(e) => setSelectedNodeId(e.target.value)}
-                    className="login-select-field"
-                  >
-                    {(findNodeById(selectedDistrictId)?.children || []).map(ps => (
-                      <option key={ps.id} value={ps.id}>{ps.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-          </motion.div>
+              {/* Police Station Selector */}
+              {activeTier === "PS" && (
+                <>
+                  <div className="light-form-group">
+                    <label htmlFor="ps-district-select">Select District *</label>
+                    <select
+                      id="ps-district-select"
+                      value={selectedDistrictId}
+                      onChange={(e) => setSelectedDistrictId(e.target.value)}
+                      className="light-select-field"
+                    >
+                      {districts.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-          {/* Officer Profile Live Preview */}
-          {previewNode && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 100, damping: 15 }}
-              className="officer-preview-card"
-            >
-              <div className="officer-preview-badge">
-                <UserCheck size={16} aria-hidden="true" />
-              </div>
-              <div className="officer-preview-info">
-                <span className="officer-preview-label">{previewNode.rank}</span>
-                <span className="officer-preview-name">{previewNode.officerName}</span>
-                <span className="officer-preview-sub">ID: {previewNode.pis} · {previewNode.name}</span>
-              </div>
-            </motion.div>
-          )}
+                  <div className="light-form-group">
+                    <label htmlFor="ps-select">Select Police Station *</label>
+                    <select
+                      id="ps-select"
+                      value={selectedNodeId}
+                      onChange={(e) => setSelectedNodeId(e.target.value)}
+                      className="light-select-field"
+                    >
+                      {(findNodeById(selectedDistrictId)?.children || []).map(ps => (
+                        <option key={ps.id} value={ps.id}>{ps.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
 
-          {/* Email / Password Form */}
-          <motion.form 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            onSubmit={handleSubmit(onSubmit)} 
-            className="flex flex-col gap-3"
-          >
-            <div className="login-form-group">
-              <label htmlFor="login-email">Badge No / Official Email</label>
+            {/* Email Field */}
+            <div className="light-form-group">
+              <label htmlFor="login-email">Registered Official Email *</label>
               <input
                 id="login-email"
                 type="text"
                 autoComplete="username"
-                placeholder="HC001 or officer@delhipolice.gov.in"
-                className="login-input-field"
+                spellCheck={false}
+                placeholder="e.g., ram.sharma.ips@delhipolice.gov.in…"
+                className="light-input-field"
                 {...register('email')}
               />
-              {errors.email && <span className="text-xs text-red-400">{errors.email.message}</span>}
+              {errors.email && <span className="text-xs text-red-500 mt-1">{errors.email.message}</span>}
             </div>
 
-            <div className="login-form-group">
-              <label htmlFor="login-password">Security Key / Password</label>
+            {/* Password Field */}
+            <div className="light-form-group">
+              <label htmlFor="login-password">Security Key / Password *</label>
               <div className="relative">
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="••••••••"
-                  className="login-input-field pr-10"
+                  spellCheck={false}
+                  placeholder="e.g., ••••••••…"
+                  className="light-input-field pr-10"
                   {...register('password')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  aria-pressed={showPassword}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                  {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                 </button>
               </div>
-              {errors.password && <span className="text-xs text-red-400">{errors.password.message}</span>}
+              {errors.password && <span className="text-xs text-red-500 mt-1">{errors.password.message}</span>}
             </div>
 
-            {/* Audit Warning */}
-            <div className="security-notice-box flex gap-2">
-              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
+            {/* Red Warning Card copy matching the image */}
+            <div className="light-warning-box">
+              <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>
-                <strong>Warning:</strong> Authorized official access only. All sessions are monitored, audited, and logged under Section 66 of IT Act, 2000.
+                <strong>Warning:</strong> A network disruption may allow simultaneous sessions on different machines. Please ensure all previous sessions are logged out.
               </span>
             </div>
 
@@ -412,62 +370,54 @@ export default function LoginPage() {
               id="login-submit"
               type="submit"
               disabled={loginMutation.isPending}
-              className="login-btn-primary mt-2"
+              className="light-submit-btn"
             >
-              <Lock size={14} aria-hidden="true" />
+              {loginMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Lock size={16} aria-hidden="true" />
+              )}
               <span>{loginMutation.isPending ? 'Authorizing Session…' : 'Establish Secure Connection'}</span>
             </button>
-          </motion.form>
+          </form>
 
-          {/* Quick-Access Demo Profiles */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            className="quick-profiles-section"
-          >
-            <span className="quick-profiles-label">Quick Demo Access</span>
-            <div className="quick-profile-grid">
+          {/* Quick Sign-In As Grid */}
+          <div className="light-quick-section">
+            <span className="light-quick-label">Quick Sign In As</span>
+            <div className="light-quick-grid">
               <button
                 type="button"
-                onClick={() => handleQuickLogin("HQ", null, "HQ")}
-                className="quick-profile-card"
+                onClick={() => handleQuickLogin("PS", "DIST_NDD", "PS_NDD_PARLIAMENT_STREET")}
+                className="light-quick-card"
               >
-                <div className="quick-profile-avatar" aria-hidden="true">HQ</div>
-                <span className="quick-profile-role">Headquarters</span>
-                <span className="quick-profile-name">DGP Vikram Singh</span>
+                <UserCheck size={16} className="light-quick-avatar" aria-hidden="true" />
+                <span className="light-quick-role">Station</span>
+                <span className="light-quick-name">Operator Login</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleQuickLogin("DISTRICT", "DIST_CD", "DIST_CD")}
-                className="quick-profile-card"
+                className="light-quick-card"
               >
-                <div className="quick-profile-avatar" aria-hidden="true">DCP</div>
-                <span className="quick-profile-role">Central District</span>
-                <span className="quick-profile-name">DCP H. Vardhan</span>
+                <Shield size={16} className="light-quick-avatar" aria-hidden="true" />
+                <span className="light-quick-role">DCP</span>
+                <span className="light-quick-name">Credentials Login</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin("PS", "DIST_NDD", "PS_NDD_PARLIAMENT_STREET")}
-                className="quick-profile-card"
+                onClick={() => handleQuickLogin("HQ", null, "HQ")}
+                className="light-quick-card"
               >
-                <div className="quick-profile-avatar" aria-hidden="true">PS</div>
-                <span className="quick-profile-role">Parliament St</span>
-                <span className="quick-profile-name">HC Ramesh Kumar</span>
+                <Lock size={16} className="light-quick-avatar" aria-hidden="true" />
+                <span className="light-quick-role">Password</span>
+                <span className="light-quick-name">& Cert Login</span>
               </button>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
 
-        {/* Portal Footer */}
-        <footer className="w-full text-center text-[10px] sm:text-xs text-slate-500 mt-2 max-w-[460px] leading-relaxed">
-          <p>© {new Date().getFullYear()} Delhi Police (IT Division). NCT of Delhi, India.</p>
-          <p className="mt-1 text-slate-600 font-sans tracking-wide">
-            Powered by PRISM (Police Reporting, Intelligence & Statistics Management)
-          </p>
-        </footer>
       </div>
     </div>
   );
