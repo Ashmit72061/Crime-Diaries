@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ClipboardList
 } from 'lucide-react';
+import UnifiedFilterStrip from '../../components/common/UnifiedFilterStrip';
 import DynamicForm from '../../components/DynamicForm/DynamicForm';
 
 const { Title, Paragraph } = Typography;
@@ -23,6 +24,13 @@ export const QueuePage = () => {
   const { t, i18n } = useTranslation();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    type: 'ALL',
+    status: 'ALL',
+    dateFrom: null,
+    dateTo: null,
+    search: ''
+  });
   const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [recordDetail, setRecordDetail] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -40,7 +48,14 @@ export const QueuePage = () => {
   const fetchQueue = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/v1/workflow/queue');
+      const params = {};
+      if (filters.type && filters.type !== 'ALL') params.type = filters.type;
+      if (filters.status && filters.status !== 'ALL') params.status = filters.status;
+      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+      if (filters.dateTo) params.dateTo = filters.dateTo;
+      if (filters.search) params.search = filters.search;
+
+      const res = await axios.get('/api/v1/workflow/queue', { params });
       setQueue(res.data.data.queue || []);
     } catch (err) {
       console.error('Failed to load queue:', err);
@@ -52,7 +67,7 @@ export const QueuePage = () => {
 
   useEffect(() => {
     fetchQueue();
-  }, []);
+  }, [filters]);
 
   const handleOpenDetail = async (id) => {
     setSelectedRecordId(id);
@@ -280,6 +295,12 @@ export const QueuePage = () => {
           Monitor record submittals, revise logs, inspect transaction state revisions, and approve or redirect corrections.
         </Paragraph>
       </div>
+
+      <UnifiedFilterStrip 
+        filters={filters}
+        onFilterChange={setFilters}
+        allowedStatuses={['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED']}
+      />
 
       <Card style={{ background: '#10141d', border: '1px solid #1c2430' }}>
         <Table

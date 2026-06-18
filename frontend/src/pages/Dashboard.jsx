@@ -1,63 +1,47 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from '@tanstack/react-query';
+import api from '../utils/api.js';
 import { 
-  FileText, 
-  UserX, 
-  PhoneCall, 
-  Search, 
-  TrendingUp, 
-  TrendingDown, 
-  Clock, 
-  ArrowRight,
-  AlertTriangle,
-  Layers,
-  FileSpreadsheet,
-  Filter,
-  Printer,
-  ShieldCheck,
-  X,
-  Award,
-  BookOpen
+  FileText, UserX, PhoneCall, Search, TrendingUp, TrendingDown, Clock, ArrowRight,
+  FileSpreadsheet, Filter, Printer, X, BookOpen, Layers
 } from "lucide-react";
 import useAuthStore from "../store/authStore.js";
 import { 
-  findNodeById, 
-  getNodePath, 
-  getMetricsForNode, 
-  getMockLogsForNode, 
-  getStationsForNode,
-  POLICE_HIERARCHY,
-  DISTRICT_MAP
+  findNodeById, getNodePath, POLICE_HIERARCHY
 } from "../utils/hierarchyData.js";
+import UnifiedFilterStrip from '../components/common/UnifiedFilterStrip.jsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { activeNodeId } = useAuthStore();
+  const { activeNodeId, user } = useAuthStore();
   
-  // Retrieve node details and dynamic metrics
   const activeNode = findNodeById(activeNodeId) || POLICE_HIERARCHY;
-  const metrics = getMetricsForNode(activeNodeId);
   const path = getNodePath(activeNodeId) || [POLICE_HIERARCHY];
-  const rawLogs = getMockLogsForNode(activeNodeId);
 
-  // HQ Filters State
-  const [filterDistrict, setFilterDistrict] = useState("All");
-  const [filterType, setFilterType] = useState("All");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterTime, setFilterTime] = useState("All");
+  const [filters, setFilters] = useState({
+    type: 'ALL',
+    status: 'ALL',
+    dateFrom: null,
+    dateTo: null,
+    search: ''
+  });
 
-  // Morning Diary and Fortnightly Report Modals State
   const [diaryOpen, setDiaryOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const [reportType, setReportType] = useState(""); // "fortnightly" or "morning"
 
-  // Formatter helpers
-  const formatNumber = (num) => new Intl.NumberFormat("en-IN").format(num);
+  const formatNumber = (num) => new Intl.NumberFormat("en-IN").format(num || 0);
 
   const getSystemDate = (dateString) => {
-    return new Intl.DateTimeFormat("en-IN", {
-      dateStyle: "medium",
-    }).format(new Date(dateString));
+    if (!dateString) return 'N/A';
+    try {
+      return new Intl.DateTimeFormat("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(new Date(dateString));
+    } catch {
+      return dateString;
+    }
   };
 
   const getIndianDateString = () => {
@@ -66,91 +50,111 @@ export default function Dashboard() {
     }).format(new Date());
   };
 
-  // Filters calculation for HQ Panel
-  const getFilteredLogs = () => {
-    return rawLogs.filter(log => {
-      // District filter
-      if (filterDistrict !== "All") {
-        const distNode = findNodeById(filterDistrict);
-        if (distNode) {
-          const stations = getStationsForNode(distNode).map(ps => ps.stationName);
-          if (!stations.includes(log.station)) return false;
-        }
-      }
-      // Crime type filter
-      if (filterType !== "All") {
-        if (log.crimeHead !== filterType) return false;
-      }
-      // Status filter
-      if (filterStatus !== "All") {
-        if (log.status !== filterStatus) return false;
-      }
-      return true;
-    });
-  };
+  // Fetch real analytics stats
+  const { data: analyticsStats = { cases_today: 0, pcr_today: 0, arrests_today: 0, missing_today: 0 } } = useQuery({
+    queryKey: ['analytics_overview', activeNodeId],
+    queryFn: async () => {
+      const res = await api.get('/analytics/overview');
+      return res.data.data;
+    }
+  });
 
-  const filteredLogs = getFilteredLogs();
+  // Fetch live records
+  const { data: filteredLogs = [], isLoading: recordsLoading } = useQuery({
+    queryKey: ['dashboard_records', filters, activeNodeId],
+    queryFn: async () => {
+      const params = {};
+      if (filters.type && filters.type !== 'ALL') params.type = filters.type;
+      if (filters.status && filters.status !== 'ALL') params.status = filters.status;
+      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+      if (filters.dateTo) params.dateTo = filters.dateTo;
+      if (filters.search) params.search = filters.search;
 
-  // Stats definition based on node scope
+      const res = await api.get('/records', { params });
+      return res.data.data.cases || res.data.data.queue || res.data.data || [];
+    }
+  });
+
   const stats = [
     { 
       label: "Total Registered FIRs", 
-      value: metrics.firs, 
+      value: analyticsStats.cases_today, 
       icon: FileText, 
-      trend: "+12% from last month", 
+      trend: "Live Database Feed", 
       trendType: "up",
-      colorClass: "primary"
+      bgClass: "bg-blue-500/10",
+      textClass: "text-blue-500",
+      borderClass: "border-blue-500/20"
     },
     { 
       label: "Accused Arrested", 
-      value: metrics.arrests, 
+      value: analyticsStats.arrests_today, 
       icon: UserX, 
-      trend: "+8% this week", 
+      trend: "Live Database Feed", 
       trendType: "up",
-      colorClass: "success"
+      bgClass: "bg-emerald-500/10",
+      textClass: "text-emerald-500",
+      borderClass: "border-emerald-500/20"
     },
     { 
       label: "PCR Response Dispatches", 
-      value: metrics.pcrCalls, 
+      value: analyticsStats.pcr_today, 
       icon: PhoneCall, 
-      trend: "Avg response 7 mins", 
+      trend: "Live Database Feed", 
       trendType: "up",
-      colorClass: "warning"
+      bgClass: "bg-amber-500/10",
+      textClass: "text-amber-500",
+      borderClass: "border-amber-500/20"
     },
     { 
-      label: "Missing Found Status", 
-      value: metrics.missingFound, 
+      label: "Missing Persons / UIDB", 
+      value: (analyticsStats.missing_today || 0) + (analyticsStats.uidb_today || 0), 
       icon: Search, 
-      trend: `${metrics.missingTotal} total reported`, 
+      trend: "Live Database Feed", 
       trendType: "up",
-      colorClass: "danger"
+      bgClass: "bg-rose-500/10",
+      textClass: "text-rose-500",
+      borderClass: "border-rose-500/20"
     }
   ];
 
+  // Map backend status to badge colors
+  const getBadgeColor = (status) => {
+    switch(status) {
+      case 'DRAFT': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'PENDING_SHO': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'DISTRICT_REVIEW': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'HQ_RECEIVED': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'COMPILED': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'SENT_BACK_HC': return 'bg-rose-100 text-rose-800 border-rose-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
   return (
-    <div className="page-wrapper">
-      {/* Dynamic Header with Scope Breadcrumb */}
-      <div className="page-header flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="bg-blue-900/40 text-blue-300 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded border border-blue-800 uppercase" translate="no">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="bg-[#0f52ba]/10 text-[#0f52ba] text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-md border border-[#0f52ba]/20 uppercase">
               {activeNode.type} Scope Console
             </span>
-            <div className="flex items-center text-xs text-slate-400 gap-1.5" translate="no">
+            <div className="flex items-center text-xs text-slate-400 gap-1.5 font-medium">
               {path.map((node, index) => (
                 <React.Fragment key={node.id}>
-                  {index > 0 && <span className="text-slate-600">/</span>}
-                  <span className={index === path.length - 1 ? "text-slate-200 font-semibold" : ""}>
+                  {index > 0 && <span className="text-slate-300">/</span>}
+                  <span className={index === path.length - 1 ? "text-slate-700 font-bold" : ""}>
                     {node.name.replace("District: ", "").replace("PS: ", "")}
                   </span>
                 </React.Fragment>
               ))}
             </div>
           </div>
-          <h1 translate="no" className="text-pretty font-serif font-bold text-3xl tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-display">
             {activeNode.type === "HQ" ? "Delhi Police Headquarters Console" : `${activeNode.name} Console`}
           </h1>
-          <p className="page-desc text-slate-400">
+          <p className="text-slate-500 mt-1 font-medium">
             {activeNode.type === "HQ" 
               ? "Global command metrics overview, command filters, and reports across all ranges and districts."
               : `Scoped data logs, metrics, and activities for ${activeNode.name}.`}
@@ -158,43 +162,36 @@ export default function Dashboard() {
         </div>
 
         {/* Console Action Buttons */}
-        <div className="flex gap-2">
-          {activeNode.type === "PS" && (
+        <div className="flex gap-3">
+          {user?.role === 'HC' && (
             <button 
               type="button" 
-              className="btn btn-primary flex items-center gap-1.5"
-              onClick={() => navigate("/dashboard/case-management")}
-              aria-label="Create a new PRISM record"
+              className="bg-[#0f52ba] hover:bg-[#16406d] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-[#0f52ba]/20"
+              onClick={() => navigate("/records")}
             >
-              <span>New Entry Form</span>
-              <ArrowRight size={16} aria-hidden="true" />
+              <span>Manage Desk</span>
+              <ArrowRight size={16} />
             </button>
           )}
 
-          {activeNode.type === "DISTRICT" && (
+          {user?.role === 'DISTRICT_OFFICER' && (
             <button 
               type="button" 
-              className="btn btn-primary flex items-center gap-1.5"
-              onClick={() => {
-                setReportType("morning");
-                setDiaryOpen(true);
-              }}
+              className="bg-white border border-[#0f52ba] text-[#0f52ba] hover:bg-[#0f52ba]/5 px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-sm"
+              onClick={() => setDiaryOpen(true)}
             >
-              <BookOpen size={16} aria-hidden="true" />
+              <BookOpen size={16} />
               <span>Generate Morning Diary</span>
             </button>
           )}
 
-          {activeNode.type === "HQ" && (
+          {['HQ_ANALYST', 'HQ_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role) && (
             <button 
               type="button" 
-              className="btn btn-primary flex items-center gap-1.5"
-              onClick={() => {
-                setReportType("fortnightly");
-                setReportOpen(true);
-              }}
+              className="bg-[#cca43b] hover:bg-[#b08d33] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-[#cca43b]/20"
+              onClick={() => setReportOpen(true)}
             >
-              <FileSpreadsheet size={16} aria-hidden="true" />
+              <FileSpreadsheet size={16} />
               <span>Generate Fortnightly Report</span>
             </button>
           )}
@@ -202,337 +199,149 @@ export default function Dashboard() {
       </div>
 
       {/* Dynamic Metrics Row */}
-      <div className="dashboard-grid mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((item, idx) => {
           const Icon = item.icon;
           return (
-            <div key={idx} className="stat-card transition-standard">
-              <div className={`stat-icon ${item.colorClass}`} aria-hidden="true">
-                <Icon size={22} />
+            <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 transition-all hover:shadow-md hover:-translate-y-1">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">{item.label}</span>
+                  <div className="text-4xl font-black text-slate-800 mt-2 font-display">{formatNumber(item.value)}</div>
+                </div>
+                <div className={`p-3 rounded-2xl ${item.bgClass} ${item.textClass} border ${item.borderClass}`}>
+                  <Icon size={24} />
+                </div>
               </div>
-              <div className="stat-info">
-                <span className="stat-label text-xs uppercase tracking-wider text-slate-400">{item.label}</span>
-                <span className="stat-value tabular-numbers font-bold text-white text-2xl">{formatNumber(item.value)}</span>
-                <span className={`stat-trend ${item.trendType} flex items-center text-xs mt-1 text-slate-300`}>
-                  {item.trendType === "up" ? (
-                    <TrendingUp size={12} className="mr-1 inline text-emerald-500" aria-hidden="true" />
-                  ) : (
-                    <TrendingDown size={12} className="mr-1 inline text-rose-500" aria-hidden="true" />
-                  )}
-                  {item.trend}
-                </span>
+              <div className="flex items-center text-xs mt-4 font-semibold text-slate-500 bg-slate-50 w-fit px-2 py-1 rounded-lg">
+                {item.trendType === "up" ? (
+                  <TrendingUp size={14} className="mr-1.5 text-emerald-500" />
+                ) : (
+                  <TrendingDown size={14} className="mr-1.5 text-rose-500" />
+                )}
+                {item.trend}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Senior Officer Child Comparison (Zone/Range Level UI) */}
-      {(activeNode.type === "ZONE" || activeNode.type === "RANGE") && (
-        <div className="card mb-6 transition-standard">
-          <div className="card-title flex items-center gap-2">
-            <Layers size={18} className="text-blue-500" aria-hidden="true" />
-            <span>Range & District Workload Comparison (Simulation)</span>
-          </div>
-          <p className="page-desc mb-4">Command workload distribution across child jurisdictions.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeNode.children?.map(child => {
-              const childMetrics = getMetricsForNode(child.id);
-              const percentage = Math.min(100, Math.round((childMetrics.firs / (metrics.firs || 1)) * 100));
-              return (
-                <div key={child.id} className="p-4 bg-slate-800/40 border border-slate-700/60 rounded-md">
-                  <span className="text-xs text-blue-400 font-bold uppercase" translate="no">{child.type} View</span>
-                  <h3 className="text-sm font-semibold text-white mt-1 mb-3">{child.name}</h3>
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-400">Cases Percentage</span>
-                        <span className="font-semibold text-slate-200">{percentage}%</span>
-                      </div>
-                      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                        <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: "var(--primary-accent)" }}></div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-700/60 text-xs">
-                      <div>
-                        <span className="text-slate-400 block">FIRs</span>
-                        <strong className="text-slate-200 tabular-numbers">{formatNumber(childMetrics.firs)}</strong>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block">Arrests</span>
-                        <strong className="text-slate-200 tabular-numbers">{formatNumber(childMetrics.arrests)}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* HQ INTERACTIVE COMMAND FILTER PANEL */}
-      {activeNode.type === "HQ" && (
-        <div className="card mb-6 transition-standard">
-          <div className="card-title flex items-center gap-2">
-            <Filter size={18} className="text-amber-500" aria-hidden="true" />
-            <span>Interactive Command Filter Panel</span>
-          </div>
-          <p className="page-desc mb-4">Filter registered crime dockets across all ranges and districts in real-time.</p>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="form-group">
-              <label htmlFor="filter-district" className="form-label text-slate-300">District Boundary</label>
-              <select
-                id="filter-district"
-                className="form-control"
-                value={filterDistrict}
-                onChange={(e) => setFilterDistrict(e.target.value)}
-              >
-                <option value="All">All Districts</option>
-                {Object.entries(DISTRICT_MAP).map(([code, name]) => (
-                  <option key={code} value={`DIST_${code}`}>{name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="filter-type" className="form-label text-slate-300">Crime Category</label>
-              <select
-                id="filter-type"
-                className="form-control"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                <option value="All">All Categories</option>
-                <option value="Robbery">Robbery</option>
-                <option value="Theft">Property Theft</option>
-                <option value="Snatching">Snatching</option>
-                <option value="Assault">Assault / Altercation</option>
-                <option value="Kidnapping">Kidnapping</option>
-                <option value="UIDB">UIDB corpse</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="filter-status" className="form-label text-slate-300">Docket Status</label>
-              <select
-                id="filter-status"
-                className="form-control"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="All">All Statuses</option>
-                <option value="Active Investigation">Active Investigation</option>
-                <option value="Approved">Approved</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Traced & Recovered">Traced & Recovered</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="filter-time" className="form-label text-slate-300">Time Range</label>
-              <select
-                id="filter-time"
-                className="form-control"
-                value={filterTime}
-                onChange={(e) => setFilterTime(e.target.value)}
-              >
-                <option value="All">All Times</option>
-                <option value="24">Previous 24 Hours</option>
-                <option value="7">Last 7 Days</option>
-                <option value="14">Fortnightly (14 Days)</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-between items-center text-xs text-slate-400 mt-2">
-            <span>Showing {filteredLogs.length} matching dockets based on command filters.</span>
-            <button 
-              type="button" 
-              className="text-amber-500 hover:underline flex items-center gap-1 font-semibold"
-              onClick={() => window.print()}
-            >
-              <Printer size={12} />
-              <span>Print Filtered Log</span>
-            </button>
-          </div>
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter size={20} className="text-[#0f52ba]" />
+          <h2 className="text-lg font-bold text-slate-800">Command Filter Interface</h2>
         </div>
-      )}
+        <p className="text-slate-500 text-sm mb-6 font-medium">Filter registered crime dockets across all jurisdictions dynamically.</p>
+        
+        <UnifiedFilterStrip 
+          filters={filters}
+          onFilterChange={setFilters}
+          allowedStatuses={['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED']}
+        />
+        
+        <div className="flex justify-between items-center text-xs text-slate-400 mt-4 font-medium">
+          <span>Showing {filteredLogs.length} matching dockets based on active filters.</span>
+          <button 
+            type="button" 
+            className="text-[#0f52ba] hover:text-[#16406d] flex items-center gap-1.5 font-bold px-3 py-1.5 bg-[#0f52ba]/5 hover:bg-[#0f52ba]/10 rounded-lg transition-colors"
+            onClick={() => window.print()}
+          >
+            <Printer size={14} />
+            <span>Print Report</span>
+          </button>
+        </div>
+      </div>
 
       {/* Dynamic Log & Docket Table */}
-      <div className="card transition-standard">
-        <div className="card-title flex items-center gap-2">
-          <Clock size={18} className="text-blue-500" aria-hidden="true" />
-          <span>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div className="p-6 border-b border-slate-200/60 bg-slate-50 flex items-center gap-2">
+          <Clock size={20} className="text-slate-700" />
+          <h2 className="text-lg font-bold text-slate-800">
             {activeNode.type === "HQ" 
               ? "Filtered Command Feeds" 
               : `${activeNode.name} Logs & Docket Feeds`}
-          </span>
+          </h2>
         </div>
-        <div className="list-table-container">
-          <table className="list-table">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr>
-                <th scope="col">Docket / Ref</th>
-                <th scope="col">Station Context</th>
-                <th scope="col">Entry Type</th>
-                <th scope="col">Time Registered</th>
-                <th scope="col">Description</th>
-                <th scope="col">Status</th>
+              <tr className="bg-slate-100 text-slate-500 uppercase font-bold text-xs tracking-wider">
+                <th className="p-4 pl-6 border-b border-slate-200/60">Docket / Ref</th>
+                <th className="p-4 border-b border-slate-200/60">Jurisdiction</th>
+                <th className="p-4 border-b border-slate-200/60">Entry Type</th>
+                <th className="p-4 border-b border-slate-200/60">Time Registered</th>
+                <th className="p-4 border-b border-slate-200/60">Description</th>
+                <th className="p-4 pr-6 border-b border-slate-200/60">Status</th>
               </tr>
             </thead>
-            <tbody>
-              {(activeNode.type === "HQ" ? filteredLogs : rawLogs).length === 0 ? (
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {recordsLoading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-6 text-slate-400">
-                    No active dockets recorded under this console scope.
+                  <td colSpan="6" className="text-center py-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0f52ba] mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Syncing live records...</p>
+                  </td>
+                </tr>
+              ) : filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-10">
+                    <FileText size={32} className="mx-auto text-slate-300 mb-3" />
+                    <p className="text-slate-500 font-bold">No active dockets recorded.</p>
                   </td>
                 </tr>
               ) : (
-                (activeNode.type === "HQ" ? filteredLogs : rawLogs).map((act) => (
-                  <tr key={act.id} className="hover:bg-slate-800/20">
-                    <td className="tabular-numbers font-semibold text-blue-400" translate="no">{act.id}</td>
-                    <td className="text-slate-300">{act.station}</td>
-                    <td className="font-medium">{act.type}</td>
-                    <td className="tabular-numbers text-slate-400">{getSystemDate(act.time)}</td>
-                    <td className="text-slate-200">{act.details}</td>
-                    <td>
-                      <span className={`badge badge-${act.badge}`}>{act.status}</span>
-                    </td>
-                  </tr>
-                ))
+                filteredLogs.map((log) => {
+                  const refId = log.data?.fir_no || log.data?.gd_no || log.data?.linked_fir_dd_no || log.data?.dd_fir_no || log.data?.uidbNumber || log.id.substring(0, 8);
+                  const gist = log.data?.brief_facts || log.data?.call_gist || log.data?.recovered_material || log.data?.physical_description || log.data?.description || 'No description provided';
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 pl-6 font-mono font-bold text-slate-800">{refId}</td>
+                      <td className="p-4 font-semibold text-slate-600">{log.ps_name || log.district_name || 'Delhi Police'}</td>
+                      <td className="p-4 font-bold text-slate-600 text-xs">
+                        <span className="bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
+                          {log.record_type}
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono text-slate-500">{getSystemDate(log.created_at)}</td>
+                      <td className="p-4 max-w-[300px] truncate text-slate-500" title={gist}>{gist}</td>
+                      <td className="p-4 pr-6">
+                        <span className={`inline-flex items-center text-[10px] font-bold px-2 py-1 rounded-full border ${getBadgeColor(log.current_status)}`}>
+                          {log.current_status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Modals for Diary and Report (Keep static UI for now, just stylized) */}
       {/* DISTRICT DAILY MORNING DIARY COMPILE MODAL */}
       {diaryOpen && (
-        <div className="modal-overlay" onClick={() => setDiaryOpen(false)} role="dialog" aria-modal="true" aria-labelledby="diary-modal-title">
-          <div className="modal-content report-modal transition-standard text-black" onClick={(e) => e.stopPropagation()} style={{ overscrollBehavior: "contain" }}>
-            <div className="modal-header border-b border-slate-300 pb-3">
-              <h2 id="diary-modal-title" className="flex items-center gap-2 font-serif font-bold text-slate-800 text-lg">
-                <BookOpen size={20} className="text-blue-600" />
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDiaryOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+              <h2 className="flex items-center gap-2 font-display font-bold text-slate-800 text-lg">
+                <BookOpen size={20} className="text-[#0f52ba]" />
                 <span>Daily Morning Diary compilation (District DCP)</span>
               </h2>
-              <button type="button" className="nav-icon-btn text-slate-600 hover:text-slate-900" onClick={() => setDiaryOpen(false)} aria-label="Close diary">
-                <X size={20} />
+              <button className="text-slate-400 hover:text-slate-700 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm" onClick={() => setDiaryOpen(false)}>
+                <X size={18} />
               </button>
             </div>
-            <div className="modal-body py-4 font-sans text-xs">
-              <div className="report-header-section text-center mb-6 pb-4 border-b border-black">
+            <div className="p-6 overflow-y-auto font-sans text-xs flex-grow">
+              {/* Keep the original inner HTML structure for print formatting */}
+              <div className="text-center mb-6 pb-4 border-b border-black">
                 <h1 className="text-xl font-bold tracking-wider font-serif">DELHI POLICE</h1>
                 <h2 className="text-sm font-semibold uppercase">{activeNode.name.toUpperCase()}</h2>
                 <h3 className="text-xs font-medium mt-1">DAILY MORNING DIARY (COMPILATION REPORT)</h3>
                 <p className="text-[10px] mt-1">Generated: {getIndianDateString()} | Previous 24-Hours Summary</p>
               </div>
-
-              <div className="mb-4">
-                <h4 className="font-bold text-slate-800 border-b border-slate-400 pb-1 mb-2">1. Crime Incidents & FIRs Summary</h4>
-                <table className="w-full border-collapse border border-slate-400 text-[10px]">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th className="border border-slate-400 p-1 text-left">Station</th>
-                      <th className="border border-slate-400 p-1 text-left">FIR/DD No</th>
-                      <th className="border border-slate-400 p-1 text-left">Classification</th>
-                      <th className="border border-slate-400 p-1 text-left">Incident Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rawLogs.filter(l => l.type === "Case Entry").map(log => (
-                      <tr key={log.id}>
-                        <td className="border border-slate-400 p-1">{log.station}</td>
-                        <td className="border border-slate-400 p-1 font-semibold">{log.id}</td>
-                        <td className="border border-slate-400 p-1">{log.crimeHead}</td>
-                        <td className="border border-slate-400 p-1">{log.details}</td>
-                      </tr>
-                    ))}
-                    {rawLogs.filter(l => l.type === "Case Entry").length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="border border-slate-400 p-1 text-center text-slate-500">No FIR cases recorded.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mb-4">
-                <h4 className="font-bold text-slate-800 border-b border-slate-400 pb-1 mb-2">2. Active PCR Dispatches Log</h4>
-                <table className="w-full border-collapse border border-slate-400 text-[10px]">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th className="border border-slate-400 p-1 text-left">Station</th>
-                      <th className="border border-slate-400 p-1 text-left">GD Code</th>
-                      <th className="border border-slate-400 p-1 text-left">Dispatch details</th>
-                      <th className="border border-slate-400 p-1 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rawLogs.filter(l => l.type === "PCR Dispatch").map(log => (
-                      <tr key={log.id}>
-                        <td className="border border-slate-400 p-1">{log.station}</td>
-                        <td className="border border-slate-400 p-1 font-semibold">{log.id}</td>
-                        <td className="border border-slate-400 p-1">{log.details}</td>
-                        <td className="border border-slate-400 p-1 font-semibold text-green-700">{log.status}</td>
-                      </tr>
-                    ))}
-                    {rawLogs.filter(l => l.type === "PCR Dispatch").length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="border border-slate-400 p-1 text-center text-slate-500">No PCR dispatches.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mb-4">
-                <h4 className="font-bold text-slate-800 border-b border-slate-400 pb-1 mb-2">3. Arrests & Suspect Custody</h4>
-                <table className="w-full border-collapse border border-slate-400 text-[10px]">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th className="border border-slate-400 p-1 text-left">Station</th>
-                      <th className="border border-slate-400 p-1 text-left">Arrest Ref</th>
-                      <th className="border border-slate-400 p-1 text-left">Details</th>
-                      <th className="border border-slate-400 p-1 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rawLogs.filter(l => l.type === "Arrest Report").map(log => (
-                      <tr key={log.id}>
-                        <td className="border border-slate-400 p-1">{log.station}</td>
-                        <td className="border border-slate-400 p-1 font-semibold">{log.id}</td>
-                        <td className="border border-slate-400 p-1">{log.details}</td>
-                        <td className="border border-slate-400 p-1 text-blue-700">{log.status}</td>
-                      </tr>
-                    ))}
-                    {rawLogs.filter(l => l.type === "Arrest Report").length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="border border-slate-400 p-1 text-center text-slate-500">No arrests registered.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-between items-center mt-8 pt-4 border-t border-black text-[10px]">
-                <div>
-                  <span>Generated By: System Operator console</span>
-                </div>
-                <div className="text-center">
-                  <div className="h-6 w-32 border-b border-black mx-auto mb-1"></div>
-                  <strong>DCP, {activeNode.name.replace("District: ", "")}</strong>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer border-t border-slate-300 pt-3 flex justify-end gap-2">
-              <button type="button" className="btn btn-secondary flex items-center gap-1" onClick={() => window.print()}>
-                <Printer size={14} />
-                <span>Print Diary</span>
-              </button>
-              <button type="button" className="btn btn-primary" onClick={() => setDiaryOpen(false)}>
-                <span>Approve & Archive</span>
-              </button>
+              <p className="text-center text-slate-500 italic">This report requires District Scope configuration to generate live data.</p>
             </div>
           </div>
         </div>
@@ -540,100 +349,25 @@ export default function Dashboard() {
 
       {/* HQ FORTNIGHTLY COMMAND REPORT MODAL */}
       {reportOpen && (
-        <div className="modal-overlay" onClick={() => setReportOpen(false)} role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
-          <div className="modal-content report-modal transition-standard text-black" onClick={(e) => e.stopPropagation()} style={{ overscrollBehavior: "contain" }}>
-            <div className="modal-header border-b border-slate-300 pb-3">
-              <h2 id="report-modal-title" className="flex items-center gap-2 font-serif font-bold text-slate-800 text-lg">
-                <FileSpreadsheet size={20} className="text-amber-500" />
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+              <h2 className="flex items-center gap-2 font-display font-bold text-slate-800 text-lg">
+                <FileSpreadsheet size={20} className="text-[#cca43b]" />
                 <span>Fortnightly Command Report (Headquarters)</span>
               </h2>
-              <button type="button" className="nav-icon-btn text-slate-600 hover:text-slate-900" onClick={() => setReportOpen(false)} aria-label="Close report">
-                <X size={20} />
+              <button className="text-slate-400 hover:text-slate-700 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm" onClick={() => setReportOpen(false)}>
+                <X size={18} />
               </button>
             </div>
-            <div className="modal-body py-4 font-sans text-xs">
-              <div className="report-header-section text-center mb-6 pb-4 border-b border-black">
+            <div className="p-6 overflow-y-auto font-sans text-xs flex-grow">
+               <div className="text-center mb-6 pb-4 border-b border-black">
                 <h1 className="text-xl font-bold tracking-wider font-serif">DELHI POLICE HEADQUARTERS</h1>
                 <h2 className="text-sm font-semibold uppercase">SUPREME COMMAND AND CONTROL CENTRE</h2>
                 <h3 className="text-xs font-medium mt-1">FORTNIGHTLY PERFORMANCE & CRIME ANALYSIS REPORT</h3>
                 <p className="text-[10px] mt-1">Compiled: {getIndianDateString()} | Fortnight Range: 14 Days Analysis</p>
               </div>
-
-              <div className="mb-4">
-                <h4 className="font-bold text-slate-800 border-b border-slate-400 pb-1 mb-2">1. Fortnightly Crime Volume & Recovery Summary</h4>
-                <table className="w-full border-collapse border border-slate-400 text-[10px]">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th className="border border-slate-400 p-1 text-left">Metrics Type</th>
-                      <th className="border border-slate-400 p-1 text-center">Volume logged</th>
-                      <th className="border border-slate-400 p-1 text-center">Previous 14-days</th>
-                      <th className="border border-slate-400 p-1 text-center">Variance %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-slate-400 p-1">Total FIR Cases Filed</td>
-                      <td className="border border-slate-400 p-1 text-center font-bold">{metrics.firs}</td>
-                      <td className="border border-slate-400 p-1 text-center">{(metrics.firs * 0.9).toFixed(0)}</td>
-                      <td className="border border-slate-400 p-1 text-center text-red-600 font-semibold">+10.0%</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-slate-400 p-1">Total Accused Arrested</td>
-                      <td className="border border-slate-400 p-1 text-center font-bold">{metrics.arrests}</td>
-                      <td className="border border-slate-400 p-1 text-center">{(metrics.arrests * 0.95).toFixed(0)}</td>
-                      <td className="border border-slate-400 p-1 text-center text-green-600 font-semibold">+5.3%</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-slate-400 p-1">PCR Distress Calls Received</td>
-                      <td className="border border-slate-400 p-1 text-center font-bold">{metrics.pcrCalls}</td>
-                      <td className="border border-slate-400 p-1 text-center">{(metrics.pcrCalls * 1.05).toFixed(0)}</td>
-                      <td className="border border-slate-400 p-1 text-center text-green-600 font-semibold">-4.8%</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-slate-400 p-1">Missing Persons Successfully Traced</td>
-                      <td className="border border-slate-400 p-1 text-center font-bold">{metrics.missingFound}</td>
-                      <td className="border border-slate-400 p-1 text-center">{(metrics.missingFound * 0.88).toFixed(0)}</td>
-                      <td className="border border-slate-400 p-1 text-center text-green-600 font-semibold">+13.6%</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mb-4">
-                <h4 className="font-bold text-slate-800 border-b border-slate-400 pb-1 mb-2">2. Zone-wise Crime Share Compilation</h4>
-                <div className="grid grid-cols-2 gap-4 text-[10px]">
-                  {POLICE_HIERARCHY.children.map(zone => {
-                    const zoneMetrics = getMetricsForNode(zone.id);
-                    return (
-                      <div key={zone.id} className="p-2 border border-slate-300 rounded">
-                        <strong className="text-slate-800 block mb-1">{zone.name}</strong>
-                        <div>Total FIRs: <strong>{zoneMetrics.firs}</strong></div>
-                        <div>Total Arrests: <strong>{zoneMetrics.arrests}</strong></div>
-                        <div>PCR Calls: <strong>{zoneMetrics.pcrCalls}</strong></div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mt-12 pt-4 border-t border-black text-[10px]">
-                <div>
-                  <span>Compiled by: Headquarters Data Cell</span>
-                </div>
-                <div className="text-center">
-                  <div className="h-6 w-32 border-b border-black mx-auto mb-1"></div>
-                  <strong>Spl. CP (HQ), Delhi Police</strong>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer border-t border-slate-300 pt-3 flex justify-end gap-2">
-              <button type="button" className="btn btn-secondary flex items-center gap-1" onClick={() => window.print()}>
-                <Printer size={14} />
-                <span>Print Report</span>
-              </button>
-              <button type="button" className="btn btn-primary" onClick={() => setReportOpen(false)}>
-                <span>Close & File</span>
-              </button>
+              <p className="text-center text-slate-500 italic">This report requires full analytical queries implementation.</p>
             </div>
           </div>
         </div>

@@ -73,7 +73,7 @@ export default function StationPerformanceTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-900 border-b" style={{ borderColor: 'var(--border-light)' }}>
+            <tr className="bg-[#0f172a] border-b" style={{ borderColor: 'var(--border-light)' }}>
               {isHq && (
                 <th
                   onClick={() => handleSort("district_name")}
@@ -132,10 +132,10 @@ export default function StationPerformanceTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-[var(--border-light)]">
             {sortedStations.length === 0 ? (
               <tr>
-                <td colSpan={isHq ? 9 : 8} className="px-5 py-8 text-center text-sm text-slate-400">
+                <td colSpan={isHq ? 9 : 8} className="px-5 py-8 text-center text-sm text-slate-500">
                   No police station records match the current filters.
                 </td>
               </tr>
@@ -144,26 +144,26 @@ export default function StationPerformanceTable({
                 <tr
                   key={station.id}
                   onClick={() => onRowClick && onRowClick(station.id)}
-                  className="hover:bg-slate-800/40 cursor-pointer transition-colors"
+                  className="hover:bg-slate-50 cursor-pointer transition-colors"
                 >
                   {isHq && (
-                    <td className="px-5 py-3.5 text-sm text-slate-300 font-semibold">
+                    <td className="px-5 py-3.5 text-sm text-slate-700 font-semibold">
                       {station.district_name}
                     </td>
                   )}
-                  <td className="px-5 py-3.5 text-sm text-slate-100 font-bold">
+                  <td className="px-5 py-3.5 text-sm text-slate-900 font-bold">
                     {station.name_en}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-300 font-bold text-right tabular-numbers">
+                  <td className="px-5 py-3.5 text-sm text-slate-600 font-bold text-right tabular-numbers">
                     {station.cases}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-300 font-bold text-right tabular-numbers">
+                  <td className="px-5 py-3.5 text-sm text-slate-600 font-bold text-right tabular-numbers">
                     {station.arrests}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-300 font-bold text-right tabular-numbers">
+                  <td className="px-5 py-3.5 text-sm text-slate-600 font-bold text-right tabular-numbers">
                     {station.pcr}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-300 font-bold text-right tabular-numbers">
+                  <td className="px-5 py-3.5 text-sm text-slate-600 font-bold text-right tabular-numbers">
                     {station.missing}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-amber-500 font-bold text-right tabular-numbers">
@@ -172,7 +172,7 @@ export default function StationPerformanceTable({
                   <td className="px-5 py-3.5 text-sm text-emerald-500 font-bold text-right tabular-numbers">
                     {station.approved}
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-slate-400 font-mono tabular-numbers">
+                  <td className="px-5 py-3.5 text-xs text-slate-500 font-mono tabular-numbers">
                     {formatDate(station.last_activity)}
                   </td>
                 </tr>

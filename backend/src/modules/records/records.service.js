@@ -63,7 +63,7 @@ export const listRecords = async (recordType, filters, jurisdictionQuery) => {
   }
 
   // Scoped filters
-  if (recordType) {
+  if (recordType && recordType !== 'ALL') {
     query = query.where('records.record_type', recordType);
   }
 
@@ -81,6 +81,15 @@ export const listRecords = async (recordType, filters, jurisdictionQuery) => {
 
   if (filters.dateTo) {
     query = query.where('records.record_date', '<=', filters.dateTo);
+  }
+
+  if (filters.search) {
+    const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+    if (isPostgres) {
+      query = query.whereRaw("records.data::text ILIKE ?", [`%${filters.search}%`]);
+    } else {
+      query = query.where('records.data', 'LIKE', `%${filters.search}%`);
+    }
   }
 
   const rawRecords = await query.orderBy('records.created_at', 'desc');

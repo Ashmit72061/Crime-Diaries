@@ -194,21 +194,25 @@ export default function StationPerformanceDashboard() {
       if (row.station) psApiMap[row.station] = row;
     });
 
+    const isLocalFilterActive = Boolean(filters.dateFrom || filters.dateTo || filters.recordType);
+
     const finalStations = listToProcess.map((s) => {
-      // Prefer the API-aggregated data; fall back to client-side counts
+      // Prefer the API-aggregated data only if no time/type filters are applied
       const apiRow = psApiMap[s.name_en || s.name];
       const clientAgg = statsMap[s.id] || {
         cases: 0, arrests: 0, pcr: 0, missing: 0, pending: 0, approved: 0, last_activity: null,
       };
       
+      const useApi = !isLocalFilterActive && apiRow;
+
       return {
         id: s.id,
         name_en: s.name_en || s.name,
         district_id: userDistrictNode?.id || s.parent_id,
         district_name: isHq ? getDistrictName(s) : (userDistrictNode?.name_en || userDistrictNode?.name || "District"),
-        cases:    apiRow?.cases    ?? clientAgg.cases,
-        arrests:  apiRow?.arrests  ?? clientAgg.arrests,
-        pcr:      apiRow?.pcr      ?? clientAgg.pcr,
+        cases:    useApi ? apiRow.cases : clientAgg.cases,
+        arrests:  useApi ? apiRow.arrests : clientAgg.arrests,
+        pcr:      useApi ? apiRow.pcr : clientAgg.pcr,
         missing:  clientAgg.missing,
         pending:  clientAgg.pending,
         approved: clientAgg.approved,
@@ -267,14 +271,14 @@ export default function StationPerformanceDashboard() {
   }
 
   return (
-    <div className="page-wrapper font-sans text-slate-100">
+    <div className="page-wrapper font-sans text-slate-900">
       <div className="page-header flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-100" style={{ fontFamily: 'var(--font-display)' }}>
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>
             <Shield className="text-amber-500" size={24} />
             Station Wise Performance Dashboard
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             {isHq 
               ? "HQ Consolidated Police Station Performance Comparison Console (Consolidated Delhi)" 
               : `Police Station metrics under ${userDistrictNode?.name_en || "District"} boundary`}

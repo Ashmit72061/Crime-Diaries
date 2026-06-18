@@ -4,12 +4,12 @@ import { maskRecordData, maskRecordDetails } from '../level-contracts/levelContr
 import path from 'path';
 
 export const getRecords = async (req, res) => {
-  const { type, status, dateFrom, dateTo } = req.query;
+  const { type, status, dateFrom, dateTo, search } = req.query;
 
   try {
     const records = await recordsService.listRecords(
       type,
-      { status, dateFrom, dateTo },
+      { status: status !== 'ALL' ? status : null, dateFrom, dateTo, search },
       req.jurisdictionQuery
     );
     const maskedRecords = await Promise.all(
@@ -143,6 +143,7 @@ export const overrideHead = async (req, res) => {
 
 export const getQueue = async (req, res) => {
   const { role } = req.user;
+  const { type, status, dateFrom, dateTo, search } = req.query;
   let targetStatus;
 
   if (role === 'HC') {
@@ -155,10 +156,15 @@ export const getQueue = async (req, res) => {
     targetStatus = ['HQ_RECEIVED', 'DISTRICT_REVIEW', 'PENDING_SHO'];
   }
 
+  let filterStatus = targetStatus;
+  if (status && status !== 'ALL') {
+    filterStatus = targetStatus.includes(status) ? status : targetStatus;
+  }
+
   try {
     const records = await recordsService.listRecords(
-      null, // any type
-      { status: targetStatus },
+      type,
+      { status: filterStatus, dateFrom, dateTo, search },
       req.jurisdictionQuery
     );
     const maskedRecords = await Promise.all(

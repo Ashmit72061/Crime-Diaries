@@ -6,6 +6,7 @@ import { FileText, Plus, FileEdit, Trash2, Send, Filter, Eye } from 'lucide-reac
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
+import UnifiedFilterStrip from '../../components/common/UnifiedFilterStrip.jsx';
 import FilterPresetsPanel from '../../components/common/FilterPresetsPanel.jsx';
 
 const pageVariants = {
@@ -28,14 +29,26 @@ export default function MyRecords() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState('CASE'); // CASE, ARREST, PCR_CALL, MISSING, UIDB
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [filters, setFilters] = useState({
+    type: 'CASE',
+    status: 'ALL',
+    dateFrom: null,
+    dateTo: null,
+    search: ''
+  });
 
   // Fetch all records
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['records'],
+    queryKey: ['records', filters],
     queryFn: async () => {
-      const res = await api.get('/records');
+      const params = {};
+      if (filters.type) params.type = filters.type;
+      if (filters.status) params.status = filters.status;
+      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+      if (filters.dateTo) params.dateTo = filters.dateTo;
+      if (filters.search) params.search = filters.search;
+
+      const res = await api.get('/records', { params });
       const payload = res.data.data;
       if (payload?.cases) return payload.cases;
       if (payload?.queue) return payload.queue;
@@ -74,12 +87,8 @@ export default function MyRecords() {
     },
   });
 
-  // Filter records
-  const filteredRecords = records.filter((rec) => {
-    if (rec.record_type !== activeTab) return false;
-    if (statusFilter !== 'ALL' && rec.current_status !== statusFilter) return false;
-    return true;
-  });
+  // Backend handles filtering, so we just use records directly
+  const filteredRecords = records;
 
   // Render Status Badge
   const renderStatusBadge = (status) => {
@@ -119,87 +128,39 @@ export default function MyRecords() {
         variants={itemVariants}
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6"
       >
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5 font-display">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5 font-display m-0">
             <div className="crest-frame">
               <FileText className="text-[#0f52ba]" size={20} />
             </div>
             <span>{t('nav.records', 'My Records Desk')}</span>
           </h1>
-          <p className="text-slate-500 text-sm mt-1 font-semibold">
-            {t('common.recordsSubtitle', 'Create, manage and submit daily diaries for cases, arrests, and PCR incident logs.')}
+          <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
+          <p className="text-slate-500 text-sm font-medium m-0">
+            {t('common.recordsSubtitle', 'Manage and submit your daily diary entries.')}
           </p>
         </div>
-
-        {/* Creation actions */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs text-slate-400 font-extrabold uppercase tracking-wider">{t('actions.createNew', 'Create New:')}</span>
-          <div className="flex gap-2 flex-wrap">
-            {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((type) => (
-              <button
-                key={type}
-                onClick={() => navigate(`/records/new/${type}`)}
-                className="bg-[#0f52ba] hover:bg-[#16406d] text-white px-4.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-[#0f52ba]/10 hover:shadow-[#0f52ba]/25 hover:-translate-y-0.5 cursor-pointer border-none active:scale-[0.98]"
-              >
-                <Plus size={14} className="text-amber-400" />
-                <span>{t(`recordTypes.${type}`, type)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </motion.div>
 
-      {/* Record Category Tabs */}
-      <motion.div 
-        variants={itemVariants}
-        className="bg-slate-100 p-1 rounded-2xl flex gap-1 flex-wrap w-fit border border-slate-200/50"
-      >
-        {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-5 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border-none ${
-              activeTab === tab
-                ? 'bg-white text-[#0f52ba] shadow-sm font-black'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            {t(`recordTypes.${tab}`, tab)}
-          </button>
-        ))}
-      </motion.div>
-
-      {/* Filters Section */}
-      <motion.div 
-        variants={itemVariants}
-        className="flex items-center gap-3 bg-white border border-slate-200/60 shadow-sm rounded-2xl p-4 flex-wrap"
-      >
-        <Filter size={16} className="text-slate-400 flex-shrink-0" />
-        <span className="text-slate-500 font-extrabold text-xs uppercase tracking-wider">{t('actions.filterStatus', 'Status:')}</span>
-        <div className="flex gap-2.5 flex-wrap">
-          {['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                statusFilter === st
-                  ? 'bg-[#0f52ba] text-white shadow-md shadow-[#0f52ba]/20'
-                  : 'bg-slate-50 border border-slate-100 text-slate-600 hover:border-[#0f52ba] hover:text-[#0f52ba] hover:bg-[#0f52ba]/5'
-              }`}
-            >
-              {st === 'ALL' ? t('common.all', 'All') : t(`status.${st}`, st)}
-            </button>
-          ))}
-        </div>
+      {/* Unified Filter Strip */}
+      <motion.div variants={itemVariants}>
+        <UnifiedFilterStrip 
+          filters={filters}
+          onFilterChange={setFilters}
+          allowedStatuses={['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED']}
+        />
       </motion.div>
 
       {/* Saved Filter Presets */}
       <motion.div variants={itemVariants}>
         <FilterPresetsPanel
-          currentFilters={{ recordType: activeTab, status: statusFilter }}
+          currentFilters={{ recordType: filters.type, status: filters.status }}
           onLoadPreset={(saved) => {
-            if (saved.recordType) setActiveTab(saved.recordType);
-            if (saved.status)     setStatusFilter(saved.status);
+            setFilters(prev => ({
+              ...prev,
+              type: saved.recordType || prev.type,
+              status: saved.status || prev.status
+            }));
           }}
         />
       </motion.div>

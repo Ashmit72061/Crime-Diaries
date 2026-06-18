@@ -67,11 +67,11 @@ export default function StationFilters({
         {/* District Filter (HQ only) */}
         {isHq && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">District</label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">District</label>
             <select
               value={filters.districtId || ""}
               onChange={(e) => handleChange("districtId", e.target.value)}
-              className="console-switcher-select w-full border border-slate-700 bg-slate-900 rounded p-2 text-sm text-slate-100 font-semibold"
+              className="console-switcher-select w-full border border-[var(--border-light)] bg-white rounded p-2 text-sm text-slate-900 font-semibold"
               style={{ minHeight: '38px', borderColor: 'var(--border-light)' }}
             >
               <option value="">All Districts</option>
@@ -87,11 +87,11 @@ export default function StationFilters({
         {/* Station Filter (HQ or conditional District) */}
         {isHq && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Police Station</label>
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Police Station</label>
             <select
               value={filters.psId || ""}
               onChange={(e) => handleChange("psId", e.target.value)}
-              className="console-switcher-select w-full border border-slate-700 bg-slate-900 rounded p-2 text-sm text-slate-100 font-semibold"
+              className="console-switcher-select w-full border border-[var(--border-light)] bg-white rounded p-2 text-sm text-slate-900 font-semibold"
               style={{ minHeight: '38px', borderColor: 'var(--border-light)' }}
             >
               <option value="">All Stations</option>
@@ -106,11 +106,11 @@ export default function StationFilters({
 
         {/* Record Type Filter */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Record Type</label>
+          <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Record Type</label>
           <select
             value={filters.recordType || ""}
             onChange={(e) => handleChange("recordType", e.target.value)}
-            className="console-switcher-select w-full border border-slate-700 bg-slate-900 rounded p-2 text-sm text-slate-100 font-semibold"
+            className="console-switcher-select w-full border border-[var(--border-light)] bg-white rounded p-2 text-sm text-slate-900 font-semibold"
             style={{ minHeight: '38px', borderColor: 'var(--border-light)' }}
           >
             <option value="">All Categories</option>
@@ -124,25 +124,25 @@ export default function StationFilters({
 
         {/* Date From */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Date From</label>
+          <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Date From</label>
           <input
             type="date"
             value={filters.dateFrom || ""}
             onChange={(e) => handleChange("dateFrom", e.target.value)}
-            className="w-full border border-slate-700 bg-slate-900 rounded p-2 text-sm text-slate-100 font-semibold"
-            style={{ minHeight: '38px', borderColor: 'var(--border-light)', colorScheme: 'dark' }}
+            className="w-full border border-[var(--border-light)] bg-white rounded p-2 text-sm text-slate-900 font-semibold"
+            style={{ minHeight: '38px', borderColor: 'var(--border-light)', colorScheme: 'light' }}
           />
         </div>
 
         {/* Date To */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Date To</label>
+          <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Date To</label>
           <input
             type="date"
             value={filters.dateTo || ""}
             onChange={(e) => handleChange("dateTo", e.target.value)}
-            className="w-full border border-slate-700 bg-slate-900 rounded p-2 text-sm text-slate-100 font-semibold"
-            style={{ minHeight: '38px', borderColor: 'var(--border-light)', colorScheme: 'dark' }}
+            className="w-full border border-[var(--border-light)] bg-white rounded p-2 text-sm text-slate-900 font-semibold"
+            style={{ minHeight: '38px', borderColor: 'var(--border-light)', colorScheme: 'light' }}
           />
         </div>
       </div>
