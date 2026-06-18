@@ -1,0 +1,297 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { FileText, Plus, FileEdit, Trash2, Send, Filter, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import api from '../../utils/api.js';
+import UnifiedFilterStrip from '../../components/common/UnifiedFilterStrip.jsx';
+import FilterPresetsPanel from '../../components/common/FilterPresetsPanel.jsx';
+
+const pageVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12, filter: "blur(3px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 95, damping: 14 } }
+};
+
+export default function MyRecords() {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [filters, setFilters] = useState({
+    type: 'CASE',
+    status: 'ALL',
+    dateFrom: null,
+    dateTo: null,
+    search: ''
+  });
+
+  // Fetch all records
+  const { data: records = [], isLoading } = useQuery({
+    queryKey: ['records', filters],
+    queryFn: async () => {
+      const params = {};
+      if (filters.type) params.type = filters.type;
+      if (filters.status) params.status = filters.status;
+      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+      if (filters.dateTo) params.dateTo = filters.dateTo;
+      if (filters.search) params.search = filters.search;
+
+      const res = await api.get('/records', { params });
+      const payload = res.data.data;
+      if (payload?.cases) return payload.cases;
+      if (payload?.queue) return payload.queue;
+      if (Array.isArray(payload)) return payload;
+      return [];
+    },
+  });
+
+  // Submit Draft to SHO mutation
+  const submitMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await api.post(`/records/${id}/submit`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success(t('actions.submitSuccess', 'Record submitted to SHO successfully'));
+      queryClient.invalidateQueries({ queryKey: ['records'] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to submit record');
+    },
+  });
+
+  // Delete Draft mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await api.delete(`/records/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success(t('actions.deleteSuccess', 'Local draft deleted successfully'));
+      queryClient.invalidateQueries({ queryKey: ['records'] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to delete draft');
+    },
+  });
+
+  // Backend handles filtering, so we just use records directly
+  const filteredRecords = records;
+
+  // Render Status Badge
+  const renderStatusBadge = (status) => {
+    const badges = {
+      DRAFT: 'bg-slate-100 text-slate-600 border-slate-200/80',
+      PENDING_SHO: 'bg-amber-50 text-amber-700 border-amber-200/60',
+      ACP_REVIEW: 'bg-purple-50 text-purple-700 border-purple-200/60',
+      DISTRICT_REVIEW: 'bg-blue-50 text-blue-700 border-blue-200/60',
+      SENT_BACK_HC: 'bg-rose-50 text-rose-700 border-rose-200/60',
+      COMPILED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+    };
+    const dotColors = {
+      DRAFT: 'bg-slate-400',
+      PENDING_SHO: 'bg-amber-500',
+      ACP_REVIEW: 'bg-purple-500',
+      DISTRICT_REVIEW: 'bg-blue-500',
+      SENT_BACK_HC: 'bg-rose-500',
+      COMPILED: 'bg-emerald-500',
+    };
+    return (
+      <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${badges[status] || badges.DRAFT}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColors[status] || dotColors.DRAFT}`} />
+        {t(`status.${status}`, status)}
+      </span>
+    );
+  };
+
+  return (
+    <motion.div 
+      variants={pageVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
+      {/* Page Header */}
+      <motion.div 
+        variants={itemVariants}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6"
+      >
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5 font-display m-0">
+            <div className="crest-frame">
+              <FileText className="text-[#0f52ba]" size={20} />
+            </div>
+            <span>{t('nav.records', 'My Records Desk')}</span>
+          </h1>
+          <div className="h-6 w-px bg-slate-300 hidden sm:block"></div>
+          <p className="text-slate-500 text-sm font-medium m-0">
+            {t('common.recordsSubtitle', 'Manage and submit your daily diary entries.')}
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Unified Filter Strip */}
+      <motion.div variants={itemVariants}>
+        <UnifiedFilterStrip 
+          filters={filters}
+          onFilterChange={setFilters}
+          allowedStatuses={['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED']}
+        />
+      </motion.div>
+
+      {/* Saved Filter Presets */}
+      <motion.div variants={itemVariants}>
+        <FilterPresetsPanel
+          currentFilters={{ recordType: filters.type, status: filters.status }}
+          onLoadPreset={(saved) => {
+            setFilters(prev => ({
+              ...prev,
+              type: saved.recordType || prev.type,
+              status: saved.status || prev.status
+            }));
+          }}
+        />
+      </motion.div>
+
+      {/* Records Listing Grid */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center p-20 text-slate-400">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0f52ba] mb-4"></div>
+          <p className="text-xs font-semibold">{t('common.loading', 'Syncing digital registry logs...')}</p>
+        </div>
+      ) : filteredRecords.length === 0 ? (
+        <motion.div 
+          variants={itemVariants}
+          className="border border-dashed border-slate-200 bg-white rounded-2xl p-16 text-center text-slate-400 shadow-sm"
+        >
+          <FileText size={40} className="mx-auto text-slate-300 mb-3" />
+          <p className="text-sm font-bold text-slate-700">{t('common.noRecords', 'No Daily Log Entries Found')}</p>
+          <p className="text-xs text-slate-400 mt-1 font-medium">
+            {t('common.noRecordsDetail', 'Select a creation form above to enter your daily general diary records.')}
+          </p>
+        </motion.div>
+      ) : (
+        <motion.div 
+          variants={itemVariants}
+          className="border border-slate-200 bg-white rounded-2xl overflow-hidden shadow-sm"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-slate-400 uppercase font-bold border-b border-slate-200 text-xs tracking-wider">
+                  <th className="p-4 pl-6">{t('common.referenceId', 'Ref ID / Number')}</th>
+                  <th className="p-4">{t('common.recordDate', 'Record Date')}</th>
+                  <th className="p-4">{t('common.details', 'Brief Gist')}</th>
+                  <th className="p-4">{t('common.status', 'Status')}</th>
+                  <th className="p-4 pr-6 text-right">{t('common.actions', 'Console Operations')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {filteredRecords.map((rec, index) => {
+                  const refId =
+                    rec.data.fir_no ||
+                    rec.data.gd_no ||
+                    rec.data.linked_fir_dd_no ||
+                    rec.data.dd_fir_no ||
+                    rec.data.uidbNumber ||
+                    'N/A';
+
+                  const gist =
+                    rec.data.brief_facts ||
+                    rec.data.call_gist ||
+                    rec.data.recovered_material ||
+                    rec.data.physical_description ||
+                    rec.data.description ||
+                    rec.data.foundPlace ||
+                    'No description text logged';
+
+                  const isEditable = rec.current_status === 'DRAFT' || rec.current_status === 'SENT_BACK_HC';
+
+                  return (
+                    <motion.tr 
+                      key={rec.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02, duration: 0.3 }}
+                      className="hover:bg-slate-50/60 transition-colors"
+                    >
+                      <td className="p-4 pl-6 font-mono font-bold text-slate-800 text-sm">{refId}</td>
+                      <td className="p-4 font-mono text-slate-500 font-semibold">{rec.data.record_date || 'N/A'}</td>
+                      <td className="p-4 max-w-[280px] truncate text-slate-500 font-medium" title={gist}>
+                        {gist}
+                      </td>
+                      <td className="p-4">{renderStatusBadge(rec.current_status)}</td>
+                      <td className="p-3.5 pr-6 text-right space-x-2 whitespace-nowrap">
+                        {/* View Action */}
+                        <button
+                          onClick={() => navigate(`/records/${rec.id}`)}
+                          className="bg-slate-50 hover:bg-[#0f52ba] text-slate-500 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-slate-200 hover:border-[#0f52ba] hover:shadow-md active:scale-95"
+                          title="View Details"
+                        >
+                          <Eye size={14} />
+                        </button>
+
+                        {/* Edit Action */}
+                        {isEditable && (
+                          <button
+                            onClick={() => navigate(`/records/new/${rec.record_type}?edit=${rec.id}`)}
+                            className="bg-amber-50 hover:bg-[#cca43b] text-amber-700 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-amber-200 hover:border-[#cca43b] hover:shadow-md active:scale-95"
+                            title="Edit Record"
+                          >
+                            <FileEdit size={14} />
+                          </button>
+                        )}
+
+                        {/* Submit Action */}
+                        {isEditable && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(t('actions.confirmSubmit', 'Confirm submission to SHO? This locks the record.'))) {
+                                submitMutation.mutate(rec.id);
+                              }
+                            }}
+                            className="bg-emerald-50 hover:bg-emerald-500 text-emerald-700 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-emerald-200 hover:border-emerald-500 hover:shadow-md active:scale-95"
+                            title="Submit to SHO"
+                          >
+                            <Send size={14} />
+                          </button>
+                        )}
+
+                        {/* Delete Action */}
+                        {rec.current_status === 'DRAFT' && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(t('actions.confirmDelete', 'Delete this draft record forever?'))) {
+                                deleteMutation.mutate(rec.id);
+                              }
+                            }}
+                            className="bg-rose-50 hover:bg-rose-500 text-rose-700 hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-rose-200 hover:border-rose-500 hover:shadow-md active:scale-95"
+                            title="Delete Draft"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
