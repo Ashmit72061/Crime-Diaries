@@ -1,0 +1,143 @@
+# SSE Real-Time Bridge: RabbitMQ → Frontend
+
+## Background
+
+The backend has a fully functional RabbitMQ **Event Bus** (`eventBus.js`) with:
+- `notifyHandler.js` — writes DB rows to `notifications` table on `record.submitted`, `record.approved`, `record.sent_back`
+- `auditHandler.js` — writes tamper-evident revision rows on all `record.*` events
+- A `notifications` REST module with `GET /notifications`, `GET /notifications/count`, `PATCH /:id/read`, `PATCH /read-all`
+
+**The problem is twofold:**
+1. The notifications REST router is **not registered** in `app.js` (no import/mount)
+2. There is **no real-time push channel** — the frontend only polls manually or uses hardcoded dummy notifications in `DashboardLayout.jsx`
+
+The frontend navbar (`PoliceNavbar.jsx`) receives `notifications` as a prop from `DashboardLayout`, which currently holds **two hardcoded static dummy entries**. The `DashboardPage.jsx` hits the wrong endpoint (`/api/v1/auth/notifications` instead of `/api/v1/notifications`).
+
+## Proposed Approach: Server-Sent Events (SSE)
+
+**Why SSE instead of WebSockets:**
+- SSE is simpler and works over standard HTTP — no need for `ws` package or socket.io
+- Works natively with CORS and auth headers
+- Perfect for one-way push (server → browser) which is what we need for notification delivery
+- RabbitMQ handler already writes to DB; SSE just needs to signal the browser to "refresh"
+
+## Proposed Changes
+
+---
+
+### 1. Backend — Register Notifications Router
+
+#### [MODIFY] [app.js](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/backend/src/app.js)
+- Import `notificationsRouter` from `./modules/notifications/notifications.routes.js`
+- Mount at `/api/v1/notifications` and `/api/notifications` (dual registration for compatibility)
+- Add auth middleware to the notifications routes
+
+---
+
+### 2. Backend — SSE Endpoint + notifyHandler push integration
+
+#### [NEW] `backend/src/modules/notifications/sse.js`
+A singleton **SSE connection registry** that holds a `Map<userId, Set<SSEResponse>>`. Exported functions:
+- `registerClient(userId, res)` — adds SSE response to the map
+- `removeClient(userId, res)` — removes on disconnect
+- `pushToUser(userId, event, data)` — writes an SSE frame to all open tabs for a user
+- `pushToAll(event, data)` — broadcasts to all connected clients
+
+#### [MODIFY] [notifications.routes.js](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/backend/src/modules/notifications/notifications.routes.js)
+Add a new `GET /stream` route:
+```
+router.get('/stream', authenticate, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  registerClient(req.user.id, res);
+  // heartbeat every 30s to keep connection alive
+  const hb = setInterval(() => res.write(':heartbeat\n\n'), 30000);
+  req.on('close', () => { clearInterval(hb); removeClient(req.user.id, res); });
+});
+```
+
+#### [MODIFY] [notifyHandler.js](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/backend/src/events/handlers/notifyHandler.js)
+After each `db('notifications').insert(...)`, call `pushToUser(userId, 'notification', { ...notificationRow })` so the frontend gets an instant push.
+
+---
+
+### 3. Frontend — `useNotifications` hook
+
+#### [NEW] `frontend/src/hooks/useNotifications.js`
+A React hook that:
+1. Opens a persistent `EventSource` to `/api/v1/notifications/stream` (with auth header via URL token param or cookie — handled by `withCredentials`)
+2. On `notification` event → appends to local state and calls `queryClient.invalidateQueries(['notifications'])`
+3. Returns `{ notifications, unreadCount, markRead, markAllRead, isConnected }`
+4. Reconnects on disconnect with exponential backoff
+
+---
+
+### 4. Frontend — `DashboardLayout.jsx` refactor
+
+#### [MODIFY] [DashboardLayout.jsx](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/frontend/src/components/layout/DashboardLayout.jsx)
+- Replace the static hardcoded `useState` notification array with `useNotifications()` hook
+- Pass live `notifications`, `unreadCount`, `markRead`, and `markAllRead` down to `PoliceNavbar`
+
+---
+
+### 5. Frontend — `PoliceNavbar.jsx` upgrade
+
+#### [MODIFY] [PoliceNavbar.jsx](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/frontend/src/components/layout/PoliceNavbar.jsx)
+- Accept `unreadCount`, `markRead`, `markAllRead` props
+- Display real notification data fields: `title_en`/`title_hi`, `message_en`/`message_hi`, `created_at`
+- Show `unreadCount` badge instead of `notifications.length`
+- Add "Mark All Read" button in dropdown header
+- Style unread items differently from read ones
+
+---
+
+### 6. Frontend — `DashboardPage.jsx` fix wrong endpoint
+
+#### [MODIFY] [DashboardPage.jsx](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/frontend/src/pages/DashboardPage.jsx)
+- Fix `/api/v1/auth/notifications` → `/api/v1/notifications`
+- Fix mark-read from `PUT .../read` → `PATCH .../:id/read` (matching backend)
+- This page can now be simplified to just use the `useNotifications()` hook
+
+---
+
+### 7. Frontend — `constants.js` add QUERY_KEYS
+
+#### [MODIFY] [constants.js](file:///c:/Users/Ashmi/OneDrive/Desktop/Crime-Diaries/frontend/src/utils/constants.js)
+Add `NOTIFICATIONS: ['notifications']` to `QUERY_KEYS`
+
+---
+
+## Backend-Ready Features Not Yet in Frontend (Side List)
+
+| # | Feature | Backend Location | Status |
+|---|---------|-----------------|--------|
+| 1 | **Notifications REST API** | `/api/v1/notifications` (all 4 routes) | ❌ Router not even registered in `app.js` |
+| 2 | **Audit Log Viewer** | `GET /api/v1/audit` | ✅ Route exists; `AuditPage.jsx` exists but backend endpoint not verified wired |
+| 3 | **Analytics Summary** | `GET /api/v1/analytics/summary` | ⚠️ Frontend hits correct URL but destructure may be off (`.data.data.summary`) |
+| 4 | **Field Registry (Admin)** | `GET /api/v1/fields` | ✅ Backend exists; `FieldManager.jsx` imports it but not validated |
+| 5 | **Compilation dispatch to HQ** | `POST /api/v1/compilations` | ⚠️ Backend ready; `CompilationUI.jsx` partially wired but had bugs in prior sessions |
+| 6 | **Hierarchy Manager** | `GET /api/v1/hierarchy` | ✅ Backend exists; `HierarchyManager.jsx` in router but validation unknown |
+| 7 | **Reports (PDF/Excel export)** | `GET /api/v1/reports/:type` | ✅ `ReportBuilder.jsx` exists but trigger/download flow not validated end-to-end |
+| 8 | **Filters API** | `GET /api/v1/filters` | ❌ No frontend consumption found |
+| 9 | **Workflow API** | `POST /api/v1/workflow/submit`, `/approve`, `/reject`, `/send-back` | ⚠️ Queue pages use it but destructuring mismatches noted in prior sessions |
+| 10 | **Level Contracts** | `GET /api/v1/level-contracts` | ❌ No frontend consumption found |
+| 11 | **Legacy routes** | `GET /api/v1/legacy/*` | ❌ No frontend consumption found |
+| 12 | **Station Performance API** | `GET /api/v1/analytics/stations` | ⚠️ `StationPerformanceDashboard.jsx` exists but data shape unclear |
+| 13 | **Unread notification count badge** | `GET /api/v1/notifications/count` | ❌ Not used anywhere in frontend navbar |
+| 14 | **Mark-all-read** | `PATCH /api/v1/notifications/read-all` | ❌ No frontend call found |
+| 15 | **RabbitMQ push events** | `record.submitted`, `.approved`, `.sent_back` → DB → SSE | ❌ SSE channel doesn't exist yet |
+
+## Verification Plan
+
+### Automated / Code-Level
+- Confirm `notificationsRouter` appears in `app.js` imports + mounts
+- Confirm `EventSource` connects to `/api/v1/notifications/stream` in browser devtools Network tab
+
+### Manual Verification (browser test)
+1. Log in as HC → submit a record → SHO should see notification bell update **without page refresh**
+2. SHO approves → HC operator's bell should show "Record Approved" in real time
+3. Clicking a notification should mark it read and fade it out
+4. "Mark All Read" button should clear badge
+5. Closing and re-opening the browser tab should reconnect the SSE stream

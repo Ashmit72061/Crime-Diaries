@@ -6,6 +6,7 @@ import { FileText, Plus, FileEdit, Trash2, Send, Filter, Eye } from 'lucide-reac
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
+import FilterPresetsPanel from '../../components/common/FilterPresetsPanel.jsx';
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -35,7 +36,11 @@ export default function MyRecords() {
     queryKey: ['records'],
     queryFn: async () => {
       const res = await api.get('/records');
-      return res.data.data;
+      const payload = res.data.data;
+      if (payload?.cases) return payload.cases;
+      if (payload?.queue) return payload.queue;
+      if (Array.isArray(payload)) return payload;
+      return [];
     },
   });
 
@@ -81,6 +86,7 @@ export default function MyRecords() {
     const badges = {
       DRAFT: 'bg-slate-100 text-slate-600 border-slate-200/80',
       PENDING_SHO: 'bg-amber-50 text-amber-700 border-amber-200/60',
+      ACP_REVIEW: 'bg-purple-50 text-purple-700 border-purple-200/60',
       DISTRICT_REVIEW: 'bg-blue-50 text-blue-700 border-blue-200/60',
       SENT_BACK_HC: 'bg-rose-50 text-rose-700 border-rose-200/60',
       COMPILED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
@@ -88,6 +94,7 @@ export default function MyRecords() {
     const dotColors = {
       DRAFT: 'bg-slate-400',
       PENDING_SHO: 'bg-amber-500',
+      ACP_REVIEW: 'bg-purple-500',
       DISTRICT_REVIEW: 'bg-blue-500',
       SENT_BACK_HC: 'bg-rose-500',
       COMPILED: 'bg-emerald-500',
@@ -170,7 +177,7 @@ export default function MyRecords() {
         <Filter size={16} className="text-slate-400 flex-shrink-0" />
         <span className="text-slate-500 font-extrabold text-xs uppercase tracking-wider">{t('actions.filterStatus', 'Status:')}</span>
         <div className="flex gap-2.5 flex-wrap">
-          {['ALL', 'DRAFT', 'PENDING_SHO', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED'].map((st) => (
+          {['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED'].map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -184,6 +191,17 @@ export default function MyRecords() {
             </button>
           ))}
         </div>
+      </motion.div>
+
+      {/* Saved Filter Presets */}
+      <motion.div variants={itemVariants}>
+        <FilterPresetsPanel
+          currentFilters={{ recordType: activeTab, status: statusFilter }}
+          onLoadPreset={(saved) => {
+            if (saved.recordType) setActiveTab(saved.recordType);
+            if (saved.status)     setStatusFilter(saved.status);
+          }}
+        />
       </motion.div>
 
       {/* Records Listing Grid */}

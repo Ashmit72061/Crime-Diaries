@@ -11,10 +11,7 @@ if %ERRORLEVEL% neq 0 (
 )
 echo.
 
-echo [2/6] Installing backend dependencies...
 cd backend
-call npm install
-echo.
 
 echo [3/6] Running database migrations...
 call npm run db:migrate

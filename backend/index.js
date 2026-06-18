@@ -20,8 +20,13 @@ const start = async () => {
     await initSubscriptions();
 
     // 3. Start Express server
+    httpServer.on('error', (e) => { console.error('SERVER ERROR:', e); process.exit(1); });
     httpServer.listen(env.PORT, () => {
-      logger.info(`PHAROS Server running on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
+      logger.info('===================================================');
+      logger.info(`  🚀 PHAROS API Server is ONLINE`);
+      logger.info(`  🌐 URL:  http://localhost:${env.PORT}`);
+      logger.info(`  🔧 Mode: ${env.NODE_ENV}`);
+      logger.info('===================================================');
     });
   } catch (error) {
     logger.error(`Startup failed: ${error.message}`);

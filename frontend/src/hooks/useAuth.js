@@ -17,11 +17,11 @@ export const useAuth = () => {
     queryFn: async () => {
       try {
         const res = await authApi.getMe();
-        return res.data.data.user;
+        return res.data.data; // contains { user, jurisdiction }
       } catch (err) {
         if (!err.response && isAuthenticated) {
           // Keep current offline user if backend is offline
-          return user;
+          return { user };
         }
         throw err;
       }
@@ -33,8 +33,8 @@ export const useAuth = () => {
 
   // Safe side-effect sync
   useEffect(() => {
-    if (userData) {
-      login(userData, activeNodeId);
+    if (userData?.user) {
+      login(userData.user, userData.jurisdiction);
     }
   }, [userData]);
 
@@ -77,8 +77,9 @@ export const useAuth = () => {
         throw err;
       }
     },
-    onSuccess: (userData, variables) => {
-      login(userData, variables?.selectedNodeId);
+    onSuccess: (userData) => {
+      // Intentionally not passing jurisdiction here, it will be fetched by /me immediately after
+      login(userData, null);
       toast.success('Welcome back!');
       navigate('/dashboard');
     },

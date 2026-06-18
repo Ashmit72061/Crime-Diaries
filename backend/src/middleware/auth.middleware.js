@@ -90,3 +90,33 @@ export const authMiddleware = (req, res, next) => {
 };
 
 export const requireAuth = () => authMiddleware;
+
+/**
+ * Lightweight JWT verifier for SSE connections.
+ * EventSource cannot set custom headers, so the client passes
+ * the access token as ?token= in the query string.
+ */
+export const sseAuthMiddleware = (req, res, next) => {
+  const token = req.query.token;
+  if (!token) {
+    return res.status(401).json({
+      status: 'error',
+      success: false,
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required: token query param is missing'
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    req.user = decoded;
+    return next();
+  } catch (error) {
+    return res.status(401).json({
+      status: 'error',
+      success: false,
+      code: 'UNAUTHORIZED',
+      message: 'Invalid or expired SSE token'
+    });
+  }
+};

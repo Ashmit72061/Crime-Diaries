@@ -24,38 +24,51 @@ export default function ReportBuilder() {
   // Generate Report Mutation
   const generateMutation = useMutation({
     mutationFn: async (payload) => {
+      // Backend expects: { template_id, filters: { dateFrom, dateTo }, format }
       const res = await api.post('/reports/generate', payload);
       return res.data.data;
     },
     onSuccess: (data) => {
+      // Backend returns job_id (not reportId)
+      const jobId = data?.job_id || data?.job?.id;
+      if (!jobId) {
+        toast.error('Report job ID missing in response');
+        return;
+      }
+
       setGenerating(true);
       toast.loading('Compiling spreadsheet report in background...', { id: 'report-toast' });
       
-      // Poll report status
+      // Poll report status using job_id
       let attempts = 0;
       const interval = setInterval(async () => {
         attempts += 1;
         try {
-          const statusRes = await api.get(`/reports/status/${data.reportId}`);
-          if (statusRes.data.data.status === 'READY' || attempts >= 3) {
+          const statusRes = await api.get(`/reports/status/${jobId}`);
+          const jobStatus = statusRes.data.data?.status || statusRes.data.data?.job?.status;
+          if (jobStatus === 'READY' || attempts >= 8) {
             clearInterval(interval);
             setGenerating(false);
-            setReportResult(statusRes.data.data);
+            setReportResult({ ...statusRes.data.data, jobId });
             
             // Add to history list
             setHistory(prev => [
               {
-                id: statusRes.data.data.reportId,
+                id: jobId,
                 template,
                 period: `${fromDate} to ${toDate}`,
                 format,
-                status: 'READY',
-                url: statusRes.data.data.downloadUrl
+                status: jobStatus || 'READY',
+                url: `/api/v1/reports/download/${jobId}`
               },
               ...prev
             ]);
             
-            toast.success('Spreadsheet compiled and ready for download!', { id: 'report-toast' });
+            if (jobStatus === 'READY') {
+              toast.success('Spreadsheet compiled and ready for download!', { id: 'report-toast' });
+            } else {
+              toast.error('Report is taking longer than expected. Check history later.', { id: 'report-toast' });
+            }
           }
         } catch (e) {
           clearInterval(interval);
@@ -65,33 +78,68 @@ export default function ReportBuilder() {
       }, 2000);
     },
     onError: (err) => {
-      toast.error('Failed to trigger report compilation');
+      toast.error(err.response?.data?.message || 'Failed to trigger report compilation');
     }
   });
 
   const handleGenerate = (e) => {
     e.preventDefault();
     setReportResult(null);
-    generateMutation.mutate({ template, fromDate, toDate, format });
+    // Map frontend state to backend API field names
+    const templateIdMap = {
+      'Cases Daily Diary Summary': 'cases-register',
+      'Arrest Master Registers': 'arrest-summary',
+      'PCR Kalandra Calls Log': 'pcr-call-log',
+      'Missing Persons Register': 'daily-status',
+    };
+    generateMutation.mutate({
+      template_id: templateIdMap[template] || 'cases-register',
+      filters: { dateFrom: fromDate, dateTo: toDate },
+      format,
+    });
   };
 
-  // Helper to trigger direct download of mock excel bytes
-  const handleDownloadFile = (item) => {
-    // Generate a simple CSV content representing the dynamic excel file data
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Delhi Police Daily Operational Log\n"
+  // Trigger real download from backend for real report jobs, CSV fallback for mock
+  const handleDownloadFile = async (item) => {
+    // If it's a real report job (UUID-shaped id), download from backend
+    const isRealJob = item.id && item.id.includes('-') && item.id.length > 20;
+    if (isRealJob) {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/v1/reports/download/${item.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Pharos_Report_${item.id}.${item.format === 'xlsx' ? 'xlsx' : item.format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('Report downloaded successfully');
+        return;
+      } catch (err) {
+        toast.error('Download failed: ' + err.message);
+        return;
+      }
+    }
+
+    // Fallback: generate a local CSV for mock history entries
+    const csvContent = 'data:text/csv;charset=utf-8,'
+      + 'Delhi Police Daily Operational Log\n'
       + `Report Template: ${item.template}\n`
       + `Scope Period: ${item.period}\n`
       + `Generated On: ${new Date().toLocaleDateString()}\n\n`
-      + "Ref ID,Record Type,Gist,Status,Date\n"
-      + "210/2026,CASE,Theft report at Parliament St Market,PENDING_SHO,2026-06-15\n"
-      + "45B,PCR_CALL,Altercation resolved at Parliament St flats,SENT_BACK_HC,2026-06-15\n"
-      + "Arrest-01,ARREST,Suraj Pal detained at Palika Bazaar,DRAFT,2026-06-16\n";
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `pharos_compiled_${item.id}.${item.format}`);
+      + 'Ref ID,Record Type,Gist,Status,Date\n'
+      + '210/2026,CASE,Theft report at Parliament St Market,PENDING_SHO,2026-06-15\n'
+      + '45B,PCR_CALL,Altercation resolved at Parliament St flats,SENT_BACK_HC,2026-06-15\n'
+      + 'Arrest-01,ARREST,Suraj Pal detained at Palika Bazaar,DRAFT,2026-06-16\n';
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `pharos_compiled_${item.id}.${item.format}`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -206,8 +254,8 @@ export default function ReportBuilder() {
                 <span>Spreadsheet ready!</span>
               </div>
               <button
-                onClick={() => handleDownloadFile({ id: reportResult.reportId, template, format })}
-                className="w-full bg-emerald-650 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                onClick={() => handleDownloadFile({ id: reportResult.jobId, template, format })}
+                className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Download size={12} />
                 <span>Download Now</span>

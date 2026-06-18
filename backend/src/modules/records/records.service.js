@@ -380,6 +380,7 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       rule = {
         to: dbRule.to_status,
         toLevel: dbRule.to_status === 'DISTRICT_REVIEW' ? 'DISTRICT' :
+                 dbRule.to_status === 'ACP_REVIEW' ? 'ACP' :
                  dbRule.to_status === 'JCP_REVIEW' ? 'JCP' :
                  dbRule.to_status === 'SCP_REVIEW' ? 'SCP' :
                  dbRule.to_status === 'HQ_RECEIVED' ? 'HQ' :
@@ -392,12 +393,16 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       // 2. Fallback transitions including JCP / SCP review flows
       const FALLBACK_TRANSITIONS = {
         PENDING_SHO: {
-          approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
+          approve: { to: 'ACP_REVIEW', toLevel: 'ACP', allowedRoles: ['SHO'] },
           send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true, allowedRoles: ['SHO'] }
+        },
+        ACP_REVIEW: {
+          approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['ACP'] },
+          send_back: { to: 'PENDING_SHO', toLevel: 'SHO', requiresComment: true, allowedRoles: ['ACP'] }
         },
         DISTRICT_REVIEW: {
           approve: { to: 'JCP_REVIEW', toLevel: 'JCP', allowedRoles: ['DISTRICT_OFFICER'] },
-          send_back: { to: 'PENDING_SHO', toLevel: 'SHO', requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
+          send_back: { to: 'ACP_REVIEW', toLevel: 'ACP', requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
         },
         JCP_REVIEW: {
           approve: { to: 'SCP_REVIEW', toLevel: 'SCP', allowedRoles: ['JCP'] },

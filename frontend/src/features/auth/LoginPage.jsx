@@ -17,25 +17,9 @@ import {
 } from 'lucide-react';
 import { loginSchema } from '../../utils/validators.js';
 import { useAuth } from '../../hooks/useAuth.js';
-import { POLICE_HIERARCHY, findNodeById } from '../../utils/hierarchyData.js';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore.js';
-
-// Dynamic email generator based on officer name
-const getEmailForNode = (node) => {
-  if (!node) return "operator@delhipolice.gov.in";
-  if (node.id === "HQ") return "vikram.singh@delhipolice.gov.in";
-  if (node.officerName) {
-    const cleaned = node.officerName
-      .replace(/^(Sh\.|Smt\.|HC)\s+/i, "")
-      .replace(/,\s*IPS$/i, "")
-      .toLowerCase()
-      .replace(/\s+/g, ".");
-    return `${cleaned}@delhipolice.gov.in`;
-  }
-  return "operator@delhipolice.gov.in";
-};
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -68,60 +52,15 @@ export default function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "ramesh.kumar@delhipolice.gov.in",
-      password: "Password123",
+      email: "HC001",
+      password: "Test@1234",
     }
   });
-
-  // When activeTier changes, set appropriate default node
-  useEffect(() => {
-    if (activeTier === "HQ") {
-      setSelectedNodeId("HQ");
-    } else if (activeTier === "ZONE") {
-      setSelectedNodeId(zones[0]?.id || "ZONE_2");
-    } else if (activeTier === "RANGE") {
-      setSelectedNodeId(ranges[0]?.id || "RANGE_SOUTHERN");
-    } else if (activeTier === "DISTRICT") {
-      setSelectedNodeId(districts[0]?.id || "DIST_SD");
-    } else if (activeTier === "PS") {
-      // Find stations for the selectedDistrictId
-      const distNode = findNodeById(selectedDistrictId);
-      if (distNode && distNode.children?.length > 0) {
-        setSelectedNodeId(distNode.children[0].id);
-      } else {
-        setSelectedNodeId("PS_NDD_PARLIAMENT_STREET");
-      }
-    }
-  }, [activeTier]);
-
-  // When selectedDistrictId changes in PS mode, update station selection
-  useEffect(() => {
-    if (activeTier === "PS") {
-      const distNode = findNodeById(selectedDistrictId);
-      if (distNode && distNode.children?.length > 0) {
-        setSelectedNodeId(distNode.children[0].id);
-      }
-    }
-  }, [selectedDistrictId]);
-
-  // Sync email & password when selectedNodeId changes (only in mock mode)
-  useEffect(() => {
-    const debugMode = localStorage.getItem('prism_debug_api_mode') || 'production';
-    if (debugMode !== 'production') {
-      const node = findNodeById(selectedNodeId);
-      if (node) {
-        const email = getEmailForNode(node);
-        setValue('email', email);
-        setValue('password', 'Password123'); // Demo password
-      }
-    }
-  }, [selectedNodeId, setValue]);
 
   const onSubmit = (data) => {
     loginMutation.mutate({
       email: data.email,
       password: data.password,
-      selectedNodeId: selectedNodeId
     });
   };
 
@@ -135,27 +74,12 @@ export default function LoginPage() {
 
     // Tiny delay to ensure states propagate and React Hook Form values sync before submit
     setTimeout(() => {
-      const node = findNodeById(nodeId);
-      const email = getEmailForNode(node);
       loginMutation.mutate({
-        email: email,
-        password: "Password123",
-        selectedNodeId: nodeId
+        email: badgeNo,
+        password: "Test@1234"
       });
     }, 100);
   };
-
-  // Resolve current preview node
-  const previewNode = findNodeById(selectedNodeId);
-
-  // Tiers layout configuration
-  const tierConfig = [
-    { key: "HQ", label: "HQ", icon: Shield },
-    { key: "ZONE", label: "Zone", icon: Building },
-    { key: "RANGE", label: "Range", icon: Compass },
-    { key: "DISTRICT", label: "District", icon: MapPin },
-    { key: "PS", label: "Station", icon: Activity },
-  ];
 
   return (
     <div className="login-page-bg">

@@ -11,7 +11,7 @@ export const db = knex(config);
 export const connectDB = async () => {
   try {
     await db.raw('SELECT 1');
-    logger.info('PostgreSQL connected');
+    logger.info('✅ PostgreSQL connected');
   } catch (err) {
     logger.error(`PostgreSQL connection error: ${err.message}`);
     process.exit(1);

@@ -17,6 +17,7 @@ export default function StationPerformanceDashboard() {
   
   const [nodes, setNodes] = useState([]);
   const [records, setRecords] = useState([]);
+  const [psStats, setPsStats] = useState([]);  // pre-aggregated from /analytics/by-ps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -29,19 +30,22 @@ export default function StationPerformanceDashboard() {
     dateTo: "",
   });
 
-  // Fetch nodes and records
+  // Fetch nodes, records, and pre-aggregated station metrics
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Load hierarchy nodes and all records
-        const [nodesRes, recordsRes] = await Promise.all([
+        // Load hierarchy nodes, raw records and pre-aggregated PS stats in parallel
+        const [nodesRes, recordsRes, psStatsRes] = await Promise.all([
           api.get("/hierarchy/nodes"),
           api.get("/records"),
+          api.get("/analytics/by-ps").catch(() => ({ data: { data: [] } })), // non-fatal
         ]);
         
         setNodes(nodesRes.data.data || []);
-        setRecords(recordsRes.data.data || []);
+        setRecords(recordsRes.data.data?.cases || recordsRes.data.data || []);
+        // Store station-level stats from the analytics endpoint
+        setPsStats(psStatsRes.data?.data || []);
         setError(null);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -184,15 +188,17 @@ export default function StationPerformanceDashboard() {
         })
       : scopedStations;
 
+    // Build a quick lookup: psName → {cases, arrests, pcr}
+    const psApiMap = {};
+    psStats.forEach((row) => {
+      if (row.station) psApiMap[row.station] = row;
+    });
+
     const finalStations = listToProcess.map((s) => {
-      const agg = statsMap[s.id] || {
-        cases: 0,
-        arrests: 0,
-        pcr: 0,
-        missing: 0,
-        pending: 0,
-        approved: 0,
-        last_activity: null,
+      // Prefer the API-aggregated data; fall back to client-side counts
+      const apiRow = psApiMap[s.name_en || s.name];
+      const clientAgg = statsMap[s.id] || {
+        cases: 0, arrests: 0, pcr: 0, missing: 0, pending: 0, approved: 0, last_activity: null,
       };
       
       return {
@@ -200,7 +206,13 @@ export default function StationPerformanceDashboard() {
         name_en: s.name_en || s.name,
         district_id: userDistrictNode?.id || s.parent_id,
         district_name: isHq ? getDistrictName(s) : (userDistrictNode?.name_en || userDistrictNode?.name || "District"),
-        ...agg,
+        cases:    apiRow?.cases    ?? clientAgg.cases,
+        arrests:  apiRow?.arrests  ?? clientAgg.arrests,
+        pcr:      apiRow?.pcr      ?? clientAgg.pcr,
+        missing:  clientAgg.missing,
+        pending:  clientAgg.pending,
+        approved: clientAgg.approved,
+        last_activity: clientAgg.last_activity,
       };
     });
 
@@ -229,7 +241,7 @@ export default function StationPerformanceDashboard() {
       stations: finalStations,
       summary,
     };
-  }, [scopedStations, records, filters, isHq, userDistrictNode, nodes]);
+  }, [scopedStations, records, filters, isHq, userDistrictNode, nodes, psStats]);
 
   const handleRowClick = (stationId) => {
     const basePath = isHq ? "/hq/stations" : "/district/stations";

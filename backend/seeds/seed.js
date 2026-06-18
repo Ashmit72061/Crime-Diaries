@@ -16,62 +16,21 @@ export async function seed(knex) {
   await knex('records').del();
   await knex('field_registry').del();
   await knex('users').del();
-  await knex('hierarchy_nodes').del();
 
-  // 1. Seed hierarchy_nodes
-  const nodes = [
-    { id: 'HQ', node_type: 'HQ', name_en: 'Delhi Police HQ', name_hi: 'दिल्ली पुलिस मुख्यालय', code: 'DP_HQ', parent_id: null, is_active: true },
-    { id: 'ZONE_NORTH', node_type: 'SCP', name_en: 'Northern Zone', name_hi: 'उत्तरी क्षेत्र', code: 'DP_ZN', parent_id: 'HQ', is_active: true },
-    { id: 'RANGE_NORTH', node_type: 'JCP', name_en: 'Northern Range', name_hi: 'उत्तरी रेंज', code: 'DP_RN', parent_id: 'ZONE_NORTH', is_active: true },
-    { id: 'DISTRICT_NWD', node_type: 'DISTRICT', name_en: 'North West District (NWD)', name_hi: 'उत्तर पश्चिम जिला (एनडब्ल्यूडी)', code: 'DP_NWD', parent_id: 'RANGE_NORTH', is_active: true },
-    { id: 'DISTRICT_OND', node_type: 'DISTRICT', name_en: 'Outer North District (OND)', name_hi: 'बाहरी उत्तर जिला (ओएनडी)', code: 'DP_OND', parent_id: 'RANGE_NORTH', is_active: true },
-
-    // Sub-divisions
-    { id: 'SUBDIV_ASHOK_VIHAR', node_type: 'SUB_DIVISION', name_en: 'Ashok Vihar Sub-Division', name_hi: 'अशोक विहार सब-डिवीजन', code: 'AV_SD', parent_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'SUBDIV_SARASWATI_VIHAR', node_type: 'SUB_DIVISION', name_en: 'Saraswati Vihar Sub-Division', name_hi: 'सरस्वती विहार सब-डिवीजन', code: 'SV_SD', parent_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'SUBDIV_SHALIMAR_BAGH', node_type: 'SUB_DIVISION', name_en: 'Shalimar Bagh Sub-Division', name_hi: 'शालीमार बाग सब-डिवीजन', code: 'SB_SD', parent_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'SUBDIV_JAHANGIR_PURI', node_type: 'SUB_DIVISION', name_en: 'Jahangir Puri Sub-Division', name_hi: 'जहांगीर पुरी सब-डिवीजन', code: 'JP_SD', parent_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'SUBDIV_MODEL_TOWN', node_type: 'SUB_DIVISION', name_en: 'Model Town Sub-Division', name_hi: 'मॉडल टाउन सब-डिवीजन', code: 'MT_SD', parent_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'SUBDIV_NARELA', node_type: 'SUB_DIVISION', name_en: 'Narela Sub-Division', name_hi: 'नरेला सब-डिवीजन', code: 'NL_SD', parent_id: 'DISTRICT_OND', is_active: true },
-    { id: 'SUBDIV_BAWANA', node_type: 'SUB_DIVISION', name_en: 'Bawana Sub-Division', name_hi: 'बवाना सब-डिवीजन', code: 'BW_SD', parent_id: 'DISTRICT_OND', is_active: true },
-
-    // Police Stations
-    { id: 'PS_ASHOK_VIHAR', node_type: 'PS', name_en: 'PS Ashok Vihar', name_hi: 'थाना अशोक विहार', code: 'PS_AV', parent_id: 'SUBDIV_ASHOK_VIHAR', is_active: true },
-    { id: 'PS_BHARAT_NAGAR', node_type: 'PS', name_en: 'PS Bharat Nagar', name_hi: 'थाना भारत नगर', code: 'PS_BN', parent_id: 'SUBDIV_ASHOK_VIHAR', is_active: true },
-    { id: 'PS_KESHAV_PURAM', node_type: 'PS', name_en: 'PS Keshav Puram', name_hi: 'थाना केशव पुरम', code: 'PS_KP', parent_id: 'SUBDIV_ASHOK_VIHAR', is_active: true },
-
-    { id: 'PS_SUBHASH_PLACE', node_type: 'PS', name_en: 'PS Subhash Place', name_hi: 'थाना सुभाष प्लेस', code: 'PS_SP', parent_id: 'SUBDIV_SARASWATI_VIHAR', is_active: true },
-    { id: 'PS_MAURYA_ENCLAVE', node_type: 'PS', name_en: 'PS Maurya Enclave', name_hi: 'थाना मौर्य एन्क्लेव', code: 'PS_ME', parent_id: 'SUBDIV_SARASWATI_VIHAR', is_active: true },
-
-    { id: 'PS_SHALIMAR_BAGH', node_type: 'PS', name_en: 'PS Shalimar Bagh', name_hi: 'थाना शालीमार बाग', code: 'PS_SB', parent_id: 'SUBDIV_SHALIMAR_BAGH', is_active: true },
-    { id: 'PS_MAHENDRA_PARK', node_type: 'PS', name_en: 'PS Mahendra Park', name_hi: 'थाना महेन्द्र पार्क', code: 'PS_MP', parent_id: 'SUBDIV_SHALIMAR_BAGH', is_active: true },
-
-    { id: 'PS_JAHANGIR_PURI', node_type: 'PS', name_en: 'PS Jahangir Puri', name_hi: 'थाना जहांगीर पुरी', code: 'PS_JP', parent_id: 'SUBDIV_JAHANGIR_PURI', is_active: true },
-    { id: 'PS_ADARSH_NAGAR', node_type: 'PS', name_en: 'PS Adarsh Nagar', name_hi: 'थाना आदर्श नगर', code: 'PS_AN', parent_id: 'SUBDIV_JAHANGIR_PURI', is_active: true },
-
-    { id: 'PS_MODEL_TOWN', node_type: 'PS', name_en: 'PS Model Town', name_hi: 'थाना मॉडल टाउन', code: 'PS_MT', parent_id: 'SUBDIV_MODEL_TOWN', is_active: true },
-    { id: 'PS_MUKHARJEE_NAGAR', node_type: 'PS', name_en: 'PS Mukherjee Nagar', name_hi: 'थाना मुखर्जी नगर', code: 'PS_MN', parent_id: 'SUBDIV_MODEL_TOWN', is_active: true },
-    { id: 'PS_CYBER_CRIME', node_type: 'PS', name_en: 'PS Cyber Crime', name_hi: 'थाना साइबर क्राइम', code: 'PS_CC', parent_id: 'SUBDIV_MODEL_TOWN', is_active: true },
-
-    { id: 'PS_NARELA', node_type: 'PS', name_en: 'PS Narela', name_hi: 'थाना नरेला', code: 'PS_NL', parent_id: 'SUBDIV_NARELA', is_active: true },
-    { id: 'PS_BAWANA', node_type: 'PS', name_en: 'PS Bawana', name_hi: 'थाना बवाना', code: 'PS_BW', parent_id: 'SUBDIV_BAWANA', is_active: true },
-  ];
-
-  await knex('hierarchy_nodes').insert(nodes);
+  // 1. Hierarchy nodes are now seeded via migrations (20260620000000_full_delhi_hierarchy.js)
 
   // 2. Seed users
   const passwordHash = bcrypt.hashSync('test123', 10);
   const users = [
-    { id: 'U_HC001', username: 'hc_adarsh_nagar', badge_no: 'HC001', name_en: 'Ramesh Kumar', name_hi: 'रमेश कुमार', password_hash: passwordHash, role: 'HC', station_id: 'PS_ADARSH_NAGAR', district_id: 'DISTRICT_NWD', sub_div_id: 'SUBDIV_JAHANGIR_PURI', is_active: true },
-    { id: 'U_SHO001', username: 'sho_adarsh_nagar', badge_no: 'SHO001', name_en: 'Vikram Singh', name_hi: 'विक्रम सिंह', password_hash: passwordHash, role: 'SHO', station_id: 'PS_ADARSH_NAGAR', district_id: 'DISTRICT_NWD', sub_div_id: 'SUBDIV_JAHANGIR_PURI', is_active: true },
-    { id: 'U_JCP001', username: 'jcp_north', badge_no: 'JCP001', name_en: 'Northern JCP', name_hi: 'उत्तरी जेसीपी', password_hash: passwordHash, role: 'JCP', district_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'U_SCP001', username: 'scp_north', badge_no: 'SCP001', name_en: 'Northern SCP', name_hi: 'उत्तरी एससीपी', password_hash: passwordHash, role: 'SCP', district_id: 'DISTRICT_NWD', is_active: true },
-    { id: 'U_DO001', username: 'dcp_nwd', badge_no: 'DO001', name_en: 'Priya Sharma', name_hi: 'प्रिया शर्मा', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DISTRICT_NWD', is_active: true },
+    { id: 'U_HC001', username: 'hc_parliament_street', badge_no: 'HC001', name_en: 'Ramesh Kumar', name_hi: 'रमेश कुमार', password_hash: passwordHash, role: 'HC', station_id: 'PS_NDD_PARLIAMENTSTREET', district_id: 'DIST_NDD', sub_div_id: 'SUBDIV_DIST_NDD_1', is_active: true },
+    { id: 'U_SHO001', username: 'sho_parliament_street', badge_no: 'SHO001', name_en: 'Vikram Singh', name_hi: 'विक्रम सिंह', password_hash: passwordHash, role: 'SHO', station_id: 'PS_NDD_PARLIAMENTSTREET', district_id: 'DIST_NDD', sub_div_id: 'SUBDIV_DIST_NDD_1', is_active: true },
+    { id: 'U_ACP001', username: 'acp_parliament_street', badge_no: 'ACP001', name_en: 'Rakesh Yadav', name_hi: 'राकेश यादव', password_hash: passwordHash, role: 'ACP', district_id: 'DIST_NDD', sub_div_id: 'SUBDIV_DIST_NDD_1', is_active: true },
+    { id: 'U_DO001', username: 'dcp_ndd', badge_no: 'DO001', name_en: 'Priya Sharma', name_hi: 'प्रिया शर्मा', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DIST_NDD', is_active: true },
     { id: 'U_HQ001', username: 'hq_analyst', badge_no: 'HQ001', name_en: 'Anita Verma', name_hi: 'अनिता वर्मा', password_hash: passwordHash, role: 'HQ_ANALYST', is_active: true },
     { id: 'U_HQ002', username: 'hq_admin', badge_no: 'HQ002', name_en: 'Suresh Gupta', name_hi: 'सुरेश गुप्ता', password_hash: passwordHash, role: 'HQ_ADMIN', is_active: true },
     { id: 'U_SA001', username: 'system_admin', badge_no: 'SA001', name_en: 'System Admin', name_hi: 'सिस्टम व्यवस्थापक', password_hash: passwordHash, role: 'SYSTEM_ADMIN', is_active: true },
-    { id: 'U_HC002', username: 'hc_narela', badge_no: 'HC002', name_en: 'Sunil Dutt', name_hi: 'सुनील दत्त', password_hash: passwordHash, role: 'HC', station_id: 'PS_NARELA', district_id: 'DISTRICT_OND', sub_div_id: 'SUBDIV_NARELA', is_active: true },
-    { id: 'U_DO002', username: 'dcp_ond', badge_no: 'DO002', name_en: 'Outer North DCP', name_hi: 'बाहरी उत्तर डीसीपी', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DISTRICT_OND', is_active: true }
+    { id: 'U_HC002', username: 'hc_adarsh_nagar', badge_no: 'HC002', name_en: 'Sunil Dutt', name_hi: 'सुनील दत्त', password_hash: passwordHash, role: 'HC', station_id: 'PS_NWD_ADARSHNAGAR', district_id: 'DIST_NWD', sub_div_id: 'SUBDIV_DIST_NWD_0', is_active: true },
+    { id: 'U_DO002', username: 'dcp_nwd', badge_no: 'DO002', name_en: 'North West DCP', name_hi: 'उत्तर पश्चिम डीसीपी', password_hash: passwordHash, role: 'DISTRICT_OFFICER', district_id: 'DIST_NWD', is_active: true }
   ];
 
 

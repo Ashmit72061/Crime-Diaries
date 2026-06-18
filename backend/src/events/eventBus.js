@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
 import EventEmitter from 'events';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 let channel = null;
 let connection = null;
@@ -9,14 +10,13 @@ let isMock = false;
 
 export async function connect() {
   try {
-    console.log(`[EventBus] Attempting connection to RabbitMQ at ${env.RABBITMQ_URL}...`);
     connection = await amqp.connect(env.RABBITMQ_URL);
     channel = await connection.createChannel();
     await channel.assertExchange('pharos', 'topic', { durable: true });
-    console.log('[EventBus] Decoupled RabbitMQ Exchange "pharos" booted successfully.');
+    logger.info('✅ RabbitMQ EventBus connected.');
     isMock = false;
   } catch (error) {
-    console.warn(`[EventBus] RabbitMQ offline (${error.message}). Falling back to local in-memory event emitter.`);
+    logger.warn(`⚠️ RabbitMQ offline (${error.message}). Falling back to local events.`);
     isMock = true;
   }
 }
@@ -27,7 +27,7 @@ export async function publish(routingKey, payload) {
     ts: new Date().toISOString()
   };
 
-  console.log(`[EventBus] Publishing ${routingKey} event:`, JSON.stringify(messagePayload));
+  logger.debug(`[EventBus] Publishing ${routingKey} event`);
 
   if (isMock || !channel) {
     // Dispatch via in-memory emitter
@@ -48,7 +48,7 @@ export async function publish(routingKey, payload) {
       { persistent: true }
     );
   } catch (err) {
-    console.error(`[EventBus] Publish error on ${routingKey}:`, err.message);
+    logger.error(`[EventBus] Publish error on ${routingKey}: ${err.message}`);
     // Fallback to local
     localEmitter.emit(routingKey, messagePayload);
   }
@@ -60,12 +60,11 @@ export async function subscribe(pattern, queueName, handler) {
     queueName = `${pattern.replace(/[^a-zA-Z0-9.-]/g, '_')}-queue`;
   }
   if (isMock || !channel) {
-    console.log(`[EventBus] Subscribing listener locally to pattern: "${pattern}"`);
     localEmitter.on(pattern, async (payload) => {
       try {
         await handler(payload);
       } catch (err) {
-        console.error(`[EventBus] Mock handler error on pattern ${pattern}:`, err.message);
+        logger.error(`[EventBus] Mock handler error on pattern ${pattern}: ${err.message}`);
       }
     });
     return;
@@ -82,14 +81,14 @@ export async function subscribe(pattern, queueName, handler) {
           await handler(payload);
           channel.ack(msg);
         } catch (err) {
-          console.error(`[EventBus] Real handler error on pattern ${pattern}:`, err.message);
+          logger.error(`[EventBus] Real handler error on pattern ${pattern}: ${err.message}`);
           channel.nack(msg, false, false);
         }
       }
     });
-    console.log(`[EventBus] Subscribed queue "${queueName}" to pattern: "${pattern}"`);
+    logger.debug(`[EventBus] Subscribed queue "${queueName}" to pattern: "${pattern}"`);
   } catch (error) {
-    console.error(`[EventBus] Real subscription error on pattern ${pattern}:`, error.message);
+    logger.error(`[EventBus] Real subscription error on pattern ${pattern}: ${error.message}`);
     // Bind locally as secondary fallback
     localEmitter.on(pattern, handler);
   }

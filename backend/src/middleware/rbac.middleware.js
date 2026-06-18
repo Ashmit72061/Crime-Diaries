@@ -69,6 +69,10 @@ export const verifyRecordAccess = async (recordId, user) => {
     throw new Error('Access denied: Record falls outside your police station jurisdiction');
   }
 
+  if (role === 'ACP' && record.sub_div_id !== sub_div_id) {
+    throw new Error('Access denied: Record falls outside your sub-division jurisdiction');
+  }
+
   if (role === 'DISTRICT_OFFICER' && record.district_id !== district_id) {
     throw new Error('Access denied: Record falls outside your district jurisdiction');
   }

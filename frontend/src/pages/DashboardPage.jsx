@@ -33,7 +33,7 @@ export const DashboardPage = () => {
   const fetchData = async () => {
     try {
       const summaryRes = await axios.get('/api/v1/analytics/summary');
-      setSummary(summaryRes.data.data.summary || { CASES: 0, ARREST: 0, PCR: 0, MISSING: 0 });
+      setSummary(summaryRes.data?.data?.summary || { CASES: 0, ARREST: 0, PCR: 0, MISSING: 0 });
     } catch (err) {
       console.error('Failed to fetch summary counts:', err);
     } finally {
@@ -41,8 +41,10 @@ export const DashboardPage = () => {
     }
 
     try {
-      const notificationsRes = await axios.get('/api/v1/auth/notifications');
-      setNotifications(notificationsRes.data.data.notifications || []);
+      // Correct endpoint: /api/v1/notifications (was wrongly /api/v1/auth/notifications)
+      const notificationsRes = await axios.get('/api/v1/notifications?limit=20');
+      const data = notificationsRes.data?.data;
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -56,8 +58,8 @@ export const DashboardPage = () => {
 
   const handleMarkRead = async (id) => {
     try {
-      await axios.put(`/api/v1/auth/notifications/${id}/read`);
-      // Update local state
+      // Correct method: PATCH (was PUT), correct path /:id/read
+      await axios.patch(`/api/v1/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     } catch (err) {
       console.error('Failed to mark notification as read:', err);

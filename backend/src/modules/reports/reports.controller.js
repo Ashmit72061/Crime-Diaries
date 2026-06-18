@@ -90,10 +90,10 @@ const getRecordsForReport = async (templateId, filters) => {
 const getCompilationsForReport = async (filters) => {
   let query = db('compilations')
     .select('compilations.*', 'dist.name_en as district_name')
-    .leftJoin('hierarchy_nodes as dist', 'compilations.district_id', 'dist.id');
+    .leftJoin('hierarchy_nodes as dist', 'compilations.source_entity_id', 'dist.id');
 
   const districtId = filters.districtId || filters.district_id;
-  if (districtId) query = query.where('compilations.district_id', districtId);
+  if (districtId) query = query.where('compilations.source_entity_id', districtId);
 
   const results = await query.orderBy('compilations.period', 'desc');
   return results.map(c => ({
