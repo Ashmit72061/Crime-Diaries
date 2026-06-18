@@ -18,14 +18,14 @@ export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
+    <nav className="fixed top-0 left-0 right-0 z-40 public-navbar-container">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
           <Link to={ROUTES.HOME} className="flex items-center gap-2 group">
             <Shield className="w-6 h-6 text-[#cca43b] group-hover:text-amber-400 transition-colors" />
-            <span className="font-bold text-lg text-zinc-100 tracking-tight font-display">{APP_NAME}</span>
+            <span className="font-bold text-lg public-navbar-logo tracking-tight font-display">{APP_NAME}</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -34,7 +34,7 @@ export const Navbar = () => {
               <a
                 key={link.to}
                 href={link.to}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-[#cca43b] hover:bg-zinc-800/40 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium public-navbar-link transition-colors"
               >
                 {link.label}
               </a>
@@ -50,7 +50,7 @@ export const Navbar = () => {
 
           {/* Mobile Menu Toggle */}
           <button
-            className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+            className="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
           >
@@ -61,18 +61,18 @@ export const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 space-y-2">
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-2 shadow-lg">
           {navLinks.map((link) => (
             <a
               key={link.to}
               href={link.to}
               onClick={() => setMobileOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-[#cca43b]"
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-[#cca43b] transition-colors"
             >
               {link.label}
             </a>
           ))}
-          <div className="pt-2 border-t border-zinc-800">
+          <div className="pt-2 border-t border-slate-100">
             <Button variant="primary" size="sm" fullWidth as={Link} to={ROUTES.LOGIN}>
               Access Command Console
             </Button>
