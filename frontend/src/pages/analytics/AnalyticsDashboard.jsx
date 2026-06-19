@@ -48,7 +48,7 @@ const STATUS_COLORS = {
   PENDING_SHO:     'bg-amber-950/40 text-amber-400 border-amber-800/40',
   ACP_REVIEW:      'bg-orange-950/40 text-orange-400 border-orange-800/40',
   DISTRICT_REVIEW: 'bg-blue-950/40 text-blue-400 border-blue-800/40',
-  HQ_RECEIVED:     'bg-violet-950/40 text-violet-400 border-violet-800/40',
+  HQ_RECEIVED:     'bg-violet-100 text-violet-800 border-violet-300',
   CLOSED:          'bg-emerald-950/40 text-emerald-400 border-emerald-800/40',
   COMPILED:        'bg-cyan-950/40 text-cyan-400 border-cyan-800/40',
 };
