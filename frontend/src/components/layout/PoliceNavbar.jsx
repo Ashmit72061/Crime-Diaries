@@ -3,6 +3,7 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Bell, User, LogOut, Settings, Award, Shield, CheckCheck, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
+import LanguageToggle from "../ui/LanguageToggle.jsx";
 
 export default function PoliceNavbar({
   notifications = [],
@@ -178,6 +179,9 @@ export default function PoliceNavbar({
         <div className="time-display tabular-numbers" aria-live="off" translate="no">
           {currentTime}
         </div>
+
+        {/* EN ↔ हिन्दी Toggle */}
+        <LanguageToggle variant="pill" />
 
         {/* Notifications Dropdown */}
         <div className="nav-dropdown-wrapper" ref={notifPanelRef}>

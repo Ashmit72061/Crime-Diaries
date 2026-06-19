@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore.js';
+import LanguageToggle from '../../components/ui/LanguageToggle.jsx';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -63,6 +64,9 @@ export default function LoginPage() {
 
   return (
     <div className="login-split-container">
+      {/* Floating Language Toggle */}
+      <LanguageToggle variant="badge" />
+
       {/* Left Panel: Branding */}
       <div className="login-branding-panel">
         <div className="branding-header">

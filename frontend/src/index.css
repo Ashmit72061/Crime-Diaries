@@ -3234,4 +3234,160 @@ textarea.form-control {
   }
 }
 
+/* ─── Language Toggle Component Styles ────────────────────────────────────── */
+
+/* Pill variant — used in dashboard navbar */
+.lang-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+  letter-spacing: 0.01em;
+}
+
+.lang-toggle-pill:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary);
+  background: rgba(15, 82, 186, 0.04);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(15, 82, 186, 0.1);
+}
+
+.lang-toggle-pill:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.lang-toggle-label {
+  line-height: 1;
+}
+
+.lang-toggle-active-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  background: var(--primary-accent);
+  color: white;
+}
+
+.lang-toggle-pill.is-hindi .lang-toggle-active-badge {
+  background: #d97706;
+}
+
+/* Icon variant — compact for tight spaces */
+.lang-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.lang-toggle-icon:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary);
+  background: rgba(15, 82, 186, 0.04);
+}
+
+.lang-toggle-indicator {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* Badge variant — floating for login / public pages */
+.lang-toggle-badge {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  background: rgba(13, 42, 74, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #e2e8f0;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.lang-toggle-badge:hover {
+  background: rgba(13, 42, 74, 0.95);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.lang-toggle-badge:active {
+  transform: translateY(0) scale(0.96);
+}
+
+/* Public page light-theme badge override */
+.lang-toggle-badge-light {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: white;
+  color: var(--primary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  user-select: none;
+}
+
+.lang-toggle-badge-light:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.lang-toggle-badge-light:active {
+  transform: translateY(0) scale(0.96);
+}
 
