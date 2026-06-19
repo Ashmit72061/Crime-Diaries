@@ -12,7 +12,7 @@ function determineFieldType(text) {
   if (lower.includes('photo') || lower.includes('image')) return 'FILE';
   if (lower.includes('date') || lower.includes('time')) return 'DATE'; // Using DATE for better form calendar binding
   if (lower.includes('gist') || lower.includes('brief') || lower.includes('address') || lower.includes('details') || lower.includes('remarks')) return 'TEXTAREA';
-  if (lower.includes('gender') || lower.includes('status') || lower.includes('major/minor') || lower.includes('is identified')) return 'SELECT';
+  if (lower.includes('gender') || lower.includes('status') || lower.includes('major/minor') || lower.includes('is identified') || lower.includes('head')) return 'SELECT';
   return 'TEXT';
 }
 
@@ -142,6 +142,44 @@ function getSectionForHeader(recordType, fieldKey) {
 }
 
 function getOptionsForField(fieldKey) {
+  if (fieldKey === 'local_head' || fieldKey === 'crime_head') {
+    const heads = [
+      "Simple Hurt", "Other IPC", "Other SLL", "Kidnapping", "Pick Pocketing", "Gambling Act", "Cruelty by Husband",
+      "Simple Accident", "Narcotics Drugs & Psychotropic Substances Act", "Robbery", "Snatching", "Murder",
+      "Delhi Excise Act", "Att. to Murder", "Burglary", "Arms Act", "Other Theft", "House Theft", "Night Burglary",
+      "Rape", "Copyright Act", "Cheating", "Fatal Accident", "Child Labour Act 1986",
+      "Att. to Culpable Homicide not Amounting to Murder", "Dowry Prohibition Act 1961", "Electricity Theft",
+      "Information Technology Act 2000", "Grievous Hurt", "Electricity Act 2003", "Other Act", "Eve Teasing",
+      "Trade & Merchandise Marks Act, 1958", "Mobile Phone Theft", "M.O. Women", "Theft In Shop", "POCSO Act 2012",
+      "Wild Life (Protection) Act 1972", "Mischief", "Day Burglary", "Encroachment on Govt. Land", "Servant Theft",
+      "Ext. For Ransom", "Extortion", "Counterfeiting", "Criminal Breach of Trust", "Criminal Intimidation",
+      "Threatening", "Environment (Protection) Act 1986", "Affray", "Arson", "Abetment of Suicide",
+      "Juvenile Justice Act 2015", "Adultery",
+      "The Delhi Prevention of Touting and Malpractices Against Tourists Ordinance Act 2010",
+      "Att. to Commit Suicide", "Acid Attack", "Explosive Act 1884", "Acid Attack Attempt",
+      "Immoral Traffic(Prev.) Act, 1956 (SIT Act (Immoral))", "Trespass", "Delhi Police Act 1978",
+      "Culpable Homicide not Amounting to Murder", "Fire Incident", "Dowry Death", "Organised Crime",
+      "Maharashtra Control of Organised Crime Act 1999", "Misappropriation of property & cruelty by inlaws",
+      "Forgery", "Receiver of Stolen Property", "Explosive Substances Act 1908", "Foreigners Act 1946",
+      "Juvenile Justice Act 2000", "Miscarriage Etc.", "Prevention of Atrocities SC/ST Act 1989",
+      "House/Criminal Trespass", "Abduction", "Protection of Women Domestic Violence Act 2005", "Dacoity",
+      "Concealment of birth", "Riot", "Offence against Public Servant", "Stereo Theft",
+      "wrongful Confinement/restraint", "Public Nuisance", "National Security Act 1980", "Impersonation",
+      "Assault on Public Servant", "Passport Act 1967", "Terrorist Act",
+      "Prevention of Damage of Public Property Act 1984", "M.V. Theft", "Drugging/ Poisoning",
+      "Escape from Police Custody", "Civil Rights Act", "Election Offences", "Drugs and Cosmetics Act 1940",
+      "Offences Relating to religion", "Essential Commodities Act 1955", "Central Motor Vehicles Rules 1989",
+      "Motor Vehicle Act,1988", "Delhi Control of vehicular and Other Traffic on Road Act",
+      "Prevention of Corruption Act 1988", "Delhi Preservation of Trees Act, 1994", "Juvenile Justice Act 2010",
+      "Pre-conception and pre-natal diagnostic [pndt]", "Protection of human rights Act 1993", "Cycle Theft",
+      "Sedition or Offences against State", "Poisons Act 1919", "Bombay Prevention of Begging Act 1959",
+      "Child Marriage Restraint Act 1929", "Official Secrets Act,1923", "Un-Natural Death / Inquest Report",
+      "Cattle Theft", "M.V. Accessories Theft", "Unlawful Activities (Prevention) Act 1967",
+      "Personating public servant", "Unnatural Offences(SODOMY)"
+    ];
+    return heads.map(h => ({ value: h, label_en: h, label_hi: h }));
+  }
+
   if (fieldKey === 'gender') {
     return [
       { value: 'male', label_en: 'Male', label_hi: 'पुरुष' },
@@ -195,10 +233,13 @@ function generateFields(recordType, headers) {
       options: options ? JSON.stringify(options) : null,
       sort_order: (index + 1) * 10,
       visible_to_levels: JSON.stringify(['PS', 'DISTRICT', 'HQ']),
-      editable_by_levels: JSON.stringify(['PS'])
+      editable_by_levels: JSON.stringify(['PS']),
+      is_active: true,
+      scope_level: 'global',
     };
   }).filter(Boolean);
 }
+
 
 const arrestHeaders = [
   "FIR / DD No. With Date and Time, Section of Law",
@@ -289,8 +330,14 @@ const missingHeaders = [
 const seedFields = async () => {
   await connectDB();
   try {
-    logger.info('Clearing existing field registry...');
-    await db('field_registry').del();
+    // ── SKIPPED ──────────────────────────────────────────────────────────────
+    // seed.js (run via `npm run db:seed`) is the authoritative source for
+    // field_registry. This script previously wiped and replaced the registry
+    // with stale headers, overwriting all fields added to seed.js.
+    // It is now disabled so seed.js remains the sole source of truth.
+    // ─────────────────────────────────────────────────────────────────────────
+    logger.info('seed-fields.js: skipped — field_registry is managed by seeds/seed.js');
+    return;
 
     logger.info('Preparing Master Fields...');
     

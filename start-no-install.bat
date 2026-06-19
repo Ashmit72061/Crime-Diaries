@@ -23,6 +23,7 @@ call node scripts/seed-fields.js
 call node scripts/seed-mock-data.js
 call node scripts/verify_pharos.js
 call node scripts/verify_p2_filters_contracts.js
+call node scripts/migrations.js
 @REM call node scripts/verify_reports.js
 call node scripts/seed-dummy-data.js
 echo.

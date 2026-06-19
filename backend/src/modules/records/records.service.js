@@ -235,8 +235,9 @@ export const updateRecord = async (id, user, data, ipAddress) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
-      throw new Error('This record is locked. Only DRAFT or SENT_BACK_HC records can be edited.');
+    const editableStatuses = ['DRAFT', 'SENT_BACK', 'SENT_BACK_HC'];
+    if (!editableStatuses.includes(record.current_status)) {
+      throw new Error('This record is locked. Only DRAFT or sent-back records can be edited.');
     }
 
     const oldData = parseJsonField(record.data);
@@ -321,7 +322,8 @@ export const submitRecord = async (id, user) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
 
-    if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
+    const submittableStatuses = ['DRAFT', 'SENT_BACK', 'SENT_BACK_HC'];
+    if (!submittableStatuses.includes(record.current_status)) {
       throw new Error('Record is already submitted');
     }
 
@@ -372,9 +374,9 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
     const fromStatus = record.current_status;
 
     // Evaluate rule
-    // 1. Try querying DB config
+    // 1. Try querying DB config (action stored lowercase in seed)
     let dbRule = await trx('workflow_transitions_config')
-      .where({ from_status: fromStatus, action: action.toUpperCase(), is_active: true })
+      .where({ from_status: fromStatus, action: action.toLowerCase(), is_active: true })
       .andWhere(function() {
         this.where('record_type', record.record_type).orWhere('record_type', '*');
       })
@@ -402,16 +404,12 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       // 2. Fallback transitions including JCP / SCP review flows
       const FALLBACK_TRANSITIONS = {
         PENDING_SHO: {
-          approve: { to: 'ACP_REVIEW', toLevel: 'ACP', allowedRoles: ['SHO'] },
-          send_back: { to: 'SENT_BACK_HC', toLevel: 'PS', requiresComment: true, allowedRoles: ['SHO'] }
-        },
-        ACP_REVIEW: {
-          approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['ACP'] },
-          send_back: { to: 'PENDING_SHO', toLevel: 'SHO', requiresComment: true, allowedRoles: ['ACP'] }
+          approve:   { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
+          send_back: { to: 'SENT_BACK',       toLevel: 'PS',       requiresComment: true, allowedRoles: ['SHO'] }
         },
         DISTRICT_REVIEW: {
-          approve: { to: 'JCP_REVIEW', toLevel: 'JCP', allowedRoles: ['DISTRICT_OFFICER'] },
-          send_back: { to: 'ACP_REVIEW', toLevel: 'ACP', requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
+          approve:   { to: 'JCP_REVIEW',  toLevel: 'JCP',      allowedRoles: ['DISTRICT_OFFICER'] },
+          send_back: { to: 'SENT_BACK',   toLevel: 'PS',       requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
         },
         JCP_REVIEW: {
           approve: { to: 'SCP_REVIEW', toLevel: 'SCP', allowedRoles: ['JCP'] },

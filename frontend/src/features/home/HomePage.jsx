@@ -85,7 +85,7 @@ export default function HomePage() {
                 style={{ minHeight: '450px' }}
               />
               <div className="py-4 px-3 text-center bg-white border-t border-slate-100 flex-shrink-0">
-                <span className="text-xs font-black uppercase text-[#cca43b] tracking-wider block">MESSAGE FROM</span>
+                {/* <span className="text-xs font-black uppercase text-[#cca43b] tracking-wider block">MESSAGE FROM</span> */}
                 <h3 className="text-base font-extrabold text-[#0d2a4a] mt-0.5 font-display">Sardar Vallabhbhai Patel</h3>
                 <p className="text-[10px] text-slate-500 font-bold tracking-wide uppercase mt-0.5">First Home Minister of India</p>
               </div>

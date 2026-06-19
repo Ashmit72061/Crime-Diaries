@@ -1,4 +1,5 @@
 import * as authService from './auth.service.js';
+import { resolveDistrictId } from './auth.service.js';
 import db from '../../config/db.js';
 import bcrypt from 'bcryptjs';
 
@@ -119,6 +120,18 @@ export const me = async (req, res) => {
 
     const level = getLevelFromRole(user.role);
 
+    // Resolve district_id via hierarchy when user only has station_id (HC/SHO)
+    const effectiveDistrictId = await resolveDistrictId(user);
+
+    // Fetch district name if we resolved it through PS parent
+    let districtName_en = user.district_name_en || null;
+    let districtName_hi = user.district_name_hi || null;
+    if (!user.district_id && effectiveDistrictId) {
+      const distNode = await db('hierarchy_nodes').where({ id: effectiveDistrictId }).first();
+      districtName_en = distNode?.name_en || null;
+      districtName_hi = distNode?.name_hi || null;
+    }
+
     return res.status(200).json({
       status: 'success',
       success: true,
@@ -136,8 +149,8 @@ export const me = async (req, res) => {
           level: level,
           ps_id: user.station_id || null,
           psId: user.station_id || null,
-          district_id: user.district_id || null,
-          districtId: user.district_id || null,
+          district_id: effectiveDistrictId,
+          districtId: effectiveDistrictId,
           sub_div_id: user.sub_div_id || null,
           is_active: !!user.is_active,
           last_login: user.last_login,
@@ -145,13 +158,13 @@ export const me = async (req, res) => {
           ps_name_hi: user.ps_name_hi || null,
           sub_div_name_en: user.sub_div_name_en || null,
           sub_div_name_hi: user.sub_div_name_hi || null,
-          district_name_en: user.district_name_en || null,
-          district_name_hi: user.district_name_hi || null
+          district_name_en: districtName_en,
+          district_name_hi: districtName_hi
         },
         jurisdiction: {
           station: user.station_id ? { id: user.station_id, name_en: user.ps_name_en, name_hi: user.ps_name_hi, code: user.ps_code } : null,
           sub_division: user.sub_div_id ? { id: user.sub_div_id, name_en: user.sub_div_name_en, name_hi: user.sub_div_name_hi } : null,
-          district: user.district_id ? { id: user.district_id, name_en: user.district_name_en, name_hi: user.district_name_hi, code: user.district_code } : null
+          district: effectiveDistrictId ? { id: effectiveDistrictId, name_en: districtName_en, name_hi: districtName_hi } : null
         }
       }
     });
