@@ -25,6 +25,7 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
 
   const handleChange = (val) => onChange(key, val);
 
+
   if (type === 'TEXT') {
     return <TextField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
   }

@@ -15,11 +15,11 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore.js';
 
 const QUICK_PROFILES = [
-  { badge: "HQ001",  abbr: "HQ",  role: "Headquarters",          name: "HQ Analyst"            },
-  { badge: "DO001",  abbr: "DCP", role: "District Officer",       name: "New Delhi District"    },
-  { badge: "ACP001", abbr: "ACP", role: "Asst. Commissioner",     name: "Parliament St Subdiv"  },
-  { badge: "SHO001", abbr: "SHO", role: "Station House Officer",  name: "Parliament St PS"      },
-  { badge: "HC001",  abbr: "HC",  role: "Head Constable",         name: "Parliament St PS"      },
+  { badge: "HQ001",  abbr: "HQ",  role: "Research Cell",          name: "HQ Analyst"            },
+  { badge: "DO001",  abbr: "DCP", role: "SO Branch/DCP",       name: "New Delhi District"    },
+  { badge: "ACP001", abbr: "ACP", role: "ACP Sub Division",     name: "Parliament St Subdiv"  },
+  { badge: "SHO001", abbr: "SHO", role: "SHO",  name: "Parliament St PS"      },
+  { badge: "HC001",  abbr: "HC",  role: "Record Branch/HC",         name: "Parliament St PS"      },
 ];
 
 export default function LoginPage() {
