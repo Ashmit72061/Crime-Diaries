@@ -1,0 +1,13 @@
+sn,fir_no,us,name,father_husband_name,address,age,name_of_io,pcjcbail,prev_involvement_no_of_cases,recovery,whether_accused_is_bc_or_not,integrated_pi,group_patrolling,cycle_patrolling,by_antisnatching_team,by_prahari,by_eyes_ears_scheme_members
+1,FIR/DD/2006,103,Vijay Kumar,Lala Kumar,"Slum Area, Old Town",32,Insp. Rao,PC,3,Knife,YES,NO,NO,NO,NO,YES,NO
+2,DD/2010,126/170 BNSS,Mahesh Yadav,Ganga Yadav,Camp Road,41,SI Khan,Bound Down,1,,NO,NO,NO,NO,NO,NO,NO
+3,EFIR Theft 2003,303,Sanjay Lal,Babu Lal,Karol Bagh,27,SI Meena,JC,2,,NO,NO,YES,NO,NO,NO,NO
+4,EFIR MVT 2004,303,Imran Sheikh,Yusuf Sheikh,Patel Nagar,29,Insp. Yadav,PC,0,,NO,YES,NO,NO,NO,NO,NO
+5,FIR/DD/1900,309,Ramesh Tomar,Dhan Singh,Unknown,38,Insp. Rao,po,5,,NO,NO,NO,NO,NO,NO,NO
+6,FIR/DD/1850,305,Karan Bawaria,Sher Singh,Bawana,44,SI Khan,JC,8,,NO,NO,NO,NO,NO,NO,NO
+7,FIR/DD/2003,303,Minor X,Guardian Y,Karol Bagh,16,SI Meena,JJB,0,,NO,NO,NO,NO,YES,NO,NO
+8,FIR/DD/2009,318,Naveen Agarwal,Prem Agarwal,Cyber Hub,30,Insp. Cyber,PC,1,,NO,NO,NO,NO,NO,NO,NO
+9,FIR/DD/2011,25,Faisal Khan,Ali Khan,Seelampur,33,SI Khan,JC,0,,NO,NO,NO,NO,NO,NO,NO
+10,DD/2012,33,Gopal Das,Hari Das,Wazirpur,36,SI Meena,Bail,0,,NO,NO,NO,NO,NO,NO,NO
+11,DD/2013,13,Pawan Joshi,Kishan Joshi,Sadar Bazar,39,Insp. Rao,Bail,0,,NO,NO,NO,NO,NO,NO,NO
+12,FIR/DD/2007,20,Sohan Singh,Mohan Singh,Highway,31,SI Khan,JC,0,,NO,NO,NO,NO,NO,NO,NO

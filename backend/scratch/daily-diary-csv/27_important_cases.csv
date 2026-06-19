@@ -1,0 +1,4 @@
+s_no,case_type_category_of_offence,police_station,district,fir_no,date_ddmmyyyy,under_sections_act_ipc_bns_bnss,brief_facts_of_the_case,accused_person_name,fathers_name,recovery_made_property_weapon_cash_etc
+1,Burglary,PS Parliament Street,New Delhi District,FIR/DD/2001,2026-06-19,305,"House broken into overnight, valuables stolen.",,,"Gold jewellery, cash"
+2,Murder,PS Parliament Street,New Delhi District,FIR/DD/2006,2026-06-19,103,"Homicide reported, investigation on.",Vijay (absconding),,Knife recovered
+3,Robbery,PS Parliament Street,New Delhi District,FIR/DD/2008,2026-06-19,309,Mobile snatched and later recovered.,,,Mobile phone (Samsung)
