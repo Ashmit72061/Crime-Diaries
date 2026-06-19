@@ -598,7 +598,6 @@ async function seed() {
   await db('report_jobs').del();
   await db('report_templates').del();
   await db('filter_presets').del();
-  await db('field_registry').del();
   await db('users').del();
 
   // Phase-2 tables (may not exist on Phase-1 DB — safe to ignore)
@@ -610,9 +609,10 @@ async function seed() {
   console.log('👮 Seeding users...');
   await db('users').insert(USERS);
 
-  // ── 2. Field registry ──────────────────────────────────────────────────────────
-  console.log('📋 Seeding field registry...');
-  await db('field_registry').insert(buildFields());
+  // ── 2. Field registry ─────────────────────────────────────────────────────────
+  // NOTE: field_registry is managed exclusively by seeds/seed.js (npm run db:seed).
+  // Do NOT insert fields here — seed.js already ran before this script.
+  console.log('📋 Field registry managed by seeds/seed.js — skipping.');
 
   // ── 3. Report templates ───────────────────────────────────────────────────────
   console.log('📄 Seeding report templates...');
