@@ -28,6 +28,8 @@ import legacyRouter from './modules/legacy/legacy.router.js';
 import levelContractsRouter from './modules/level-contracts/levelContracts.router.js';
 import filtersRouter from './modules/filters/filters.router.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
+import dailyDiaryRouter from './modules/daily-diary/daily-diary.router.js';
+
 
 const app = express();
 
@@ -114,6 +116,10 @@ app.use('/api/filters', filtersRouter);
 
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/notifications', notificationsRouter);
+
+app.use('/api/v1/daily-diary', dailyDiaryRouter);
+app.use('/api/daily-diary', dailyDiaryRouter);
+
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
