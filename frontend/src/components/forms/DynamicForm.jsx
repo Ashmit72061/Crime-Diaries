@@ -434,18 +434,23 @@ export default function DynamicForm({
 
       {/* ── Active Section Form ─────────────────────────────────────────── */}
       {activeSection && (
-        <form onSubmit={handleFormSubmit} noValidate className="space-y-6">
-          <FormSection
-            section={activeSection}
-            currentStep={currentStep}
-            values={values}
-            errors={errors}
-            touched={touched}
-            handleChange={handleChange}
-            readOnly={readOnly}
-            targetFields={targetFields}
-            lang={lang}
-          />
+        <div className="space-y-6">
+          {/* Wrap ONLY the fields in a form so Enter key doesn't auto-submit
+              when navigating between steps. The submit action is wired via
+              an explicit onClick on the Submit button in FormToolbar. */}
+          <form onSubmit={(e) => e.preventDefault()} noValidate>
+            <FormSection
+              section={activeSection}
+              currentStep={currentStep}
+              values={values}
+              errors={errors}
+              touched={touched}
+              handleChange={handleChange}
+              readOnly={readOnly}
+              targetFields={targetFields}
+              lang={lang}
+            />
+          </form>
 
           {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
           <FormToolbar
@@ -456,10 +461,11 @@ export default function DynamicForm({
             onPrevious={handleBack}
             onSaveDraft={!readOnly ? handleManualSave : null}
             onNext={handleNext}
+            onSubmit={handleFormSubmit}
             isLastStep={isLastStep}
             lang={lang}
           />
-        </form>
+        </div>
       )}
     </div>
   );
