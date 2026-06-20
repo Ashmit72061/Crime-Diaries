@@ -1,10 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Send, Calendar, CheckCircle, Database, AlertTriangle, FileText, Shield, Phone, UserX, Fingerprint } from 'lucide-react';
+import { ArrowLeft, BookOpen, Send, Calendar, CheckCircle, Database, AlertTriangle, FileText, Shield, Phone, UserX, Fingerprint, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
 import useAuthStore from '../../store/authStore.js';
+
+const REPORTS = [
+  { tableName: "excel_1manual_fir",                label: "Manual FIR",                        type: "list",    num: 1  },
+  { tableName: "excel_2eburglary_cases",           label: "E-Burglary Cases",                  type: "list",    num: 2  },
+  { tableName: "excel_3ehouse_theft_cases",        label: "E-House Theft Cases",               type: "list",    num: 3  },
+  { tableName: "excel_4eother_theft_cases",        label: "E-Other Theft Cases",               type: "list",    num: 4  },
+  { tableName: "excel_5mvt_cases",                 label: "MVT Cases",                         type: "list",    num: 5  },
+  { tableName: "excel_6arrested_all_heads",        label: "Arrested - All Heads",              type: "summary", num: 6  },
+  { tableName: "excel_7arrested_east_district",    label: "Arrested - District",               type: "list",    num: 7  },
+  { tableName: "excel_8arrested_kalandara",        label: "Arrested - Kalandara / Preventive", type: "list",    num: 8  },
+  { tableName: "excel_9arrested_efir_theft",       label: "Arrested - E-FIR Theft",            type: "list",    num: 9  },
+  { tableName: "excel_10arrested_efir_mv_theft",   label: "Arrested - E-FIR MV Theft",         type: "list",    num: 10 },
+  { tableName: "excel_11proclaimed_offenders",     label: "Proclaimed Offenders",              type: "list",    num: 11 },
+  { tableName: "excel_12listed_criminals_action",  label: "Listed Criminals Action",           type: "list",    num: 12 },
+  { tableName: "excel_13arrested_24_hrs_list",     label: "Arrested - Last 24 Hrs",            type: "list",    num: 13 },
+  { tableName: "excel_14pi_disposal_manual",       label: "PI Disposal - Manual",              type: "list",    num: 14 },
+  { tableName: "excel_15pi_disposal_eproperty",    label: "PI Disposal - E-Property",          type: "list",    num: 15 },
+  { tableName: "excel_16pi_disposal_emvt",         label: "PI Disposal - E-MVT",               type: "list",    num: 16 },
+  { tableName: "excel_17juveniles_conflict_law",   label: "Juveniles in Conflict with Law",    type: "list",    num: 17 },
+  { tableName: "excel_18missing_persons",          label: "Missing Persons",                   type: "list",    num: 18 },
+  { tableName: "excel_19uidb",                     label: "UIDB (Unidentified Bodies)",        type: "list",    num: 19 },
+  { tableName: "excel_20abandoned_persons",        label: "Abandoned Persons",                 type: "list",    num: 20 },
+  { tableName: "excel_21traced_persons",           label: "Traced Persons",                    type: "list",    num: 21 },
+  { tableName: "excel_22women_missing",            label: "Women Missing",                     type: "summary", num: 22 },
+  { tableName: "excel_23children_missing",         label: "Children Missing",                  type: "summary", num: 23 },
+  { tableName: "excel_24preventive_action",        label: "Preventive Action",                 type: "list",    num: 24 },
+  { tableName: "excel_25inquest_registered",       label: "Inquest Registered",                type: "list",    num: 25 },
+  { tableName: "excel_26inquest_acpsdm_disposal",  label: "Inquest ACP/SDM Disposal",          type: "list",    num: 26 },
+  { tableName: "excel_27important_cases",          label: "Important Cases",                   type: "list",    num: 27 },
+  { tableName: "excel_28fir_goswara_summary",      label: "FIR Goswara Summary",               type: "summary", num: 28 },
+  { tableName: "excel_29financial_fraud_arrest",   label: "Financial Fraud Arrest",            type: "list",    num: 29 },
+  { tableName: "excel_30patrolling_checking",      label: "Patrolling / Checking",             type: "summary", num: 30 },
+  { tableName: "excel_31ndps_action",              label: "NDPS Action",                       type: "summary", num: 31 },
+  { tableName: "excel_32servant_verification",     label: "Servant Verification",              type: "summary", num: 32 },
+  { tableName: "excel_33mobile_recovered_ps",      label: "Mobile Recovered - PS",             type: "list",    num: 33 },
+  { tableName: "excel_34mobile_recovered_summary", label: "Mobile Recovered Summary",          type: "summary", num: 34 },
+];
+
+const MOCK_PS_LIST = [
+  { id: "PS_NDD_01", name: "Connaught Place",    code: "CP"  },
+  { id: "PS_NDD_02", name: "Tilak Marg",         code: "TM"  },
+  { id: "PS_NDD_03", name: "Barakhamba Road",    code: "BR"  },
+  { id: "PS_NDD_04", name: "Patel Marg",         code: "PM"  },
+  { id: "PS_NDD_05", name: "Chanakyapuri",       code: "CKP" },
+  { id: "PS_NDD_06", name: "Diplomatic Enclave", code: "DE"  },
+  { id: "PS_NDD_07", name: "Parliament Street",  code: "PST" },
+  { id: "PS_NDD_08", name: "Mandir Marg",        code: "MM"  },
+  { id: "PS_NDD_09", name: "Karol Bagh",         code: "KB"  },
+  { id: "PS_NDD_10", name: "Rajendra Nagar",     code: "RN"  },
+  { id: "PS_NDD_11", name: "Patel Nagar",        code: "PN"  },
+  { id: "PS_NDD_12", name: "Kishanganj",         code: "KSG" },
+  { id: "PS_NDD_13", name: "Saraswati Vihar",   code: "SV"  },
+  { id: "PS_NDD_14", name: "Delhi Cantt.",       code: "DC"  },
+  { id: "PS_NDD_15", name: "Naraina",            code: "NAR" },
+];
 
 export default function CompilationUI() {
   const navigate = useNavigate();
@@ -12,6 +67,53 @@ export default function CompilationUI() {
   const { user } = useAuthStore();
 
   const [compileDate, setCompileDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Dropdown UI states
+  const [selectedPS, setSelectedPS] = useState(null);
+  const [psDropOpen, setPsDropOpen] = useState(false);
+  const [psSearch, setPsSearch] = useState('');
+
+  const [selectedFields, setSelectedFields] = useState(new Set(REPORTS.map(r => r.tableName)));
+  const [reportsDropOpen, setReportsDropOpen] = useState(false);
+  const [reportSearch, setReportSearch] = useState('');
+
+  const psDropRef = useRef(null);
+  const reportsDropRef = useRef(null);
+
+  // Fetch police stations dynamically under target district
+  const { data: psList = [], isLoading: psLoading } = useQuery({
+    queryKey: ['hierarchy', 'ps', user?.district_id || user?.districtId],
+    queryFn: async () => {
+      try {
+        const distId = user?.district_id || user?.districtId || 'DIST_NDD';
+        const res = await api.get(`/hierarchy/nodes?type=PS&districtId=${distId}`);
+        const list = (res.data?.data?.nodes || res.data?.data || []).map(n => ({
+          id: n.id || n._id,
+          name: n.name || n.ps_name,
+          code: n.code || n.ps_code || "",
+        }));
+        return list.length ? list : MOCK_PS_LIST;
+      } catch (err) {
+        console.warn('Failed to fetch hierarchy nodes, using fallback mock list:', err.message);
+        return MOCK_PS_LIST;
+      }
+    },
+    initialData: MOCK_PS_LIST,
+  });
+
+  // Handle outside clicks to close dropdowns
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (psDropRef.current && !psDropRef.current.contains(event.target)) {
+        setPsDropOpen(false);
+      }
+      if (reportsDropRef.current && !reportsDropRef.current.contains(event.target)) {
+        setReportsDropOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Fetch district compilations list — backend uses JWT district, no need to send it
   const { data: compilations = [], isLoading, error: fetchError } = useQuery({
@@ -52,8 +154,40 @@ export default function CompilationUI() {
     },
   });
 
-  const handleCompileTrigger = () => {
+  const handleCompileTrigger = async () => {
+    // 1. Trigger DB compilation tracking
     createCompMutation.mutate(compileDate);
+
+    // 2. Perform Excel report export & download flow
+    try {
+      const params = new URLSearchParams();
+      params.set('date', compileDate);
+      if (selectedPS) {
+        params.set('psId', selectedPS.id);
+      }
+      if (selectedFields.size < REPORTS.length) {
+        params.set('tableNames', Array.from(selectedFields).join(','));
+      }
+
+      const response = await api.get(`/daily-diary/export?${params.toString()}`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const psSuffix = selectedPS ? `_${selectedPS.code}` : '_All_Stations';
+      link.setAttribute('download', `Daily_Diary_${compileDate}${psSuffix}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Daily Diary Excel spreadsheet downloaded successfully!');
+    } catch (err) {
+      console.error('[CompilationUI] Excel export failed:', err);
+      toast.error('Failed to download Daily Diary Excel spreadsheet.');
+    }
   };
 
   const getSummaryVal = (comp, key) => {
@@ -107,17 +241,186 @@ export default function CompilationUI() {
           This will bundle all records currently at <span className="text-amber-400 font-semibold">DISTRICT_REVIEW</span> status in your district into a single compilation packet.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
           <input
             type="date"
             value={compileDate}
             onChange={(e) => setCompileDate(e.target.value)}
-            className="bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2 outline-none focus:border-[#cca43b] transition-all"
+            className="bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2.5 outline-none focus:border-[#cca43b] transition-all shrink-0"
           />
+
+          {/* POLICE STATION DROPDOWN */}
+          <div ref={psDropRef} className="relative flex-1 min-w-[200px]">
+            <button
+              type="button"
+              onClick={() => setPsDropOpen(!psDropOpen)}
+              className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2.5 outline-none focus:border-[#cca43b] transition-all cursor-pointer h-full"
+            >
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Shield size={14} className="text-[#cca43b] shrink-0" />
+                <span className="truncate text-left">
+                  {psLoading ? 'Loading stations...' : selectedPS ? selectedPS.name : 'All Stations (District)'}
+                </span>
+              </div>
+              <ChevronDown size={14} className="text-zinc-500 shrink-0" />
+            </button>
+            
+            {psDropOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-950 border border-zinc-850 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-64 animate-fade-in">
+                <div className="p-2 border-b border-zinc-850 bg-zinc-900/60">
+                  <input
+                    type="text"
+                    placeholder="Search station..."
+                    value={psSearch}
+                    onChange={(e) => setPsSearch(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] text-zinc-200 outline-none focus:border-[#cca43b]"
+                  />
+                </div>
+                <div className="overflow-y-auto flex-1 max-h-48 scrollbar-thin">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPS(null);
+                      setPsDropOpen(false);
+                      setPsSearch('');
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-900 transition-colors flex items-center justify-between cursor-pointer ${
+                      !selectedPS ? 'text-[#cca43b] font-bold bg-zinc-900/40' : 'text-zinc-300'
+                    }`}
+                  >
+                    <span>All Stations (District-wide)</span>
+                    {!selectedPS && <CheckCircle size={10} className="text-[#cca43b]" />}
+                  </button>
+                  <div className="h-px bg-zinc-850" />
+                  {psList
+                    .filter(ps => 
+                      ps.name.toLowerCase().includes(psSearch.toLowerCase()) || 
+                      ps.code.toLowerCase().includes(psSearch.toLowerCase())
+                    )
+                    .map(ps => {
+                      const isSelected = selectedPS?.id === ps.id;
+                      return (
+                        <button
+                          key={ps.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedPS(ps);
+                            setPsDropOpen(false);
+                            setPsSearch('');
+                          }}
+                          className={`w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-900 transition-colors flex items-center justify-between cursor-pointer ${
+                            isSelected ? 'text-[#cca43b] font-bold bg-zinc-900/40' : 'text-zinc-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-zinc-500 font-mono w-6 text-left shrink-0">
+                              {ps.code}
+                            </span>
+                            <span className="truncate">{ps.name}</span>
+                          </div>
+                          {isSelected && <CheckCircle size={10} className="text-[#cca43b]" />}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* REPORTS DROPDOWN */}
+          <div ref={reportsDropRef} className="relative flex-1 min-w-[200px]">
+            <button
+              type="button"
+              onClick={() => setReportsDropOpen(!reportsDropOpen)}
+              className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2.5 outline-none focus:border-[#cca43b] transition-all cursor-pointer h-full"
+            >
+              <div className="flex items-center gap-2 overflow-hidden">
+                <FileText size={14} className="text-[#cca43b] shrink-0" />
+                <span className="truncate text-left">
+                  {selectedFields.size === REPORTS.length 
+                    ? 'All Reports (34/34)' 
+                    : `${selectedFields.size} Reports Selected`}
+                </span>
+              </div>
+              <ChevronDown size={14} className="text-zinc-500 shrink-0" />
+            </button>
+            
+            {reportsDropOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-950 border border-zinc-850 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-72">
+                <div className="p-2 border-b border-zinc-850 bg-zinc-900/60 flex flex-col gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search report fields..."
+                    value={reportSearch}
+                    onChange={(e) => setReportSearch(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] text-zinc-200 outline-none focus:border-[#cca43b]"
+                  />
+                  <div className="flex items-center justify-between text-[10px] px-1 text-zinc-400">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedFields.size === REPORTS.length) {
+                          setSelectedFields(new Set());
+                        } else {
+                          setSelectedFields(new Set(REPORTS.map(r => r.tableName)));
+                        }
+                      }}
+                      className="hover:text-amber-400 transition-colors cursor-pointer font-bold"
+                    >
+                      {selectedFields.size === REPORTS.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    <span>{selectedFields.size} of {REPORTS.length} selected</span>
+                  </div>
+                </div>
+                <div className="overflow-y-auto flex-1 max-h-52 scrollbar-thin">
+                  {REPORTS
+                    .filter(r => r.label.toLowerCase().includes(reportSearch.toLowerCase()))
+                    .map(report => {
+                      const isSelected = selectedFields.has(report.tableName);
+                      return (
+                        <label
+                          key={report.tableName}
+                          className="w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-900 transition-colors flex items-center gap-2 text-zinc-300 cursor-pointer select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedFields(prev => {
+                                const next = new Set(prev);
+                                if (next.has(report.tableName)) {
+                                  next.delete(report.tableName);
+                                } else {
+                                  next.add(report.tableName);
+                                }
+                                return next;
+                              });
+                            }}
+                            className="rounded border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none w-3.5 h-3.5 cursor-pointer accent-[#cca43b]"
+                          />
+                          <span className="text-[10px] text-zinc-500 font-mono w-4 text-right shrink-0">
+                            {String(report.num).padStart(2, '0')}
+                          </span>
+                          <span className="truncate flex-1">{report.label}</span>
+                          <span className={`text-[8px] font-bold px-1 py-0.2 rounded border shrink-0 ${
+                            report.type === 'summary' 
+                              ? 'bg-blue-950/40 text-blue-400 border-blue-900/40' 
+                              : 'bg-zinc-900 text-zinc-500 border-zinc-850'
+                          }`}>
+                            {report.type === 'summary' ? 'SUM' : 'LIST'}
+                          </span>
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleCompileTrigger}
-            disabled={createCompMutation.isPending}
-            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+            disabled={createCompMutation.isPending || selectedFields.size === 0}
+            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0"
           >
             {createCompMutation.isPending ? (
               <>
@@ -127,7 +430,7 @@ export default function CompilationUI() {
             ) : (
               <>
                 <Database size={14} />
-                <span>Compile Station Logs</span>
+                <span>Compile Logs</span>
               </>
             )}
           </button>
