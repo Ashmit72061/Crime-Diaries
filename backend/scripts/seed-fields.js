@@ -330,8 +330,14 @@ const missingHeaders = [
 const seedFields = async () => {
   await connectDB();
   try {
-    logger.info('Clearing existing field registry...');
-    await db('field_registry').del();
+    // ── SKIPPED ──────────────────────────────────────────────────────────────
+    // seed.js (run via `npm run db:seed`) is the authoritative source for
+    // field_registry. This script previously wiped and replaced the registry
+    // with stale headers, overwriting all fields added to seed.js.
+    // It is now disabled so seed.js remains the sole source of truth.
+    // ─────────────────────────────────────────────────────────────────────────
+    logger.info('seed-fields.js: skipped — field_registry is managed by seeds/seed.js');
+    return;
 
     logger.info('Preparing Master Fields...');
     
