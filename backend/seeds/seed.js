@@ -250,5 +250,13 @@ export async function seed(knex) {
     { id: 'U_28',  field_key: 'filed_by_acp_sdm_date', field_type: 'DATE',   applicable_record_types: JSON.stringify(['UIDB']), label_en: 'Date of Filed by ACP/SDM', label_hi: 'एसीपी/एसडीएम द्वारा दायर करने की तिथि', visible_to_levels: L, editable_by_levels: E, section: 'uidb_details',      sort_order: 13, is_active: true, scope_level: 'global' },
   ];
 
-  await knex('field_registry').insert(fields);
+  await knex('field_registry').insert(fields.map(f => ({ 
+    is_active: true, 
+    scope_level: 'global',
+    scope_id: null,
+    created_by: null,
+    section_label_en: null,
+    section_label_hi: null,
+    ...f 
+  })));
 }

@@ -12,8 +12,11 @@ const databaseUrl = process.env.DATABASE_URL || 'postgresql://pharos:pharos@loca
 
 const config = {
   client: dbClient,
-  connection: databaseUrl,
-  pool: {
+  connection: dbClient === 'sqlite3' ? {
+    filename: process.env.SQLITE_DB_PATH || path.resolve(__dirname, 'database.sqlite')
+  } : databaseUrl,
+  useNullAsDefault: dbClient === 'sqlite3',
+  pool: dbClient === 'sqlite3' ? undefined : {
     min: 2,
     max: 10
   },
@@ -30,7 +33,9 @@ export default {
   development: config,
   test: {
     ...config,
-    connection: databaseUrl
+    connection: dbClient === 'sqlite3' ? {
+      filename: ':memory:'
+    } : databaseUrl
   },
   production: config
 };
