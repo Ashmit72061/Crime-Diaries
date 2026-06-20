@@ -20,6 +20,7 @@
  */
 
 import db from '../../config/db.js';
+import { logger } from '../../utils/logger.js';
 
 const _isSqlite = () => {
   const c = db.client.config.client;
@@ -99,7 +100,7 @@ export async function isWarehouseReady() {
     _whReadyCacheAt = now;
     return _whReadyCache;
   } catch (err) {
-    console.error('Error checking warehouse status:', err);
+    logger.error('[Warehouse] Error checking warehouse status:', err.message);
     _whReadyCache = false;
     _whReadyCacheAt = now;
     return false;

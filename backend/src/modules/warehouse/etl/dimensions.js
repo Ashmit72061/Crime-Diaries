@@ -13,6 +13,7 @@ import {
   normalizeActLaw
 } from './normalize.js';
 import db from '../../../config/db.js';
+import { logger } from '../../../utils/logger.js';
 
 // In-memory caches to speed up batch lookups during a sync run
 let districtCache = new Map();   // source_district_id -> sk
@@ -117,7 +118,7 @@ export async function syncHierarchyDimensions() {
     // Resolve parent district
     const opDistrictId = await getDistrictIdForNode(op.id);
     if (!opDistrictId) {
-      console.warn(`Could not find district for PS: ${op.id} (${op.name_en})`);
+      logger.warn(`[Warehouse] Could not find district for PS: ${op.id} (${op.name_en})`);
       continue;
     }
 
@@ -129,7 +130,7 @@ export async function syncHierarchyDimensions() {
         districtSk = dRow.sk;
         districtCache.set(opDistrictId, districtSk);
       } else {
-        console.warn(`District SK not found in DB for: ${opDistrictId}`);
+        logger.warn(`[Warehouse] District SK not found in DB for: ${opDistrictId}`);
         continue;
       }
     }
