@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PHAROS — Phase 3 Implementation Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg0: #0b0f1a; --bg1: #111827; --bg2: #1a2233; --bg3: #212d42;
+    --border: #2a3a58; --border-light: #1f2e48;
+    --text0: #e8edf5; --text1: #9bacc6; --text2: #5d738f;
+    --blue: #3b82f6; --purple: #8b5cf6; --teal: #14b8a6;
+    --amber: #f59e0b; --green: #22c55e; --red: #ef4444;
+    --mono: 'SF Mono','Fira Code','Cascadia Code','Courier New',monospace;
+    --sans: system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg0); color: var(--text0); line-height: 1.6; font-size: 14px; }
+  .page { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: 235px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--bg1); border-right: 1px solid var(--border); padding: 2rem 0; }
+  .sidebar-logo { padding: 0 1.25rem 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
+  .sidebar-logo .sys { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.08em; }
+  .sidebar-logo .sub { font-size: 0.68rem; color: var(--text2); margin-top: 0.2rem; line-height: 1.5; }
+  .sidebar-section { padding: 0 1.25rem 0.25rem; margin-top: 0.75rem; }
+  .sidebar-section-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text2); margin-bottom: 0.4rem; }
+  .sidebar nav a { display: block; padding: 0.28rem 1.25rem; font-size: 0.78rem; color: var(--text1); text-decoration: none; border-left: 2px solid transparent; transition: color 0.15s, border-color 0.15s; line-height: 1.4; }
+  .sidebar nav a:hover { color: var(--text0); border-left-color: var(--blue); }
+  .sidebar nav a.indent { padding-left: 2rem; font-size: 0.73rem; }
+
+  /* ── Main ── */
+  .main { flex: 1; padding: 3rem 3.5rem; max-width: 940px; }
+  .doc-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+  .doc-header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+  .doc-header .sub { font-size: 0.9rem; color: var(--text1); margin: 0.25rem 0 1rem; }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+  .badge { font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 4px; border: 1px solid var(--border); color: var(--text1); background: var(--bg2); }
+  .badge.blue { border-color: #1d4ed8; background: #1e3a8a22; color: #93c5fd; }
+  .badge.purple { border-color: #6d28d9; background: #4c1d9522; color: #c4b5fd; }
+  .badge.teal { border-color: #0f766e; background: #0d948022; color: #5eead4; }
+  .badge.amber { border-color: #b45309; background: #78350f22; color: #fde68a; }
+  .badge.green { border-color: #15803d; background: #14532d22; color: #86efac; }
+  .badge.red { border-color: #991b1b; background: #7f1d1d22; color: #fca5a5; }
+
+  /* ── Sections ── */
+  section { margin-bottom: 3.5rem; }
+  section h2 { font-size: 1rem; font-weight: 700; color: var(--text0); padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
+  .sn { font-size: 0.62rem; font-weight: 700; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 0.15rem 0.45rem; border-radius: 4px; font-family: var(--mono); }
+  section h3 { font-size: 0.85rem; font-weight: 700; color: var(--text0); margin: 1.5rem 0 0.6rem; }
+  section h4 { font-size: 0.8rem; font-weight: 600; color: var(--text1); margin: 1rem 0 0.4rem; }
+  p { color: var(--text1); font-size: 0.84rem; margin-bottom: 0.9rem; line-height: 1.65; }
+
+  /* ── Code ── */
+  pre { background: var(--bg1); border: 1px solid var(--border); border-radius: 6px; padding: 1.1rem 1.25rem; font-family: var(--mono); font-size: 0.74rem; color: var(--text1); overflow-x: auto; white-space: pre; line-height: 1.75; margin: 0.75rem 0 1.25rem; }
+  pre .c { color: var(--text2); }
+  pre .k { color: #93c5fd; font-weight: 600; }
+  pre .s { color: #6ee7b7; }
+  pre .t { color: var(--text0); font-weight: 600; }
+  pre .n { color: #fde68a; }
+  pre .p { color: #c4b5fd; }
+  pre .ok { color: #86efac; }
+  pre .err { color: #fca5a5; }
+  code { font-family: var(--mono); font-size: 0.81em; background: var(--bg2); border: 1px solid var(--border-light); padding: 0.1em 0.35em; border-radius: 3px; color: #93c5fd; }
+
+  /* ── Notes ── */
+  .note { background: var(--bg2); border-left: 3px solid var(--blue); border-radius: 0 6px 6px 0; padding: 0.75rem 1rem; font-size: 0.82rem; color: var(--text1); margin: 0.75rem 0 1.25rem; line-height: 1.6; }
+  .note.amber { border-left-color: var(--amber); }
+  .note.green { border-left-color: var(--green); }
+  .note.red { border-left-color: var(--red); }
+  .note.purple { border-left-color: var(--purple); }
+  .note strong { color: var(--text0); }
+
+  /* ── Tables ── */
+  .tbl-wrap { overflow-x: auto; margin: 0.75rem 0 1.25rem; border: 1px solid var(--border); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+  th { text-align: left; padding: 0.55rem 0.85rem; background: var(--bg2); color: var(--text2); font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 0.5rem 0.85rem; border-bottom: 1px solid var(--border-light); color: var(--text1); vertical-align: top; line-height: 1.5; }
+  td:first-child { color: var(--text0); font-family: var(--mono); font-size: 0.75rem; font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg2); }
+
+  /* ── HTTP Methods ── */
+  .method { display: inline-block; font-family: var(--mono); font-size: 0.67rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 3px; margin-right: 0.4rem; vertical-align: middle; }
+  .get    { background: #064e3b; color: #6ee7b7; border: 1px solid #065f46; }
+  .post   { background: #1e3a8a; color: #93c5fd; border: 1px solid #1d4ed8; }
+  .put    { background: #451a03; color: #fde68a; border: 1px solid #78350f; }
+  .delete { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+
+  /* ── Endpoint card ── */
+  .ep { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; margin: 0.75rem 0; }
+  .ep-path { font-family: var(--mono); font-size: 0.84rem; color: var(--text0); font-weight: 600; }
+  .ep-desc { font-size: 0.8rem; color: var(--text1); margin-top: 0.3rem; line-height: 1.55; }
+  .ep-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+  .tag { font-size: 0.67rem; padding: 0.13rem 0.42rem; border-radius: 3px; border: 1px solid var(--border); color: var(--text2); font-family: var(--mono); }
+  .tag.auth   { border-color: #6d28d9; color: #c4b5fd; }
+  .tag.role   { border-color: #0f766e; color: #5eead4; }
+  .tag.python { border-color: #b45309; color: #fde68a; }
+  .tag.node   { border-color: #15803d; color: #86efac; }
+
+  /* ── Flow diagram ── */
+  .flow { font-family: var(--mono); font-size: 0.74rem; line-height: 2; color: var(--text1); background: var(--bg1); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; margin: 0.75rem 0 1.25rem; overflow-x: auto; }
+  .flow .step  { color: var(--text0); font-weight: 700; }
+  .flow .sub   { color: var(--text2); }
+  .flow .ok    { color: #86efac; }
+  .flow .warn  { color: #fde68a; }
+  .flow .err   { color: #fca5a5; }
+  .flow .py    { color: #fde68a; font-weight: 600; }
+  .flow .node  { color: #86efac; font-weight: 600; }
+  .flow .mq    { color: #c4b5fd; font-weight: 600; }
+
+  /* ── Dev cards ── */
+  .dev-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin: 1rem 0 1.5rem; }
+  .dev-card { background: var(--bg1); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.2rem; }
+  .dev-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+  .dev-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+  .av-fe  { background: #1c0d60; border: 1px solid #8b5cf6; color: #c4b5fd; }
+  .av-be  { background: #064e3b; border: 1px solid #14b8a6; color: #5eead4; }
+  .av-hlp { background: #451a03; border: 1px solid #f59e0b; color: #fde68a; }
+  .av-tst { background: #0e1e45; border: 1px solid #3b82f6; color: #93c5fd; }
+  .dev-name { font-weight: 700; font-size: 0.88rem; color: var(--text0); }
+  .dev-role { font-size: 0.7rem; color: var(--text2); }
+  .dev-tasks { list-style: none; }
+  .dev-tasks li { font-size: 0.8rem; color: var(--text1); padding: 0.25rem 0; border-bottom: 1px solid var(--border-light); display: flex; gap: 0.5rem; align-items: flex-start; line-height: 1.4; }
+  .dev-tasks li:last-child { border-bottom: none; }
+  .dev-tasks li::before { content: '›'; color: var(--text2); flex-shrink: 0; margin-top: 0.05rem; }
+  .priority { font-size: 0.62rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; flex-shrink: 0; }
+  .p1 { background: #7f1d1d22; border: 1px solid #991b1b; color: #fca5a5; }
+  .p2 { background: #78350f22; border: 1px solid #b45309; color: #fde68a; }
+  .p3 { background: #14532d22; border: 1px solid #15803d; color: #86efac; }
+
+  /* ── Pillar grid ── */
+  .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; }
+  .pillar { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .pillar-num { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: var(--text2); margin-bottom: 0.3rem; font-family: var(--mono); }
+  .pillar-name { font-size: 0.88rem; font-weight: 700; color: var(--text0); margin-bottom: 0.4rem; }
+  .pillar-desc { font-size: 0.79rem; color: var(--text1); line-height: 1.55; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+  @media (max-width: 900px) { .sidebar { display: none; } .main { padding: 2rem 1.5rem; } }
+
+  /* ── Gantt chart ── */
+  .gantt-wrap { overflow-x: auto; margin: 1rem 0 1.5rem; }
+  .gantt { display: grid; grid-template-columns: 130px repeat(4, 1fr); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; min-width: 560px; }
+  .gantt > div:nth-last-child(-n+5) { border-bottom: none !important; }
+  .gantt-axis-hdr { background: var(--bg3); padding: 0.55rem 0.75rem; border-bottom: 2px solid var(--border); }
+  .gantt-ph-hdr { background: var(--bg3); padding: 0.55rem 0.75rem; border-bottom: 2px solid var(--border); border-left: 1px solid var(--border); }
+  .gantt-phase-label { display: block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); margin-bottom: 0.15rem; font-family: var(--mono); }
+  .gantt-ph-hdr > :last-child { font-size: 0.77rem; color: var(--text0); font-weight: 700; }
+  .gantt-person-cell { background: var(--bg2); border-bottom: 1px solid var(--border); border-right: 2px solid var(--border); padding: 0.6rem 0.7rem; display: flex; align-items: center; gap: 0.5rem; }
+  .gantt-person-name { font-weight: 700; font-size: 0.8rem; color: var(--text0); }
+  .gantt-person-role { font-size: 0.67rem; color: var(--text2); }
+  .gantt-cell { background: var(--bg0); border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); padding: 0.4rem 0.5rem; display: flex; flex-direction: column; gap: 0.28rem; }
+  .gbar { border-radius: 4px; padding: 0.2rem 0.5rem; font-size: 0.71rem; line-height: 1.4; font-weight: 500; }
+  .gbar.be   { background: #05392b44; border: 1px solid #14b8a666; color: #5eead4; }
+  .gbar.seed { background: #3d1c0144; border: 1px solid #f59e0b66; color: #fde68a; }
+  .gbar.fe   { background: #1a0a5544; border: 1px solid #8b5cf666; color: #c4b5fd; }
+  .gbar.test { background: #071a4044; border: 1px solid #3b82f666; color: #93c5fd; }
+  .gbar em   { font-size: 0.65rem; color: var(--text2); font-style: normal; }
+
+  /* ── Handoff box ── */
+  .handoff-box { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 0.75rem 0 1.25rem; }
+  .handoff-row { display: grid; grid-template-columns: 76px 150px 1fr; gap: 0.75rem; align-items: start; padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--border-light); }
+  .handoff-row:last-child { border-bottom: none; }
+  .handoff-stream { font-family: var(--mono); font-size: 0.63rem; font-weight: 700; color: var(--text2); text-transform: uppercase; padding-top: 0.08rem; }
+  .handoff-people { font-size: 0.75rem; font-weight: 700; color: var(--text0); white-space: nowrap; padding-top: 0.05rem; }
+  .handoff-what { color: var(--text1); font-size: 0.78rem; line-height: 1.5; }
+
+  /* ── Simplified dev cards ── */
+  .dev-card-v2 { background: var(--bg1); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.2rem; }
+  .dev-owns { font-size: 0.74rem; color: var(--text2); margin-top: 0.3rem; line-height: 1.5; }
+  .dev-owns code { color: var(--teal); font-size: 0.72rem; }
+  .deliv-list { list-style: none; margin-top: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .deliv { display: flex; gap: 0.6rem; align-items: flex-start; }
+  .deliv-num { font-family: var(--mono); font-size: 0.62rem; font-weight: 700; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 0.12rem 0.38rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: 0.1rem; }
+  .deliv-title { font-size: 0.81rem; font-weight: 700; color: var(--text0); }
+  .deliv-desc { font-size: 0.75rem; color: var(--text1); line-height: 1.45; margin-top: 0.12rem; }
+  .deps-section { margin-top: 0.9rem; border-top: 1px solid var(--border); padding-top: 0.65rem; }
+  .deps-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); margin-bottom: 0.4rem; }
+  .dep-row { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.3rem 0; border-bottom: 1px solid var(--border-light); font-size: 0.77rem; color: var(--text1); line-height: 1.4; }
+  .dep-row:last-child { border-bottom: none; }
+  .dep-badge { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; padding: 0.1rem 0.38rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: 0.1rem; }
+  .dep-need    { background: #78350f22; border: 1px solid #b45309; color: #fde68a; }
+  .dep-deliver { background: #14532d22; border: 1px solid #15803d; color: #86efac; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sys">PHAROS</div>
+    <div class="sub">Phase 3 — Implementation Guide<br>Reports · Import · Python Worker</div>
+  </div>
+  <nav>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Overview</div>
+      <a href="#overview">What we are building</a>
+      <a href="#pipeline">Complete pipeline</a>
+      <a href="#db">DB schema changes</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Report Engine</div>
+      <a href="#template-def">template_definition explained</a>
+      <a href="#report-modes">Three report modes</a>
+      <a href="#python-worker">Python worker</a>
+      <a href="#rabbitmq">RabbitMQ events</a>
+      <a href="#report-api">Report APIs</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Import</div>
+      <a href="#import-pipeline">Import pipeline</a>
+      <a href="#normalisation">Field normalisation</a>
+      <a href="#import-api">Import APIs</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Frontend</div>
+      <a href="#fe-guide">Frontend guide</a>
+      <a href="#fe-reports">Report builder UI</a>
+      <a href="#fe-import">Import UI</a>
+      <a href="#fe-components">Component list</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Team</div>
+      <a href="#work-division">Work division</a>
+      <a href="#vaibhav">Dev1 — Vaibhav</a>
+      <a href="#raja">Dev3 — Raja</a>
+      <a href="#shahista">Dev5 — Shahista</a>
+      <a href="#akshat">Dev4 — Akshat</a>
+      <a href="#build-order">Build order</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+<div class="doc-header">
+  <h1>Phase 3 — Implementation Guide</h1>
+  <p class="sub">Report Engine · Daily Diary · Bulk Import · Python Worker · Team Task Division</p>
+  <div class="badges">
+    <span class="badge purple">Python worker via RabbitMQ</span>
+    <span class="badge blue">Node.js API layer unchanged</span>
+    <span class="badge teal">field_registry driven</span>
+    <span class="badge amber">34 Daily Diary proformas</span>
+    <span class="badge green">dry-run → confirm import</span>
+    <span class="badge red">zero hardcoded fields</span>
+  </div>
+</div>
+
+<!-- ══ 01 OVERVIEW ══ -->
+<section id="overview">
+  <h2><span class="sn">01</span> What we are building</h2>
+
+  <div class="pillar-grid">
+    <div class="pillar">
+      <div class="pillar-num">Feature 1A</div>
+      <div class="pillar-name">Predefined Proformas</div>
+      <div class="pillar-desc">Fixed police register formats (arrest summary, PCR log, etc). Field set is locked — defined in DB. User only picks date range and jurisdiction. New proforma = new DB row, zero code change.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">Feature 1B</div>
+      <div class="pillar-name">Custom Report Builder</div>
+      <div class="pillar-desc">User picks record types and ticks any fields they want. Multiple record types = multiple sheets in one Excel. Optional: save selection as a named reusable template.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">Feature 1C</div>
+      <div class="pillar-name">Daily Diary</div>
+      <div class="pillar-desc">One Excel file, 34 sheets, each sheet = one police proforma. District Officer picks date + PS. Each sheet is populated with live DB data. Downloadable from Compile tab.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">Feature 2 & 3</div>
+      <div class="pillar-name">Bulk Import</div>
+      <div class="pillar-desc">Download blank template (auto-generated from field_registry with Excel dropdowns). Fill it. Upload for dry-run validation. Review errors row by row. Confirm to commit. Same flow for PS-level entry and legacy data.</div>
+    </div>
+  </div>
+
+  <div class="note green"><strong>The one rule everything follows:</strong> <code>field_registry</code> is the only place that knows what fields exist. Report column lists, import template headers, validation rules — all read from field_registry at runtime. Adding a field to the registry automatically makes it available everywhere.</div>
+</section>
+
+<!-- ══ 02 COMPLETE PIPELINE ══ -->
+<section id="pipeline">
+  <h2><span class="sn">02</span> Complete pipeline</h2>
+  <p>Node.js handles all HTTP. Python handles all file generation. They talk via RabbitMQ. This separation means you can scale the Python worker independently and swap the generation engine without touching any API.</p>
+
+  <div class="flow">
+<span class="step">CLIENT (browser)</span>
+  │  POST /api/reports/generate  { template_id, filters, format }
+  │
+<span class="node">NODE.JS API</span>
+  │  1. Validate request (template exists, user has scope access)
+  │  2. INSERT report_jobs { status: 'PENDING' }
+  │  3. publish('report.requested', { job_id, template_id, filters, format, user_id })
+  │  4. Return HTTP 201 { job_id, status: 'PENDING' }  ← immediate, no waiting
+  │
+<span class="mq">RABBITMQ</span>  (exchange: 'pharos', topic routing)
+  │  routing key: 'report.requested'
+  │
+<span class="py">PYTHON WORKER</span>
+  │  1. Consume message from queue 'report-generation-queue'
+  │  2. Load report_jobs row by job_id  (query same PostgreSQL)
+  │  3. Load template_definition from report_templates  (or custom_definition from job)
+  │  4. Load field metadata from field_registry for fixed_fields[]
+  │  5. Build pandas query against records table
+  │     → SELECT records.data->>'field_key' for each field
+  │     → WHERE record_type + data_filter + date range + jurisdiction
+  │  6. Generate file:
+  │     → EXCEL: openpyxl workbook (one sheet per type, or 34 sheets for daily diary)
+  │     → PDF:   WeasyPrint HTML → PDF
+  │     → CSV:   pandas df.to_csv()
+  │  7. Write file to REPORTS_DIR (shared volume)
+  │  8. UPDATE report_jobs SET status='READY', file_path=...
+  │  9. publish('report.generated', { job_id, file_size })
+  │
+<span class="node">NODE.JS API</span>  (client polling)
+  │  GET /api/reports/status/:jobId  →  reads report_jobs.status
+  │  When READY: client calls GET /api/reports/download/:jobId
+  │  Node.js streams file from disk to browser
+  │
+<span class="ok">DONE</span>  File downloaded in browser</div>
+
+  <div class="note"><strong>Shared volume:</strong> Both Node.js and Python write/read from the same <code>REPORTS_DIR</code> path (e.g. <code>./generated-reports</code>). In Docker this is a named volume mounted in both containers. Python writes the file, Node.js serves it. Neither needs to know how the other works.</div>
+
+  <h3>Import pipeline (Node.js only — no Python needed)</h3>
+  <div class="flow">
+<span class="step">Step 1 — Template Download</span>
+  GET /api/import/template/ARREST
+  <span class="sub">Node.js reads field_registry → generates xlsx on-the-fly → streams to browser</span>
+  <span class="sub">SELECT fields get Excel dropdown validation from field_registry.options</span>
+
+<span class="step">Step 2 — Upload & Validate (dry run)</span>
+  POST /api/import/validate  { file, record_type, is_legacy, ps_id }
+  <span class="sub">Parse xlsx: Row 1 = field_keys map, Rows 4+ = data</span>
+  <span class="sub">Validate every cell against field_registry validation_rules + options</span>
+  <span class="sub">INSERT import_batches + import_batch_errors</span>
+  <span class="sub">Save temp file for 24h</span>
+  <span class="ok">Return: { batch_id, total: 250, valid: 247, invalid: 3, errors: [...] }</span>
+
+<span class="step">Step 3 — User Reviews Errors</span>
+  <span class="sub">Frontend shows error table: [Row 42 | crime_head | 'E-Burglary' is not valid]</span>
+  <span class="sub">User decides: fix and re-upload, OR proceed with 247 valid rows</span>
+
+<span class="step">Step 4 — Confirm Import</span>
+  POST /api/import/confirm/:batchId
+  <span class="sub">Re-read saved temp file, skip invalid rows</span>
+  <span class="sub">DB transaction per 100-row chunk:</span>
+  <span class="sub">  INSERT records (status = DRAFT or LEGACY_IMPORTED)</span>
+  <span class="sub">  INSERT record_revisions (change_type = 'IMPORT' or 'LEGACY_IMPORT')</span>
+  <span class="sub">  INSERT audit_logs</span>
+  <span class="sub">UPDATE import_batches SET status='COMPLETED'</span>
+  <span class="sub">publish('record.batch_imported', { batch_id, count, is_legacy })</span>
+  <span class="sub">Delete temp file</span>
+  <span class="ok">Return: { imported_rows: 247, skipped_rows: 3 }</span></div>
+</section>
+
+<!-- ══ 03 DB SCHEMA ══ -->
+<section id="db">
+  <h2><span class="sn">03</span> DB schema changes</h2>
+  <p>Two new tables. Two new columns on existing tables. One migration file covers all of this.</p>
+
+  <h3>Modified: report_jobs (add 2 columns)</h3>
+<pre><span class="c">-- Migration: add to existing report_jobs table</span>
+ALTER TABLE report_jobs
+  ADD COLUMN IF NOT EXISTS <span class="k">custom_definition</span> JSONB,
+  <span class="c">-- populated when template_id is NULL (custom report mode)</span>
+  <span class="c">-- structure: { title_en, sheets: [{ record_type, field_keys[] }], save_as_template }</span>
+
+  ADD COLUMN IF NOT EXISTS <span class="k">error_message</span> TEXT;
+  <span class="c">-- set when status = 'FAILED', shown to user on status poll</span></pre>
+
+  <h3>Modified: report_templates (clarify template_type)</h3>
+<pre><span class="c">-- Migration: add template_type column if not exists</span>
+ALTER TABLE report_templates
+  ADD COLUMN IF NOT EXISTS <span class="k">template_type</span> VARCHAR NOT NULL DEFAULT <span class="s">'PROFORMA'</span>;
+  <span class="c">-- 'PROFORMA'      → single-record-type fixed field list</span>
+  <span class="c">-- 'COMPOSITE'     → daily diary (list of sub_template_ids)</span>
+  <span class="c">-- 'CUSTOM_SAVED'  → user-saved custom report</span></pre>
+
+  <h3>New: import_batches</h3>
+<pre><span class="t">CREATE TABLE IF NOT EXISTS</span> import_batches (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  record_type     VARCHAR NOT NULL,      <span class="c">-- 'ARREST' | 'PCR_CALL' | 'CASE'</span>
+  <span class="k">is_legacy</span>       BOOLEAN NOT NULL DEFAULT FALSE,
+  uploaded_by     UUID NOT NULL REFERENCES users(id),
+  ps_id           UUID REFERENCES hierarchy_nodes(id),
+  district_id     UUID REFERENCES hierarchy_nodes(id),
+  file_path       VARCHAR NOT NULL,      <span class="c">-- temp file on disk, deleted after confirm</span>
+  total_rows      INTEGER NOT NULL DEFAULT 0,
+  valid_rows      INTEGER NOT NULL DEFAULT 0,
+  invalid_rows    INTEGER NOT NULL DEFAULT 0,
+  <span class="k">status</span>          VARCHAR NOT NULL DEFAULT <span class="s">'VALIDATION_PENDING'</span>,
+  <span class="c">  -- VALIDATION_PENDING → VALIDATION_DONE → IMPORTING → COMPLETED | FAILED | EXPIRED</span>
+  imported_rows   INTEGER,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  confirmed_at    TIMESTAMPTZ
+);</pre>
+
+  <h3>New: import_batch_errors</h3>
+<pre><span class="t">CREATE TABLE IF NOT EXISTS</span> import_batch_errors (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  batch_id      UUID NOT NULL REFERENCES import_batches(id) ON DELETE CASCADE,
+  row_number    INTEGER NOT NULL,         <span class="c">-- 1-based row in uploaded file</span>
+  field_key     VARCHAR,                  <span class="c">-- which field failed (NULL = row-level error)</span>
+  error_code    VARCHAR NOT NULL,         <span class="c">-- REQUIRED_MISSING | INVALID_TYPE | INVALID_VALUE | TOO_LONG</span>
+  error_message TEXT NOT NULL            <span class="c">-- human readable, shown in frontend table</span>
+);</pre>
+</section>
+
+<!-- ══ 04 TEMPLATE_DEFINITION ══ -->
+<section id="template-def">
+  <h2><span class="sn">04</span> template_definition — how it works</h2>
+  <p>This is the JSONB column on <code>report_templates</code> that replaces every hardcoded field list in the current controller. The Python worker reads this at generation time to know what to query and how to render it.</p>
+
+  <h3>Structure for PROFORMA type</h3>
+<pre>{
+  <span class="k">"filter_spec"</span>: {                        <span class="c">← PART 1: what records to pull</span>
+    <span class="k">"record_type"</span>: <span class="s">"CASE"</span>,
+    <span class="k">"data_filter"</span>: { <span class="k">"crime_head"</span>: <span class="s">"E_BURGLARY"</span> }
+    <span class="c">-- goes into: WHERE records.data @> '{"crime_head":"E_BURGLARY"}'::jsonb</span>
+    <span class="c">-- user's date/PS filters stack ON TOP of this</span>
+  },
+
+  <span class="k">"fixed_fields"</span>: [                        <span class="c">← PART 2: which columns, in order</span>
+    <span class="s">"ps_name"</span>, <span class="s">"e_fir_no"</span>, <span class="s">"us_section"</span>,
+    <span class="s">"complainant_name"</span>, <span class="s">"father_husband_name"</span>
+    <span class="c">-- these are field_keys from field_registry</span>
+    <span class="c">-- label_en (column header) is fetched from field_registry at runtime</span>
+    <span class="c">-- changing a label in field_registry → report header updates automatically</span>
+  ],
+
+  <span class="k">"computed_fields"</span>: [                     <span class="c">← PART 3: derived columns (not from DB)</span>
+    { <span class="k">"label_en"</span>: <span class="s">"Sr. No."</span>, <span class="k">"formula"</span>: <span class="s">"ROW_INDEX"</span> }
+    <span class="c">-- ROW_INDEX: sequential 1,2,3... added during render</span>
+    <span class="c">-- placed BEFORE fixed_fields columns in output</span>
+  ],
+
+  <span class="k">"header"</span>: {                              <span class="c">← controls top rows of Excel sheet</span>
+    <span class="k">"title_en"</span>: <span class="s">"Details of E-Burglary Cases Registered in PS"</span>,
+    <span class="k">"title_hi"</span>: <span class="s">"पुलिस थाने में पंजीकृत ई-सेंधमारी के मामले"</span>,
+    <span class="k">"short_name_en"</span>: <span class="s">"2.E-Burglary Cases"</span>,  <span class="c">← Excel sheet tab name (max 31 chars)</span>
+    <span class="k">"show_date_range"</span>: true,
+    <span class="k">"show_ps_name"</span>: true,
+    <span class="k">"layout"</span>: <span class="s">"A4_LANDSCAPE"</span>
+  }
+}</pre>
+
+  <h3>Structure for COMPOSITE type (Daily Diary)</h3>
+<pre>{
+  <span class="k">"sub_template_ids"</span>: [          <span class="c">← ordered list of PROFORMA template UUIDs</span>
+    <span class="s">"&lt;uuid-1-manual-fir&gt;"</span>,
+    <span class="s">"&lt;uuid-2-e-burglary&gt;"</span>,
+    <span class="s">"&lt;uuid-3-e-house-theft&gt;"</span>,
+    <span class="c">-- ... all 34 proforma IDs in order</span>
+  ],
+  <span class="k">"user_selectable"</span>: true        <span class="c">← user can deselect individual sheets</span>
+  <span class="c">-- Python worker loops through this list</span>
+  <span class="c">-- each ID → one worksheet in the Excel workbook</span>
+  <span class="c">-- worksheet name = that template's header.short_name_en</span>
+}</pre>
+
+  <h3>How the Python worker uses it</h3>
+<pre><span class="c"># python_worker/generator.py</span>
+
+<span class="k">def</span> generate_report(job_id):
+    job = db.execute(<span class="s">"SELECT * FROM report_jobs WHERE id = %s"</span>, [job_id]).fetchone()
+
+    <span class="c"># Step 1 — resolve the field spec</span>
+    <span class="k">if</span> job.template_id:
+        template = db.execute(<span class="s">"SELECT * FROM report_templates WHERE id = %s"</span>, [job.template_id]).fetchone()
+        definition = template.template_definition   <span class="c"># already a dict (psycopg2 parses JSONB)</span>
+    <span class="k">else</span>:
+        definition = job.custom_definition          <span class="c"># came from request body, stored in job</span>
+
+    <span class="c"># Step 2 — composite (daily diary) branches here</span>
+    <span class="k">if</span> template.template_type == <span class="s">'COMPOSITE'</span>:
+        wb = generate_composite(definition, job.filters)
+    <span class="k">else</span>:
+        wb = generate_single_sheet(definition, job.filters)
+
+    <span class="c"># Step 3 — write file</span>
+    wb.save(job.file_path)
+    db.execute(<span class="s">"UPDATE report_jobs SET status='READY' WHERE id = %s"</span>, [job_id])
+    publish_event(<span class="s">'report.generated'</span>, { <span class="s">'job_id'</span>: job_id })
+
+<span class="k">def</span> generate_single_sheet(definition, user_filters):
+    <span class="c"># Load field metadata from field_registry</span>
+    field_keys = definition[<span class="s">'fixed_fields'</span>]
+    fields_meta = load_field_registry(field_keys)   <span class="c"># { field_key: { label_en, field_type } }</span>
+
+    <span class="c"># Build SQL — extract each field_key from JSONB data column</span>
+    selects = [f<span class="s">"records.data->>'</span>{k}<span class="s">' as </span>{k}<span class="s">"</span> <span class="k">for</span> k <span class="k">in</span> field_keys]
+    sql = f<span class="s">"""
+        SELECT {', '.join(selects)}, hn.name_en as ps_name, records.record_date
+        FROM records
+        LEFT JOIN hierarchy_nodes hn ON records.ps_id = hn.id
+        WHERE records.record_type = %(record_type)s
+        AND records.data @> %(data_filter)s::jsonb
+        AND records.record_date BETWEEN %(date_from)s AND %(date_to)s
+    """</span>
+    <span class="k">if</span> user_filters.get(<span class="s">'ps_id'</span>):
+        sql += <span class="s">" AND records.ps_id = %(ps_id)s"</span>
+
+    df = pd.read_sql(sql, engine, params={
+        <span class="s">'record_type'</span>: definition[<span class="s">'filter_spec'</span>][<span class="s">'record_type'</span>],
+        <span class="s">'data_filter'</span>: json.dumps(definition[<span class="s">'filter_spec'</span>].get(<span class="s">'data_filter'</span>, {})),
+        <span class="s">'date_from'</span>:   user_filters[<span class="s">'date_from'</span>],
+        <span class="s">'date_to'</span>:     user_filters[<span class="s">'date_to'</span>],
+        <span class="s">'ps_id'</span>:       user_filters.get(<span class="s">'ps_id'</span>)
+    })
+
+    <span class="c"># Add Sr. No.</span>
+    df.insert(<span class="n">0</span>, <span class="s">'Sr. No.'</span>, range(<span class="n">1</span>, len(df) + <span class="n">1</span>))
+
+    <span class="c"># Rename columns to label_en from field_registry</span>
+    rename_map = {k: fields_meta[k][<span class="s">'label_en'</span>] <span class="k">for</span> k <span class="k">in</span> field_keys}
+    df.rename(columns=rename_map, inplace=<span class="k">True</span>)
+
+    <span class="c"># Write to openpyxl sheet</span>
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = definition[<span class="s">'header'</span>][<span class="s">'short_name_en'</span>]
+    write_header_rows(ws, definition[<span class="s">'header'</span>], user_filters)
+    write_dataframe(ws, df)
+    <span class="k">return</span> wb</pre>
+</section>
+
+<!-- ══ 05 REPORT MODES ══ -->
+<section id="report-modes">
+  <h2><span class="sn">05</span> Three report modes</h2>
+
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Mode</th><th>template_id</th><th>custom_definition</th><th>Python worker behaviour</th></tr></thead>
+    <tbody>
+      <tr><td>Predefined</td><td>UUID (existing row)</td><td>NULL</td><td>Reads template_definition.fixed_fields from DB. Queries records. Generates single-sheet or multi-sheet file.</td></tr>
+      <tr><td>Custom</td><td>NULL</td><td>Populated in request body</td><td>Uses custom_definition.sheets[] stored in report_jobs. Each sheet = one record type with user's field_keys[].</td></tr>
+      <tr><td>Daily Diary</td><td>UUID (composite row)</td><td>NULL</td><td>Detects template_type='COMPOSITE'. Loops sub_template_ids[]. Generates 34 worksheets into one workbook.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Daily Diary — composite loop</h3>
+<pre><span class="k">def</span> generate_composite(definition, user_filters, selected_ids=None):
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)   <span class="c"># remove default empty sheet</span>
+
+    sub_ids = selected_ids or definition[<span class="s">'sub_template_ids'</span>]
+
+    <span class="k">for</span> sub_id <span class="k">in</span> sub_ids:
+        sub_template = load_template(sub_id)
+        sub_def      = sub_template.template_definition
+        sheet_name   = sub_def[<span class="s">'header'</span>][<span class="s">'short_name_en'</span>]   <span class="c"># max 31 chars, pre-set in seed</span>
+
+        ws = wb.create_sheet(title=sheet_name)
+        df = query_records(sub_def, user_filters)               <span class="c"># same function as single-sheet</span>
+        write_header_rows(ws, sub_def[<span class="s">'header'</span>], user_filters)
+        write_dataframe(ws, df)
+
+    <span class="k">return</span> wb   <span class="c"># 34-sheet workbook written to one .xlsx file</span></pre>
+</section>
+
+<!-- ══ 06 PYTHON WORKER ══ -->
+<section id="python-worker">
+  <h2><span class="sn">06</span> Python worker — setup & structure</h2>
+
+  <h3>Folder structure</h3>
+<pre>python_worker/
+├── main.py            ← entry point, RabbitMQ consumer loop
+├── generator.py       ← report generation logic
+├── db.py              ← SQLAlchemy engine + helpers
+├── events.py          ← publish to RabbitMQ
+├── requirements.txt
+└── .env               ← same DB creds as backend</pre>
+
+  <h3>requirements.txt</h3>
+<pre>pika==1.3.2              <span class="c"># RabbitMQ client</span>
+SQLAlchemy==2.0.30       <span class="c"># DB ORM / connection pool</span>
+psycopg2-binary==2.9.9   <span class="c"># PostgreSQL driver</span>
+pandas==2.2.2            <span class="c"># data manipulation + queries</span>
+openpyxl==3.1.2          <span class="c"># Excel generation</span>
+WeasyPrint==62.3         <span class="c"># PDF generation (HTML → PDF)</span>
+python-dotenv==1.0.1     <span class="c"># read .env file</span></pre>
+
+  <h3>main.py — RabbitMQ consumer</h3>
+<pre><span class="k">import</span> pika, json, os
+<span class="k">from</span> dotenv <span class="k">import</span> load_dotenv
+<span class="k">from</span> generator <span class="k">import</span> generate_report
+
+load_dotenv()
+
+<span class="k">def</span> on_message(channel, method, properties, body):
+    payload = json.loads(body)
+    job_id  = payload[<span class="s">'job_id'</span>]
+    <span class="k">try</span>:
+        generate_report(job_id)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+    <span class="k">except</span> Exception <span class="k">as</span> e:
+        <span class="k">print</span>(f<span class="s">"[ERROR] Job {job_id} failed: {e}"</span>)
+        <span class="c"># Mark job as FAILED in DB, then ack so message doesn't loop</span>
+        mark_job_failed(job_id, str(e))
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+
+<span class="k">def</span> start():
+    conn   = pika.BlockingConnection(pika.URLParameters(os.getenv(<span class="s">'RABBITMQ_URL'</span>)))
+    ch     = conn.channel()
+    ch.exchange_declare(exchange=<span class="s">'pharos'</span>, exchange_type=<span class="s">'topic'</span>, durable=<span class="k">True</span>)
+    ch.queue_declare(queue=<span class="s">'report-generation-queue'</span>, durable=<span class="k">True</span>)
+    ch.queue_bind(exchange=<span class="s">'pharos'</span>, queue=<span class="s">'report-generation-queue'</span>,
+                  routing_key=<span class="s">'report.requested'</span>)
+    ch.basic_qos(prefetch_count=<span class="n">1</span>)   <span class="c"># process one job at a time</span>
+    ch.basic_consume(queue=<span class="s">'report-generation-queue'</span>, on_message_callback=on_message)
+    <span class="k">print</span>(<span class="s">"[INFO] Python worker waiting for report jobs..."</span>)
+    ch.start_consuming()
+
+<span class="k">if</span> __name__ == <span class="s">'__main__'</span>:
+    start()</pre>
+
+  <h3>db.py — PostgreSQL connection</h3>
+<pre><span class="k">import</span> os
+<span class="k">from</span> sqlalchemy <span class="k">import</span> create_engine, text
+<span class="k">from</span> dotenv <span class="k">import</span> load_dotenv
+
+load_dotenv()
+
+engine = create_engine(
+    f<span class="s">"postgresql+psycopg2://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"</span>
+    f<span class="s">"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"</span>,
+    pool_size=<span class="n">3</span>, max_overflow=<span class="n">2</span>
+)
+
+<span class="c"># Uses SAME DB creds as backend .env — no separate config needed</span>
+<span class="c"># JSONB columns automatically become Python dicts via psycopg2</span></pre>
+
+  <h3>.env for python worker (same values as backend .env)</h3>
+<pre>DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=pharos_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+RABBITMQ_URL=amqp://localhost:5672
+REPORTS_DIR=./generated-reports    <span class="c"># must match Node.js REPORTS_DIR</span></pre>
+
+  <h3>Empty report safeguard</h3>
+<pre><span class="k">if</span> df.empty:
+    <span class="c"># Don't write a blank sheet — write a notice row instead</span>
+    ws.append([<span class="s">"No records found for the selected period and filters."</span>])
+    ws.append([f<span class="s">"Filter applied: {json.dumps(definition['filter_spec']['data_filter'])}"</span>])
+    ws.append([<span class="s">"Check that field values in filter_spec match field_registry options exactly."</span>])</pre>
+</section>
+
+<!-- ══ 07 RABBITMQ EVENTS ══ -->
+<section id="rabbitmq">
+  <h2><span class="sn">07</span> RabbitMQ events</h2>
+  <p>Exchange: <code>pharos</code> (topic, already exists). Two new routing keys for the report pipeline.</p>
+
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Routing key</th><th>Published by</th><th>Consumed by</th><th>Payload</th></tr></thead>
+    <tbody>
+      <tr><td>report.requested</td><td>Node.js (POST /reports/generate)</td><td>Python worker</td><td><code>{ job_id, template_id, filters, format, user_id }</code></td></tr>
+      <tr><td>report.generated</td><td>Python worker</td><td>Node.js notifyHandler (optional)</td><td><code>{ job_id, file_size, template_id }</code></td></tr>
+      <tr><td>record.batch_imported</td><td>Node.js (POST /import/confirm)</td><td>auditHandler</td><td><code>{ batch_id, count, is_legacy, record_type }</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Node.js publish (reports.controller.js — updated)</h3>
+<pre><span class="c">// Replace setImmediate(generateReportInternal) with:</span>
+<span class="k">import</span> { publish } <span class="k">from</span> <span class="s">'../../events/eventBus.js'</span>;
+
+<span class="k">export const</span> generateReport = <span class="k">async</span> (req, res) => {
+  <span class="k">const</span> { template_id, custom_definition, filters, format, selected_sub_templates } = req.body;
+
+  <span class="c">// Validate template access</span>
+  <span class="k">if</span> (template_id) {
+    <span class="k">const</span> tpl = <span class="k">await</span> db(<span class="s">'report_templates'</span>).where({ id: template_id, is_active: <span class="k">true</span> }).first();
+    <span class="k">if</span> (!tpl) <span class="k">return</span> res.status(<span class="n">404</span>).json({ success: <span class="k">false</span>, message: <span class="s">'Template not found'</span> });
+  }
+
+  <span class="c">// Validate custom field_keys exist in field_registry</span>
+  <span class="k">if</span> (!template_id && custom_definition) {
+    <span class="k">await</span> validateCustomDefinition(custom_definition);  <span class="c">// throws if invalid key</span>
+  }
+
+  <span class="c">// RBAC scope: HC cannot generate reports for other PS</span>
+  <span class="k">if</span> (req.user.role === <span class="s">'HC'</span> && filters.ps_id && filters.ps_id !== req.user.ps_id) {
+    <span class="k">return</span> res.status(<span class="n">403</span>).json({ success: <span class="k">false</span>, message: <span class="s">'Cannot generate reports outside your PS'</span> });
+  }
+
+  <span class="k">const</span> jobId = uuidv4();
+  <span class="k">await</span> db(<span class="s">'report_jobs'</span>).insert({
+    id: jobId, template_id: template_id || <span class="k">null</span>,
+    custom_definition: custom_definition ? JSON.stringify(custom_definition) : <span class="k">null</span>,
+    filters: JSON.stringify(filters || {}),
+    format: format.toUpperCase(), status: <span class="s">'PENDING'</span>,
+    file_path: path.join(reportsDir, `${jobId}.${ext}`),
+    created_by: req.user.id, created_at: <span class="k">new</span> Date(), updated_at: <span class="k">new</span> Date()
+  });
+
+  <span class="c">// Hand off to Python worker via RabbitMQ</span>
+  <span class="k">await</span> publish(<span class="s">'report.requested'</span>, {
+    job_id: jobId, template_id, custom_definition,
+    filters, format: format.toUpperCase(),
+    selected_sub_templates,
+    user_id: req.user.id
+  });
+
+  <span class="k">return</span> res.status(<span class="n">201</span>).json({ success: <span class="k">true</span>, data: { job_id: jobId, status: <span class="s">'PENDING'</span> } });
+};</pre>
+</section>
+
+<!-- ══ 08 REPORT APIs ══ -->
+<section id="report-api">
+  <h2><span class="sn">08</span> Report engine — full API reference</h2>
+
+  <!-- GET /templates -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/reports/templates</span></div>
+    <div class="ep-desc">List all report templates available to this user. Returns predefined proformas, composite daily diary, and user's saved custom templates.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag role">All roles</span><span class="tag node">Node.js</span></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Query param</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>record_type</td><td>string</td><td>No</td><td>Filter by ARREST, CASE, PCR_CALL. Comma-separated for multiple.</td></tr>
+      <tr><td>template_type</td><td>string</td><td>No</td><td>PROFORMA, COMPOSITE, CUSTOM_SAVED. Omit for all.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Response:</strong></p>
+<pre>{ <span class="k">"success"</span>: true, <span class="k">"data"</span>: { <span class="k">"templates"</span>: [
+  { <span class="k">"id"</span>: <span class="s">"uuid"</span>, <span class="k">"name_en"</span>: <span class="s">"E-Burglary Cases"</span>, <span class="k">"name_hi"</span>: <span class="s">"..."</span>,
+    <span class="k">"template_type"</span>: <span class="s">"PROFORMA"</span>, <span class="k">"applicable_record_types"</span>: [<span class="s">"CASE"</span>],
+    <span class="k">"output_formats"</span>: [<span class="s">"PDF"</span>, <span class="s">"EXCEL"</span>] }
+] } }</pre>
+  <p><strong>Internal logic:</strong> Query <code>report_templates WHERE is_active = true</code>. Also return templates where <code>created_by = req.user.id</code> (user's own saved customs). Do NOT return other users' saved templates.</p>
+
+  <!-- GET /fields -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/reports/fields</span></div>
+    <div class="ep-desc">Returns all field_registry fields available for custom report building. Grouped by section in response.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag role">All roles</span><span class="tag node">Node.js</span></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Query param</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>record_type</td><td>string</td><td>Yes</td><td>Comma-separated: ARREST,CASE or single value. Returns fields applicable to these types.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Response:</strong></p>
+<pre>{ <span class="k">"success"</span>: true, <span class="k">"data"</span>: { <span class="k">"fields"</span>: [
+  { <span class="k">"field_key"</span>: <span class="s">"accused_name"</span>, <span class="k">"label_en"</span>: <span class="s">"Name of Accused"</span>,
+    <span class="k">"label_hi"</span>: <span class="s">"अभियुक्त का नाम"</span>, <span class="k">"field_type"</span>: <span class="s">"TEXT"</span>,
+    <span class="k">"section"</span>: <span class="s">"Personal Details"</span>, <span class="k">"applicable_record_types"</span>: [<span class="s">"ARREST"</span>] }
+] } }</pre>
+  <p><strong>Internal logic:</strong> <code>SELECT * FROM field_registry WHERE is_active = true AND (applicable_record_types &amp;&amp; ARRAY[record_type1, ...]) ORDER BY sort_order</code>. Return only <code>field_key, label_en, label_hi, field_type, section</code> — not validation_rules or options (not needed for picker).</p>
+
+  <!-- POST /generate -->
+  <div class="ep">
+    <div><span class="method post">POST</span><span class="ep-path">/api/reports/generate</span></div>
+    <div class="ep-desc">Trigger a report job. Works for all three modes. Returns immediately with job_id. Python worker handles actual generation.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag role">All roles (scoped)</span><span class="tag node">Node.js</span><span class="tag python">Triggers Python worker</span></div>
+  </div>
+<pre><span class="c">// Mode A — predefined proforma</span>
+{
+  <span class="k">"template_id"</span>: <span class="s">"uuid"</span>,
+  <span class="k">"filters"</span>: { <span class="k">"date_from"</span>: <span class="s">"2026-06-01"</span>, <span class="k">"date_to"</span>: <span class="s">"2026-06-19"</span>, <span class="k">"ps_id"</span>: <span class="s">"uuid"</span> },
+  <span class="k">"format"</span>: <span class="s">"EXCEL"</span>
+}
+
+<span class="c">// Mode B — custom report (no template_id)</span>
+{
+  <span class="k">"template_id"</span>: null,
+  <span class="k">"custom_definition"</span>: {
+    <span class="k">"title_en"</span>: <span class="s">"My Custom Arrest Report"</span>,
+    <span class="k">"sheets"</span>: [
+      { <span class="k">"record_type"</span>: <span class="s">"ARREST"</span>, <span class="k">"field_keys"</span>: [<span class="s">"fir_no"</span>, <span class="s">"accused_name"</span>, <span class="s">"crime_head"</span>] }
+    ],
+    <span class="k">"save_as_template"</span>: false
+  },
+  <span class="k">"filters"</span>: { <span class="k">"date_from"</span>: <span class="s">"2026-06-01"</span>, <span class="k">"date_to"</span>: <span class="s">"2026-06-19"</span> },
+  <span class="k">"format"</span>: <span class="s">"EXCEL"</span>
+}
+
+<span class="c">// Mode C — daily diary (COMPOSITE template)</span>
+{
+  <span class="k">"template_id"</span>: <span class="s">"uuid-of-daily-diary-composite"</span>,
+  <span class="k">"filters"</span>: { <span class="k">"date_from"</span>: <span class="s">"2026-06-19"</span>, <span class="k">"date_to"</span>: <span class="s">"2026-06-19"</span>, <span class="k">"ps_id"</span>: <span class="s">"uuid"</span> },
+  <span class="k">"selected_sub_templates"</span>: [<span class="s">"uuid1"</span>, <span class="s">"uuid2"</span>],   <span class="c">// optional, omit for all 34</span>
+  <span class="k">"format"</span>: <span class="s">"EXCEL"</span>
+}
+
+<span class="c">// Response (all modes):</span>
+{ <span class="k">"success"</span>: true, <span class="k">"data"</span>: { <span class="k">"job_id"</span>: <span class="s">"uuid"</span>, <span class="k">"status"</span>: <span class="s">"PENDING"</span> } }</pre>
+  <p><strong>Validations:</strong> Template exists + is_active. For custom: all field_keys exist in field_registry. RBAC: HC scope locked to own ps_id. DISTRICT_OFFICER locked to own district_id. Format must be one of template's output_formats.</p>
+
+  <!-- GET /status -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/reports/status/:jobId</span></div>
+    <div class="ep-desc">Poll job status. Frontend calls every 2 seconds until READY or FAILED.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag node">Node.js</span></div>
+  </div>
+<pre><span class="c">// Response:</span>
+{ <span class="k">"success"</span>: true, <span class="k">"data"</span>: {
+  <span class="k">"job_id"</span>: <span class="s">"uuid"</span>,
+  <span class="k">"status"</span>: <span class="s">"READY"</span>,       <span class="c">// PENDING | READY | FAILED</span>
+  <span class="k">"format"</span>: <span class="s">"EXCEL"</span>,
+  <span class="k">"created_at"</span>: <span class="s">"..."</span>,
+  <span class="k">"error_message"</span>: null     <span class="c">// populated when FAILED</span>
+} }</pre>
+  <p><strong>Internal:</strong> Simple <code>SELECT * FROM report_jobs WHERE id = ? AND created_by = req.user.id</code>. Return 403 if job belongs to another user.</p>
+
+  <!-- GET /download -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/reports/download/:jobId</span></div>
+    <div class="ep-desc">Stream the generated file to the browser. Sets Content-Disposition for download.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag node">Node.js</span></div>
+  </div>
+  <p><strong>Checks:</strong> job.status = 'READY', job.created_by = req.user.id (or admin), file exists on disk. Sets correct Content-Type (application/vnd.openxmlformats / application/pdf / text/csv). Returns 400 if not ready, 404 if file missing.</p>
+
+  <!-- GET /history -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/reports/history</span></div>
+    <div class="ep-desc">Paginated list of past report jobs for the current user. Used to populate the history table in the UI.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag node">Node.js</span></div>
+  </div>
+  <p><strong>Query params:</strong> <code>?page=1&amp;limit=20</code>. <strong>Response:</strong> <code>{ data: [...jobs], meta: { page, limit, total } }</code>. Each job includes id, template_id, format, status, created_at, filters (parsed).</p>
+</section>
+
+<!-- ══ 09 IMPORT PIPELINE ══ -->
+<section id="import-pipeline">
+  <h2><span class="sn">09</span> Import pipeline — internals</h2>
+
+  <h3>Template xlsx structure</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Row</th><th>Content</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Row 1</td><td><code>fir_no | accused_name | crime_head | ...</code> (field_keys)</td><td>Hidden in Excel. Upload parser reads this row to build column → field_key map. User never sees it.</td></tr>
+      <tr><td>Row 2</td><td><code>FIR Number | Name of Accused | Crime Head | ...</code> (label_en)</td><td>Visible header. Bold, blue background. What user sees as column name.</td></tr>
+      <tr><td>Row 3</td><td><code>e.g. 123/2026 | text | select: E_BURGLARY, MVT... | ...</code></td><td>Hints. SELECT fields show all valid options. Muted italic style.</td></tr>
+      <tr><td>Row 4+</td><td>Empty — user fills data here</td><td>SELECT fields have Excel dropdown validation built in.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Excel dropdown for SELECT fields (prevents mismatch at source)</h3>
+<pre><span class="c">// In downloadImportTemplate controller</span>
+<span class="k">for</span> (<span class="k">const</span> [colIdx, field] <span class="k">of</span> fields.entries()) {
+  <span class="k">if</span> (field.field_type === <span class="s">'SELECT'</span>) {
+    <span class="k">const</span> options = field.options;                              <span class="c">// from field_registry.options JSONB</span>
+    <span class="k">const</span> validValues = options.map(o => o.value).join(<span class="s">','</span>);    <span class="c">// 'E_BURGLARY,MVT,NDPS,...'</span>
+    <span class="k">const</span> col = worksheet.getColumn(colIdx + <span class="n">1</span>);
+    col.eachCell({ includeEmpty: <span class="k">true</span> }, (cell, rowIdx) => {
+      <span class="k">if</span> (rowIdx >= <span class="n">4</span>) {   <span class="c">// only data rows, not header rows</span>
+        cell.dataValidation = {
+          type: <span class="s">'list'</span>,
+          allowBlank: <span class="k">true</span>,
+          formulae: [`<span class="s">"${validValues}"</span>`]   <span class="c">// Excel shows dropdown in this cell</span>
+        };
+      }
+    });
+  }
+}</pre>
+
+  <h3>Upload parser — how column mapping works</h3>
+<pre><span class="c">// parse uploaded xlsx in import.service.js</span>
+<span class="k">const</span> wb = <span class="k">new</span> ExcelJS.Workbook();
+<span class="k">await</span> wb.xlsx.readFile(uploadedFilePath);
+<span class="k">const</span> ws = wb.getWorksheet(<span class="n">1</span>);
+
+<span class="c">// Row 1 = field_keys — build column index → field_key map</span>
+<span class="k">const</span> colMap = {};   <span class="c">// { 1: 'fir_no', 2: 'accused_name', 3: 'crime_head', ... }</span>
+ws.getRow(<span class="n">1</span>).eachCell((cell, colIdx) => {
+  <span class="k">if</span> (cell.value) colMap[colIdx] = String(cell.value).trim();
+});
+
+<span class="c">// This means: even if user reorders columns, the mapping is still correct</span>
+<span class="c">// because each column carries its own identity in Row 1</span>
+
+<span class="c">// Rows 4+ = data rows</span>
+ws.eachRow((row, rowIdx) => {
+  <span class="k">if</span> (rowIdx < <span class="n">4</span>) <span class="k">return</span>;   <span class="c">// skip header rows</span>
+  <span class="k">const</span> rowData = {};
+  row.eachCell((cell, colIdx) => {
+    <span class="k">const</span> key = colMap[colIdx];
+    <span class="k">if</span> (key) rowData[key] = cell.value ?? <span class="k">null</span>;
+  });
+  <span class="c">// ... validate rowData against field_registry rules</span>
+});</pre>
+
+  <h3>Validation rules applied per cell</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Rule</th><th>Source in field_registry</th><th>Error code</th><th>Example message</th></tr></thead>
+    <tbody>
+      <tr><td>Required</td><td>validation_rules.required = true</td><td>REQUIRED_MISSING</td><td>"FIR Number is required"</td></tr>
+      <tr><td>Date format</td><td>field_type = 'DATE'</td><td>INVALID_TYPE</td><td>"Must be a valid date (YYYY-MM-DD)"</td></tr>
+      <tr><td>Number</td><td>field_type = 'NUMBER'</td><td>INVALID_TYPE</td><td>"Must be a number"</td></tr>
+      <tr><td>Select option</td><td>field_type = 'SELECT', options[]</td><td>INVALID_VALUE</td><td>"'E-Burglary' is not valid. Valid: E_BURGLARY, MVT, NDPS"</td></tr>
+      <tr><td>Max length</td><td>validation_rules.maxLength</td><td>TOO_LONG</td><td>"Must be 100 characters or less"</td></tr>
+      <tr><td>Regex</td><td>validation_rules.regex</td><td>INVALID_FORMAT</td><td>"Phone must be 10 digits"</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══ 10 NORMALISATION ══ -->
+<section id="normalisation">
+  <h2><span class="sn">10</span> Field normalisation — the full prevention chain</h2>
+  <p>SELECT fields must always store normalised values (e.g. <code>E_BURGLARY</code> not <code>E-Burglary</code>). If they don't, report filters silently return zero rows. This is prevented at every layer:</p>
+
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Layer</th><th>Where</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>1. Import template</td><td>downloadImportTemplate controller</td><td>Excel dropdown forces valid values. User cannot type freely in SELECT columns.</td></tr>
+      <tr><td>2. Import validation</td><td>import.service.js validateRow()</td><td>Dry-run catches any value not in field_registry.options[]. Shown as INVALID_VALUE error before commit.</td></tr>
+      <tr><td>3. Normal form submit</td><td>records.service.js createRecord()</td><td>Server-side check: for each SELECT field, value must be in options[].value. Throws 422 if not. Frontend dropdown also enforces this, but server check is authoritative.</td></tr>
+      <tr><td>4. Empty report guard</td><td>Python worker generator.py</td><td>If query returns zero rows, writes a notice to the sheet explaining possible filter mismatch. No silent empty files.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Server-side validation to add in records.service.js</h3>
+<pre><span class="c">// In createRecord() and updateRecord() — add this before the DB insert</span>
+<span class="k">const</span> selectFields = allFields.filter(f => f.field_type === <span class="s">'SELECT'</span>);
+
+<span class="k">for</span> (<span class="k">const</span> field <span class="k">of</span> selectFields) {
+  <span class="k">const</span> submitted = data[field.field_key];
+  <span class="k">if</span> (!submitted) <span class="k">continue</span>;   <span class="c">// required check is separate</span>
+
+  <span class="k">const</span> options = parseJsonField(field.options);
+  <span class="k">const</span> valid   = options.map(o => o.value);
+
+  <span class="k">if</span> (!valid.includes(submitted)) {
+    <span class="k">throw new</span> ApiError(<span class="n">422</span>,
+      `Invalid value '${submitted}' for '${field.label_en}'. Valid: ${valid.join(<span class="s">', '</span>)}`
+    );
+  }
+}</pre>
+</section>
+
+<!-- ══ 11 IMPORT APIs ══ -->
+<section id="import-api">
+  <h2><span class="sn">11</span> Import — full API reference</h2>
+
+  <!-- GET /template -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/import/template/:record_type</span></div>
+    <div class="ep-desc">Generate and stream a blank import template xlsx. Built from field_registry at request time — always reflects current active fields. SELECT fields include Excel dropdown validation.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag role">All roles</span><span class="tag node">Node.js</span></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Param</th><th>In</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>record_type</td><td>path</td><td>string</td><td>Yes</td><td>ARREST | PCR_CALL | CASE</td></tr>
+      <tr><td>lang</td><td>query</td><td>string</td><td>No</td><td>en (default) | hi — which label row to show as column header</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Response:</strong> File stream. <code>Content-Disposition: attachment; filename="ARREST_import_template.xlsx"</code>. No JSON — direct file download.</p>
+  <p><strong>Internal:</strong> Query <code>field_registry WHERE record_type = ANY(applicable_record_types) AND is_active = true ORDER BY (required first), sort_order</code>. Build xlsx in memory, stream via <code>workbook.xlsx.write(res)</code>. No disk write needed.</p>
+
+  <!-- POST /validate -->
+  <div class="ep">
+    <div><span class="method post">POST</span><span class="ep-path">/api/import/validate</span></div>
+    <div class="ep-desc">Dry-run. Parses uploaded file, validates every row against field_registry rules, returns full error report. Does NOT write any records. Saves file temporarily for confirm step.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag role">HC (own PS) · DISTRICT_OFFICER · HQ_ADMIN · SYSTEM_ADMIN</span><span class="tag node">Node.js</span></div>
+  </div>
+  <p><strong>Request:</strong> <code>multipart/form-data</code></p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>file</td><td>file</td><td>Yes</td><td>The filled xlsx or csv template</td></tr>
+      <tr><td>record_type</td><td>string</td><td>Yes</td><td>ARREST | PCR_CALL | CASE — must match template used</td></tr>
+      <tr><td>is_legacy</td><td>boolean</td><td>No</td><td>Default false. True for historical data. HC role cannot set this.</td></tr>
+      <tr><td>ps_id</td><td>uuid</td><td>Conditional</td><td>Required for HC (must match own ps_id). Optional for higher roles.</td></tr>
+    </tbody>
+  </table></div>
+<pre><span class="c">// Response:</span>
+{ <span class="k">"success"</span>: true, <span class="k">"data"</span>: {
+  <span class="k">"batch_id"</span>:    <span class="s">"uuid"</span>,
+  <span class="k">"total_rows"</span>:  <span class="n">250</span>,
+  <span class="k">"valid_rows"</span>:  <span class="n">247</span>,
+  <span class="k">"invalid_rows"</span>: <span class="n">3</span>,
+  <span class="k">"expires_at"</span>:  <span class="s">"2026-06-21T10:00:00Z"</span>,
+  <span class="k">"errors"</span>: [
+    { <span class="k">"row"</span>: <span class="n">18</span>, <span class="k">"field_key"</span>: <span class="s">"fir_no"</span>,         <span class="k">"code"</span>: <span class="s">"REQUIRED_MISSING"</span>, <span class="k">"message"</span>: <span class="s">"FIR Number is required"</span> },
+    { <span class="k">"row"</span>: <span class="n">42</span>, <span class="k">"field_key"</span>: <span class="s">"date_of_arrest"</span>, <span class="k">"code"</span>: <span class="s">"INVALID_TYPE"</span>,     <span class="k">"message"</span>: <span class="s">"Must be YYYY-MM-DD"</span> },
+    { <span class="k">"row"</span>: <span class="n">89</span>, <span class="k">"field_key"</span>: <span class="s">"crime_head"</span>,     <span class="k">"code"</span>: <span class="s">"INVALID_VALUE"</span>,    <span class="k">"message"</span>: <span class="s">"'Theft' not valid. Valid: E_BURGLARY, MVT, NDPS..."</span> }
+  ]
+} }</pre>
+
+  <!-- POST /confirm -->
+  <div class="ep">
+    <div><span class="method post">POST</span><span class="ep-path">/api/import/confirm/:batchId</span></div>
+    <div class="ep-desc">Commit valid rows from the batch. Skips invalid rows. Processes in chunks of 100 to avoid DB timeout. Deletes temp file on completion.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag role">Same user who created the batch</span><span class="tag node">Node.js</span></div>
+  </div>
+  <p><strong>Body:</strong> Empty — batch_id from URL is sufficient.</p>
+<pre><span class="c">// Response:</span>
+{ <span class="k">"success"</span>: true, <span class="k">"data"</span>: {
+  <span class="k">"batch_id"</span>:      <span class="s">"uuid"</span>,
+  <span class="k">"imported_rows"</span>: <span class="n">247</span>,
+  <span class="k">"skipped_rows"</span>:  <span class="n">3</span>,
+  <span class="k">"status"</span>:        <span class="s">"COMPLETED"</span>
+} }</pre>
+  <p><strong>Internal:</strong> Check batch.status = 'VALIDATION_DONE'. Check batch.uploaded_by = req.user.id. Re-read file from batch.file_path. Skip rows in import_batch_errors. Process valid rows in chunks of 100 inside separate DB transactions. For each row: INSERT records, INSERT record_revisions, INSERT audit_logs. Publish event. Delete file. Update batch status.</p>
+
+  <!-- GET /batches -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/import/batches</span></div>
+    <div class="ep-desc">List all import batches by current user. Paginated.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag node">Node.js</span></div>
+  </div>
+  <p><strong>Query:</strong> <code>?page=1&amp;limit=20</code>. <strong>Response:</strong> <code>{ data: [{ id, record_type, is_legacy, total_rows, valid_rows, status, created_at }], meta }</code></p>
+
+  <!-- GET /batches/:id -->
+  <div class="ep">
+    <div><span class="method get">GET</span><span class="ep-path">/api/import/batches/:batchId</span></div>
+    <div class="ep-desc">Full detail of a batch including complete error list. Used on the validation result screen.</div>
+    <div class="ep-tags"><span class="tag auth">Bearer JWT</span><span class="tag node">Node.js</span></div>
+  </div>
+  <p><strong>Response:</strong> Batch object + <code>errors: [{ row, field_key, code, message }]</code> sorted by row_number.</p>
+</section>
+
+<!-- ══ 12 FRONTEND GUIDE ══ -->
+<section id="fe-guide">
+  <h2><span class="sn">12</span> Frontend — complete guide for Shahista</h2>
+
+  <div class="note purple"><strong>Read this first.</strong> You don't need to understand the backend or Python. Your job is: call the APIs listed below, show the response data correctly, handle loading/error states. Every API call is described with exactly what to send and what you get back. Follow the component list in §13 and §14.</div>
+
+  <h3>API base URL</h3>
+  <p>All calls go through the existing <code>api</code> axios instance in <code>src/utils/api.js</code>. It already handles the Bearer token. Example: <code>api.get('/reports/templates')</code> — no need to add auth headers manually.</p>
+
+  <h3>Polling pattern (used for report jobs)</h3>
+<pre><span class="c">// hooks/useReportJob.js — create this file</span>
+<span class="k">import</span> { useState, useEffect } <span class="k">from</span> <span class="s">'react'</span>;
+<span class="k">import</span> api <span class="k">from</span> <span class="s">'../utils/api'</span>;
+
+<span class="k">export function</span> useReportJob() {
+  <span class="k">const</span> [jobId, setJobId]   = useState(<span class="k">null</span>);
+  <span class="k">const</span> [status, setStatus] = useState(<span class="k">null</span>);
+  <span class="k">const</span> [error, setError]   = useState(<span class="k">null</span>);
+
+  useEffect(() => {
+    <span class="k">if</span> (!jobId || status === <span class="s">'READY'</span> || status === <span class="s">'FAILED'</span>) <span class="k">return</span>;
+    <span class="k">const</span> interval = setInterval(<span class="k">async</span> () => {
+      <span class="k">const</span> res = <span class="k">await</span> api.get(`/reports/status/${jobId}`);
+      <span class="k">const</span> s   = res.data.data.status;
+      setStatus(s);
+      <span class="k">if</span> (s === <span class="s">'FAILED'</span>) setError(res.data.data.error_message);
+    }, <span class="n">2000</span>);
+    <span class="k">return</span> () => clearInterval(interval);
+  }, [jobId, status]);
+
+  <span class="k">const</span> download = () => {
+    <span class="k">const</span> token = localStorage.getItem(<span class="s">'access_token'</span>);
+    <span class="k">const</span> link  = document.createElement(<span class="s">'a'</span>);
+    link.href     = `/api/v1/reports/download/${jobId}`;
+    link.download = <span class="s">''</span>;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  <span class="k">return</span> { setJobId, status, error, download, isReady: status === <span class="s">'READY'</span> };
+}</pre>
+</section>
+
+<!-- ══ 13 FRONTEND REPORTS ══ -->
+<section id="fe-reports">
+  <h2><span class="sn">13</span> Frontend — Report Builder UI</h2>
+  <p>Replace the current <code>ReportBuilder.jsx</code> with a three-tab layout. Each tab is its own component. They all share the <code>useReportJob</code> hook.</p>
+
+  <h3>Tab 1 — Predefined Proformas</h3>
+  <p><strong>File:</strong> <code>src/pages/reports/tabs/PredefinedTab.jsx</code></p>
+<pre><span class="c">// What to build:</span>
+<span class="c">// 1. On mount: GET /api/reports/templates?template_type=PROFORMA</span>
+<span class="c">//    Show results as a &lt;select&gt; dropdown</span>
+
+<span class="c">// 2. Date range pickers: "From Date" + "To Date"</span>
+
+<span class="c">// 3. Format selector: radio buttons — Excel / PDF / CSV</span>
+<span class="c">//    Only show formats from selected template's output_formats[]</span>
+
+<span class="c">// 4. "Generate" button → POST /api/reports/generate</span>
+<span class="c">//    Body: { template_id: selectedId, filters: { date_from, date_to, ps_id: user.ps_id }, format }</span>
+<span class="c">//    On success: call setJobId(response.data.job_id)</span>
+
+<span class="c">// 5. Status indicator while polling:</span>
+<span class="c">//    status === 'PENDING' → spinning loader + "Generating..."</span>
+<span class="c">//    status === 'READY'   → green checkmark + "Download" button → call download()</span>
+<span class="c">//    status === 'FAILED'  → red X + error message from API</span>
+
+<span class="c">// 6. History table below (GET /api/reports/history)</span>
+<span class="c">//    Columns: Template | Date Range | Format | Status | Action (Download button)</span></pre>
+
+  <h3>Tab 2 — Custom Report Builder</h3>
+  <p><strong>File:</strong> <code>src/pages/reports/tabs/CustomTab.jsx</code></p>
+<pre><span class="c">// What to build:</span>
+<span class="c">// 1. Record type multi-select: checkboxes for ARREST | PCR_CALL | CASE</span>
+<span class="c">//    When selection changes: GET /api/reports/fields?record_type=ARREST,CASE</span>
+
+<span class="c">// 2. Field picker — response groups fields by 'section'</span>
+<span class="c">//    Render each section as an expandable group with checkboxes</span>
+<span class="c">//    Add a search box that filters field labels on the client side</span>
+<span class="c">//    Show selected count: "12 fields selected"</span>
+
+<span class="c">// 3. Report title input (optional, maps to custom_definition.title_en)</span>
+
+<span class="c">// 4. "Save as template" toggle</span>
+
+<span class="c">// 5. Date range + format selector (same as Tab 1)</span>
+
+<span class="c">// 6. "Generate" button → POST /api/reports/generate</span>
+<span class="c">//    Body: {</span>
+<span class="c">//      template_id: null,</span>
+<span class="c">//      custom_definition: {</span>
+<span class="c">//        title_en: reportTitle,</span>
+<span class="c">//        sheets: recordTypes.map(rt => ({</span>
+<span class="c">//          record_type: rt,</span>
+<span class="c">//          field_keys: selectedFields.filter(f => f.applicable_record_types.includes(rt)).map(f => f.field_key)</span>
+<span class="c">//        })),</span>
+<span class="c">//        save_as_template: saveToggle</span>
+<span class="c">//      },</span>
+<span class="c">//      filters: { date_from, date_to },</span>
+<span class="c">//      format</span>
+<span class="c">//    }</span>
+
+<span class="c">// 7. Same polling + download as Tab 1</span></pre>
+
+  <h3>Tab 3 — Daily Diary</h3>
+  <p><strong>File:</strong> <code>src/pages/reports/tabs/DailyDiaryTab.jsx</code></p>
+<pre><span class="c">// What to build:</span>
+<span class="c">// 1. Single date picker (diary is usually one day)</span>
+<span class="c">//    Set date_from = date_to = selected date</span>
+
+<span class="c">// 2. PS selector dropdown (if user is DISTRICT_OFFICER or above)</span>
+<span class="c">//    HC: locked to own PS, no selector shown</span>
+
+<span class="c">// 3. On mount: GET /api/reports/templates?template_type=COMPOSITE</span>
+<span class="c">//    This returns the daily diary template with its sub_template list</span>
+<span class="c">//    Also fetch sub-templates: GET /api/reports/templates?template_type=PROFORMA</span>
+<span class="c">//    Show 34 checkboxes — one per proforma — all ticked by default</span>
+<span class="c">//    "Select All / Deselect All" toggle at top</span>
+
+<span class="c">// 4. "Download Daily Diary" button → POST /api/reports/generate</span>
+<span class="c">//    Body: {</span>
+<span class="c">//      template_id: dailyDiaryCompositeId,</span>
+<span class="c">//      filters: { date_from: date, date_to: date, ps_id },</span>
+<span class="c">//      selected_sub_templates: checkedProformaIds,  // omit if all checked</span>
+<span class="c">//      format: 'EXCEL'</span>
+<span class="c">//    }</span>
+
+<span class="c">// 5. Same polling + download</span>
+<span class="c">// NOTE: Daily Diary only makes sense as Excel. Hide PDF/CSV format options here.</span></pre>
+
+  <h3>Main ReportBuilder.jsx (wrapper)</h3>
+<pre><span class="c">// src/pages/reports/ReportBuilder.jsx — just a tab switcher</span>
+<span class="k">export default function</span> ReportBuilder() {
+  <span class="k">const</span> [tab, setTab] = useState(<span class="s">'predefined'</span>);
+  <span class="k">return</span> (
+    &lt;div&gt;
+      &lt;TabBar tabs={[
+        { id: <span class="s">'predefined'</span>, label: <span class="s">'Predefined Proformas'</span> },
+        { id: <span class="s">'custom'</span>,     label: <span class="s">'Custom Report'</span> },
+        { id: <span class="s">'diary'</span>,      label: <span class="s">'Daily Diary'</span> }
+      ]} active={tab} onChange={setTab} /&gt;
+      { tab === <span class="s">'predefined'</span> &amp;&amp; &lt;PredefinedTab /&gt; }
+      { tab === <span class="s">'custom'</span>     &amp;&amp; &lt;CustomTab /&gt; }
+      { tab === <span class="s">'diary'</span>      &amp;&amp; &lt;DailyDiaryTab /&gt; }
+    &lt;/div&gt;
+  );
+}</pre>
+</section>
+
+<!-- ══ 14 FRONTEND IMPORT ══ -->
+<section id="fe-import">
+  <h2><span class="sn">14</span> Frontend — Import UI</h2>
+  <p>One reusable component, used on three pages: ArrestManagement, PCRCallEntry, CaseManagement. It gets <code>recordType</code> as a prop.</p>
+
+  <p><strong>File:</strong> <code>src/components/ImportPanel.jsx</code></p>
+<pre><span class="c">// Props: { recordType: 'ARREST' | 'PCR_CALL' | 'CASE' }</span>
+
+<span class="c">// STEP 1 — Download Template button</span>
+<span class="c">//   onClick: window.open(`/api/v1/import/template/${recordType}`, '_blank')</span>
+<span class="c">//   Label: "Download Import Template (.xlsx)"</span>
+
+<span class="c">// STEP 2 — File upload area</span>
+<span class="c">//   Drag-and-drop zone OR file input (accept=".xlsx,.csv")</span>
+<span class="c">//   Show selected filename once picked</span>
+<span class="c">//   is_legacy toggle (only visible if user.role is DISTRICT_OFFICER or above)</span>
+<span class="c">//     Default: off. Label: "Legacy Data Import (bypasses workflow)"</span>
+<span class="c">//   "Validate File" button:</span>
+<span class="c">//     POST /api/import/validate (multipart/form-data)</span>
+<span class="c">//     Fields: file, record_type, is_legacy, ps_id (from user store)</span>
+<span class="c">//     Show spinner while waiting</span>
+
+<span class="c">// STEP 3 — Validation Result (shown after validate API returns)</span>
+<span class="c">//   Summary row: "250 rows total  |  ✓ 247 valid  |  ✗ 3 invalid"</span>
+<span class="c">//</span>
+<span class="c">//   If invalid_rows > 0: show error table</span>
+<span class="c">//     Columns: Row # | Field | Error</span>
+<span class="c">//     Data: from response.errors[]</span>
+<span class="c">//     Sort by row_number ascending</span>
+<span class="c">//</span>
+<span class="c">//   Two buttons:</span>
+<span class="c">//     "Re-upload corrected file" → resets to Step 2</span>
+<span class="c">//     "Confirm Import (247 rows)" → POST /api/import/confirm/:batchId</span>
+<span class="c">//       Disabled if valid_rows === 0</span>
+
+<span class="c">// STEP 4 — Confirm Result</span>
+<span class="c">//   Show: "247 records imported successfully"</span>
+<span class="c">//   Show: "3 rows were skipped (had errors)"</span>
+<span class="c">//   "View imported records" link → navigate to the record list page</span>
+<span class="c">//   "Import another file" button → reset to Step 1</span></pre>
+
+  <h3>Wiring ImportPanel into existing pages</h3>
+<pre><span class="c">// In ArrestManagement.jsx — add import button that toggles the panel</span>
+<span class="k">import</span> ImportPanel <span class="k">from</span> <span class="s">'../../components/ImportPanel'</span>;
+
+<span class="c">// Add to the page header area (next to existing buttons):</span>
+&lt;button onClick={() => setShowImport(!showImport)}&gt;Import from Excel&lt;/button&gt;
+{ showImport &amp;&amp; &lt;ImportPanel recordType=<span class="s">"ARREST"</span> /&gt; }
+
+<span class="c">// Same pattern for PCRCallEntry.jsx → recordType="PCR_CALL"</span>
+<span class="c">// Same pattern for CaseManagement.jsx → recordType="CASE"</span></pre>
+</section>
+
+<!-- ══ 15 COMPONENT LIST ══ -->
+<section id="fe-components">
+  <h2><span class="sn">15</span> Frontend — complete component list</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>File</th><th>What it is</th><th>APIs it calls</th></tr></thead>
+    <tbody>
+      <tr><td>hooks/useReportJob.js</td><td>Shared polling hook for report jobs</td><td>GET /reports/status/:id</td></tr>
+      <tr><td>pages/reports/ReportBuilder.jsx</td><td>Tab wrapper only — no API calls</td><td>None</td></tr>
+      <tr><td>pages/reports/tabs/PredefinedTab.jsx</td><td>Predefined proforma generator</td><td>GET /reports/templates, POST /reports/generate, GET /reports/history</td></tr>
+      <tr><td>pages/reports/tabs/CustomTab.jsx</td><td>Custom field picker + generator</td><td>GET /reports/fields, POST /reports/generate</td></tr>
+      <tr><td>pages/reports/tabs/DailyDiaryTab.jsx</td><td>Daily diary generator</td><td>GET /reports/templates, POST /reports/generate</td></tr>
+      <tr><td>components/ImportPanel.jsx</td><td>Reusable import flow (all 4 steps)</td><td>GET /import/template/:type, POST /import/validate, POST /import/confirm/:id</td></tr>
+      <tr><td>components/FieldPicker.jsx</td><td>Grouped checkbox field selector for custom tab</td><td>None (data passed as prop)</td></tr>
+      <tr><td>components/ImportErrorTable.jsx</td><td>Row-level error display after validate</td><td>None (data passed as prop)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══ 16 WORK DIVISION ══ -->
+<section id="work-division">
+  <h2><span class="sn">16</span> Work division — what each person builds</h2>
+
+  <div class="note amber"><strong>One hard rule:</strong> Migration runs before any backend code. <strong>Shahista never waits</strong> — she builds with mock data from the start and swaps to real APIs when the backend is ready.</div>
+
+  <div class="dev-grid">
+
+    <!-- VAIBHAV -->
+    <div class="dev-card-v2" id="vaibhav">
+      <div class="dev-header">
+        <div class="dev-avatar av-be">V1</div>
+        <div>
+          <div class="dev-name">Vaibhav — Backend Lead</div>
+          <div class="dev-owns">Owns: <code>modules/reports/</code> · <code>modules/import/</code> · <code>python_worker/</code></div>
+        </div>
+      </div>
+      <ul class="deliv-list">
+        <li class="deliv"><span class="deliv-num">01</span><div><div class="deliv-title">Run DB migration</div><div class="deliv-desc">After Raja writes the migration file, review it, then run it. Two new tables + two column additions. Nothing else starts until tables exist.</div></div></li>
+        <li class="deliv"><span class="deliv-num">02</span><div><div class="deliv-title">Reports controller — switch to RabbitMQ</div><div class="deliv-desc">Remove <code>setImmediate(generateReportInternal)</code>. Replace with <code>publish('report.requested', …)</code>. Exact code is in §07.</div></div></li>
+        <li class="deliv"><span class="deliv-num">03</span><div><div class="deliv-title">Import module — 5 endpoints</div><div class="deliv-desc">Template download, validate (dry-run), confirm, list batches, batch detail. Full API spec in §11.</div></div></li>
+        <li class="deliv"><span class="deliv-num">04</span><div><div class="deliv-title">Python generator.py</div><div class="deliv-desc">Single sheet first (one record type → one xlsx), then composite mode (34 sheets = Daily Diary). Full structure in §06.</div></div></li>
+        <li class="deliv"><span class="deliv-num">05</span><div><div class="deliv-title">Write + wire import.router.js</div><div class="deliv-desc">Write all route definitions (copy pattern from <code>reports.router.js</code>), then register at <code>/api/import</code> and <code>/api/v1/import</code> in app.js. You own this file entirely.</div></div></li>
+        <li class="deliv"><span class="deliv-num">06</span><div><div class="deliv-title">SELECT normalisation in records.service.js</div><div class="deliv-desc">Add value check in <code>createRecord()</code> and <code>updateRecord()</code> before DB insert. Code is in §10.</div></div></li>
+      </ul>
+      <div class="deps-section">
+        <div class="deps-label">Integration</div>
+        <div class="dep-row"><span class="dep-badge dep-need">Needs</span>Raja writes migration → you review → Raja runs it. This is step zero.</div>
+        <div class="dep-row"><span class="dep-badge dep-deliver">Delivers to Shahista</span><code>GET /reports/templates</code> working → she can replace her mock array with real data</div>
+        <div class="dep-row"><span class="dep-badge dep-deliver">Delivers to Akshat</span>Flag <code>feature/be-reports</code> when ready → Akshat tests BE branch. Flag <code>feature/be-import</code> when ready → Akshat tests again. Akshat signs off before any merge to main.</div>
+      </div>
+    </div>
+
+    <!-- RAJA -->
+    <div class="dev-card-v2" id="raja">
+      <div class="dev-header">
+        <div class="dev-avatar av-hlp">R3</div>
+        <div>
+          <div class="dev-name">Raja — Backend Support</div>
+          <div class="dev-owns">Owns: migration file · seed scripts · no source code files</div>
+        </div>
+      </div>
+      <ul class="deliv-list">
+        <li class="deliv"><span class="deliv-num">01</span><div><div class="deliv-title">Migration file — first deliverable for the whole team</div><div class="deliv-desc">Create <code>backend/migrations/20260620000000_phase3_reports_import.js</code>. Copy SQL from §03 exactly. Vaibhav reviews, then you run it. Nothing else can start.</div></div></li>
+        <li class="deliv"><span class="deliv-num">02</span><div><div class="deliv-title">34 proforma seed rows</div><div class="deliv-desc">Each sheet in <code>docs/Daily-Diary-template.xlsx</code> = one <code>report_templates</code> row. Seed spec is in §04. Do 10 rows first, show Vaibhav, then continue.</div></div></li>
+        <li class="deliv"><span class="deliv-num">03</span><div><div class="deliv-title">Composite Daily Diary seed row</div><div class="deliv-desc">One <code>report_templates</code> row with <code>template_type='COMPOSITE'</code> listing all 34 proforma UUIDs. Runs after the 34 rows above are inserted.</div></div></li>
+        <li class="deliv"><span class="deliv-num">04</span><div><div class="deliv-title">Share UUIDs + confirm DB state</div><div class="deliv-desc">After seeds run: give Shahista the composite Daily Diary template UUID (she replaces her placeholder). Confirm to Akshat that all seeds are in DB so his E2E tests can run. That's your last deliverable.</div></div></li>
+      </ul>
+      <div class="deps-section">
+        <div class="deps-label">Integration</div>
+        <div class="dep-row"><span class="dep-badge dep-deliver">Delivers to Vaibhav</span>Migration file written + reviewed → you run it → everything else unblocks</div>
+        <div class="dep-row"><span class="dep-badge dep-deliver">Delivers to Shahista</span>Composite Daily Diary template UUID → she replaces <code>'daily-diary-uuid-placeholder'</code> in DailyDiaryTab</div>
+        <div class="dep-row"><span class="dep-badge dep-deliver">Delivers to Akshat</span>Confirmation that all 35 seed rows are in DB → he can run E2E daily diary test</div>
+        <div class="dep-row"><span class="dep-badge dep-need">Needs</span>Migration to finish running before any seed scripts can insert rows</div>
+      </div>
+    </div>
+
+    <!-- SHAHISTA -->
+    <div class="dev-card-v2" id="shahista">
+      <div class="dev-header">
+        <div class="dev-avatar av-fe">S5</div>
+        <div>
+          <div class="dev-name">Shahista — Frontend</div>
+          <div class="dev-owns">Owns: <code>hooks/useReportJob.js</code> · <code>pages/reports/tabs/</code> · <code>components/ImportPanel.jsx</code></div>
+        </div>
+      </div>
+      <ul class="deliv-list">
+        <li class="deliv"><span class="deliv-num">01</span><div><div class="deliv-title">useReportJob.js hook</div><div class="deliv-desc">Polls <code>GET /reports/status/:id</code> every 2s. Provides <code>setJobId</code>, <code>status</code>, and <code>download()</code>. The full code is in §12 — copy it, it is complete.</div></div></li>
+        <li class="deliv"><span class="deliv-num">02</span><div><div class="deliv-title">ReportBuilder.jsx — 3-tab wrapper</div><div class="deliv-desc">Just a tab switcher. Renders PredefinedTab, CustomTab, DailyDiaryTab. No API calls here. Structure is in §13.</div></div></li>
+        <li class="deliv"><span class="deliv-num">03</span><div><div class="deliv-title">PredefinedTab.jsx</div><div class="deliv-desc">Date range + template dropdown + Generate button + history table. <strong>Build with mock data first</strong> (static array matching the shape in §08). One-line swap to real API when backend is ready.</div></div></li>
+        <li class="deliv"><span class="deliv-num">04</span><div><div class="deliv-title">ImportPanel.jsx — 4-step flow</div><div class="deliv-desc">Step 1: download template. Step 2: upload + validate. Step 3: show errors. Step 4: confirm import. One component, used in 3 pages. Full spec in §14.</div></div></li>
+        <li class="deliv"><span class="deliv-num">05</span><div><div class="deliv-title">CustomTab.jsx + DailyDiaryTab.jsx</div><div class="deliv-desc">Custom: field picker grouped by section with checkboxes. Daily Diary: single date + 34 proforma checkboxes, all ticked by default. EXCEL only — hide PDF/CSV. Specs in §13.</div></div></li>
+      </ul>
+      <div class="deps-section">
+        <div class="deps-label">Mock data to use until backend is ready</div>
+        <div class="dep-row"><span class="dep-badge dep-need">GET /reports/templates</span>Use: <code>[{id:'t1', name_en:'E-Burglary Cases', template_type:'PROFORMA', output_formats:['EXCEL','PDF']}]</code></div>
+        <div class="dep-row"><span class="dep-badge dep-need">POST /import/validate</span>Return: <code>{batch_id:'b1', total:5, valid:4, invalid:1, errors:[{row:3, field_key:'fir_no', code:'REQUIRED_MISSING', message:'FIR Number is required'}]}</code></div>
+        <div class="dep-row"><span class="dep-badge dep-need">Daily Diary UUID</span>Hardcode <code>'daily-diary-uuid-placeholder'</code> until Raja gives you the real UUID from seeds</div>
+      </div>
+    </div>
+
+    <!-- AKSHAT -->
+    <div class="dev-card-v2" id="akshat">
+      <div class="dev-header">
+        <div class="dev-avatar av-tst">A4</div>
+        <div>
+          <div class="dev-name">Akshat — Testing + Python</div>
+          <div class="dev-owns">Owns: <code>python_worker/</code> setup · <code>docs/postman/</code> · E2E test flows</div>
+        </div>
+      </div>
+      <ul class="deliv-list">
+        <li class="deliv"><span class="deliv-num">01</span><div><div class="deliv-title">Python worker setup</div><div class="deliv-desc">Create <code>python_worker/</code> folder. Install <code>requirements.txt</code> from §06. Copy <code>.env</code> from backend. Run <code>python main.py</code> — must print "waiting for jobs" without crashing. Do this upfront so Vaibhav can hand off immediately.</div></div></li>
+        <li class="deliv"><span class="deliv-num">02</span><div><div class="deliv-title">Write Postman collections upfront</div><div class="deliv-desc">Write both collections (reports §08 + import §11) from the API shapes in the doc <em>before</em> backend is ready. You don't need working endpoints to write request bodies and expected responses. Save to <code>docs/postman/collections/</code>.</div></div></li>
+        <li class="deliv"><span class="deliv-num">03</span><div><div class="deliv-title">Test feature/be-reports branch</div><div class="deliv-desc">When Vaibhav flags <code>feature/be-reports</code> as ready: run Postman collection against it. Test generate → poll → download. Confirm Excel headers match field_registry. <strong>Sign off before it goes anywhere near main.</strong></div></div></li>
+        <li class="deliv"><span class="deliv-num">04</span><div><div class="deliv-title">Test reports integration (FE + BE)</div><div class="deliv-desc">Create <code>feature/reports-integration</code> branch merging Vaibhav's BE + Shahista's FE. Verify PredefinedTab hits real API (not mock). Confirm polling works end-to-end in the browser. Sign off → merge to main.</div></div></li>
+        <li class="deliv"><span class="deliv-num">05</span><div><div class="deliv-title">Test feature/be-import branch</div><div class="deliv-desc">When Vaibhav flags <code>feature/be-import</code>: test validate (upload xlsx with wrong date in row 5 + invalid crime_head in row 12, confirm both errors appear), then confirm import. Sign off.</div></div></li>
+        <li class="deliv"><span class="deliv-num">06</span><div><div class="deliv-title">Test import integration + sign off final merge</div><div class="deliv-desc">Create <code>feature/import-integration</code> branch. Test full ImportPanel flow in browser (download template → fill → upload → see errors → confirm). Once passing, sign off → merge to main.</div></div></li>
+      </ul>
+      <div class="deps-section">
+        <div class="deps-label">Integration — you are the gate before main</div>
+        <div class="dep-row"><span class="dep-badge dep-need">Needs</span>Vaibhav to flag branches as ready before you start testing — don't pull and test unannounced</div>
+        <div class="dep-row"><span class="dep-badge dep-need">Needs</span>Raja's confirmation that seeds are in DB before running daily diary E2E</div>
+        <div class="dep-row"><span class="dep-badge dep-deliver">Sign-off authority</span>Nothing merges to main without your explicit sign-off. If it fails, it goes back to Vaibhav or Shahista — not to you to fix.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 17 BUILD ORDER ══ -->
+<section id="build-order">
+  <h2><span class="sn">17</span> Build order — parallel timeline</h2>
+
+  <p>Read each row left-to-right to see one person's work across the full timeline. The vertical dividers mark the four work streams. Streams are not calendar days — each stream ends when its deliverables are done.</p>
+
+  <div class="gantt-wrap">
+  <div class="gantt">
+
+    <div class="gantt-axis-hdr"></div>
+    <div class="gantt-ph-hdr"><span class="gantt-phase-label">Stream 1</span>Foundation</div>
+    <div class="gantt-ph-hdr"><span class="gantt-phase-label">Stream 2</span>Core Build</div>
+    <div class="gantt-ph-hdr"><span class="gantt-phase-label">Stream 3</span>Integration</div>
+    <div class="gantt-ph-hdr"><span class="gantt-phase-label">Stream 4</span>Polish</div>
+
+    <div class="gantt-person-cell">
+      <div class="dev-avatar av-be" style="width:28px;height:28px;font-size:0.7rem;flex-shrink:0;">V1</div>
+      <div><div class="gantt-person-name">Vaibhav</div><div class="gantt-person-role">Backend Lead</div></div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar be">Run DB migration</div>
+      <div class="gbar be">RabbitMQ publish in reports controller</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar be">Import validate + confirm endpoints</div>
+      <div class="gbar be">SELECT normalisation in records.service</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar be">Python generator.py — single sheet</div>
+      <div class="gbar be">Write + wire import.router.js</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar be">Python composite — daily diary</div>
+      <div class="gbar be">Temp file cleanup cron</div>
+    </div>
+
+    <div class="gantt-person-cell">
+      <div class="dev-avatar av-hlp" style="width:28px;height:28px;font-size:0.7rem;flex-shrink:0;">R3</div>
+      <div><div class="gantt-person-name">Raja</div><div class="gantt-person-role">Backend Support</div></div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar seed">Write migration file (§03)</div>
+      <div class="gbar seed">Seed proformas 1–10</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar seed">Seed proformas 11–34</div>
+      <div class="gbar seed">Seed composite Daily Diary row</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar seed">Confirm seeds in DB</div>
+      <div class="gbar seed">Share UUIDs → Shahista + Akshat</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar seed">Fix any seed errors</div>
+      <div class="gbar seed">Support if Vaibhav blocked</div>
+    </div>
+
+    <div class="gantt-person-cell">
+      <div class="dev-avatar av-fe" style="width:28px;height:28px;font-size:0.7rem;flex-shrink:0;">S5</div>
+      <div><div class="gantt-person-name">Shahista</div><div class="gantt-person-role">Frontend</div></div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar fe">hooks/useReportJob.js</div>
+      <div class="gbar fe">ReportBuilder.jsx tab skeleton</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar fe">PredefinedTab.jsx <em>(mock data first)</em></div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar fe">ImportPanel.jsx — 4-step flow</div>
+      <div class="gbar fe">Wire into Arrest + PCR + Case pages</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar fe">CustomTab.jsx</div>
+      <div class="gbar fe">DailyDiaryTab.jsx</div>
+    </div>
+
+    <div class="gantt-person-cell">
+      <div class="dev-avatar av-tst" style="width:28px;height:28px;font-size:0.7rem;flex-shrink:0;">A4</div>
+      <div><div class="gantt-person-name">Akshat</div><div class="gantt-person-role">Testing + Python</div></div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar test">Python worker setup</div>
+      <div class="gbar test">requirements.txt + .env</div>
+      <div class="gbar test">Confirm RabbitMQ connects</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar test">Write both Postman collections upfront</div>
+      <div class="gbar test">Test feature/be-reports branch</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar test">Integration test: FE + BE reports</div>
+      <div class="gbar test">Sign off → merge reports to main</div>
+    </div>
+    <div class="gantt-cell">
+      <div class="gbar test">Test feature/be-import branch</div>
+      <div class="gbar test">Integration test: FE + BE import</div>
+      <div class="gbar test">Sign off → merge import to main</div>
+    </div>
+
+  </div>
+  </div>
+
+  <h3>Integration handoffs — what triggers what</h3>
+
+  <div class="handoff-box">
+    <div class="handoff-row">
+      <span class="handoff-stream">Stream 1</span>
+      <span class="handoff-people">Raja → everyone</span>
+      <div class="handoff-what">Migration file reviewed by Vaibhav → Raja runs it → tables exist → Vaibhav starts coding, seeds start inserting. <strong>This is the starting gun for the whole phase.</strong></div>
+    </div>
+    <div class="handoff-row">
+      <span class="handoff-stream">Stream 2</span>
+      <span class="handoff-people">Vaibhav → Akshat</span>
+      <div class="handoff-what">Vaibhav flags <code>feature/be-reports</code> as ready. Akshat pulls it, runs the Postman collection against it, tests generate → poll → download. If it passes, Vaibhav can proceed to <code>feature/be-import</code>.</div>
+    </div>
+    <div class="handoff-row">
+      <span class="handoff-stream">Stream 2</span>
+      <span class="handoff-people">Akshat → Shahista</span>
+      <div class="handoff-what"><code>feature/be-reports</code> passes Akshat's tests. Shahista now swaps her mock arrays in PredefinedTab for real API calls — she was building against the same response shapes all along, so it's a one-line change per call.</div>
+    </div>
+    <div class="handoff-row">
+      <span class="handoff-stream">Stream 3</span>
+      <span class="handoff-people">Akshat → main</span>
+      <div class="handoff-what">Akshat creates <code>feature/reports-integration</code> (BE + FE merged). Tests full flow in browser: template picker → generate → poll → download. Passes → merge to main. Same cycle then starts for import.</div>
+    </div>
+    <div class="handoff-row">
+      <span class="handoff-stream">Stream 3</span>
+      <span class="handoff-people">Raja → Shahista + Akshat</span>
+      <div class="handoff-what">Seeds are done. Raja shares composite Daily Diary UUID with Shahista (she replaces placeholder in DailyDiaryTab) and confirms DB state to Akshat (he can now run daily diary E2E).</div>
+    </div>
+    <div class="handoff-row">
+      <span class="handoff-stream">Stream 4</span>
+      <span class="handoff-people">Akshat → main</span>
+      <div class="handoff-what">Import integration tests pass → merge <code>feature/import-integration</code> to main. Akshat's sign-off is the last gate before anything lands in main.</div>
+    </div>
+  </div>
+
+  <div class="note green"><strong>Shahista never waits.</strong> Every API response shape is fully documented in §08 and §11. Build all components against those shapes as static mock data. Swapping to the real API is a one-line change per call.</div>
+  <div class="note purple"><strong>Branch merge rule:</strong> <code>feature/be-*</code> branches never go to main directly. They go to Akshat for testing → then to an integration branch with FE → then Akshat signs off → then main. Vaibhav and Shahista never touch each other's branches.</div>
+
+</section>
+
+</main>
+</div>
+</body>
+</html>

@@ -12,7 +12,7 @@ function determineFieldType(text) {
   if (lower.includes('photo') || lower.includes('image')) return 'FILE';
   if (lower.includes('date') || lower.includes('time')) return 'DATE'; // Using DATE for better form calendar binding
   if (lower.includes('gist') || lower.includes('brief') || lower.includes('address') || lower.includes('details') || lower.includes('remarks')) return 'TEXTAREA';
-  if (lower.includes('gender') || lower.includes('status') || lower.includes('major/minor') || lower.includes('is identified')) return 'SELECT';
+  if (lower.includes('gender') || lower.includes('status') || lower.includes('major/minor') || lower.includes('is identified') || lower.includes('head')) return 'SELECT';
   return 'TEXT';
 }
 
@@ -85,7 +85,31 @@ const translations = {
   "informant": { en: "Informant", hi: "सूचना देने वाला" },
   "found_place": { en: "Found Place", hi: "मिलने का स्थान" },
   "uidb_date": { en: "UIDB Date", hi: "यूआईडीबी तिथि (UIDB Date)" },
-  "is_identified": { en: "Is Identified", hi: "क्या पहचान हो गई है?" }
+  "is_identified": { en: "Is Identified", hi: "क्या पहचान हो गई है?" },
+  "case_reg_type": { en: "Case Registration Type", hi: "मामला पंजीकरण प्रकार" },
+  "complainant_parent_name": { en: "Complainant Parent Name", hi: "शिकायतकर्ता के माता/पिता का नाम" },
+  "complainant_age": { en: "Complainant Age", hi: "शिकायतकर्ता की आयु" },
+  "accused_parent_name": { en: "Accused Parent Name", hi: "आरोपी के माता/पिता का नाम" },
+  "accused_age": { en: "Accused Age", hi: "आरोपी की आयु" },
+  "stolen_property": { en: "Stolen Property", hi: "चोरी की गई संपत्ति" },
+  "recovered_property": { en: "Recovery Property", hi: "बरामद की गई संपत्ति" },
+  "arresting_officer": { en: "Arresting Officer", hi: "गिरफ्तार करने वाले अधिकारी" },
+  "arrest_time": { en: "Time of Arrest", hi: "गिरफ्तारी का समय" },
+  "arrested_age": { en: "Age", hi: "आयु" },
+  "arresting_officer_mobile": { en: "Contact of Arresting Officer", hi: "गिरफ्तार करने वाले अधिकारी का मोबाइल" },
+  "io_mobile": { en: "Contact of IO", hi: "जांच अधिकारी का मोबाइल" },
+  "is_po": { en: "Is the person PO", hi: "क्या व्यक्ति घोषित अपराधी (PO) है" },
+  "missing_type": { en: "Missing / Found Type", hi: "लापता / मिला प्रकार" },
+  "pcr_call_flag": { en: "PCR Call (Y/N)", hi: "पीसीआर कॉल (हाँ/नहीं)" },
+  "operator_name": { en: "Operator Name to Whom MPS", hi: "ऑपरेटर का नाम जिसे एमपीएस भेजा गया" },
+  "beard": { en: "Beard", hi: "दाढ़ी" },
+  "upper_dress_color": { en: "Upper Dress Color", hi: "ऊपरी पोशाक का रंग" },
+  "lower_dress_color": { en: "Lower Dress Color", hi: "निचली पोशाक का रंग" },
+  "dd_date": { en: "DD Date", hi: "डीडी दिनांक" },
+  "inquest_sections": { en: "Under Section (If inquest)", hi: "धारा के तहत (यदि जांच हो)" },
+  "deceased_name": { en: "Name of Deceased", hi: "मृतक का नाम" },
+  "deceased_address": { en: "Address of Deceased", hi: "मृतक का पता" },
+  "filed_by_acp_sdm_date": { en: "Date of Filed by ACP/SDM", hi: "एसीपी/एसडीएम द्वारा दायर करने की तिथि" }
 };
 
 function getSectionForHeader(recordType, fieldKey) {
@@ -142,6 +166,44 @@ function getSectionForHeader(recordType, fieldKey) {
 }
 
 function getOptionsForField(fieldKey) {
+  if (fieldKey === 'local_head' || fieldKey === 'crime_head') {
+    const heads = [
+      "Simple Hurt", "Other IPC", "Other SLL", "Kidnapping", "Pick Pocketing", "Gambling Act", "Cruelty by Husband",
+      "Simple Accident", "Narcotics Drugs & Psychotropic Substances Act", "Robbery", "Snatching", "Murder",
+      "Delhi Excise Act", "Att. to Murder", "Burglary", "Arms Act", "Other Theft", "House Theft", "Night Burglary",
+      "Rape", "Copyright Act", "Cheating", "Fatal Accident", "Child Labour Act 1986",
+      "Att. to Culpable Homicide not Amounting to Murder", "Dowry Prohibition Act 1961", "Electricity Theft",
+      "Information Technology Act 2000", "Grievous Hurt", "Electricity Act 2003", "Other Act", "Eve Teasing",
+      "Trade & Merchandise Marks Act, 1958", "Mobile Phone Theft", "M.O. Women", "Theft In Shop", "POCSO Act 2012",
+      "Wild Life (Protection) Act 1972", "Mischief", "Day Burglary", "Encroachment on Govt. Land", "Servant Theft",
+      "Ext. For Ransom", "Extortion", "Counterfeiting", "Criminal Breach of Trust", "Criminal Intimidation",
+      "Threatening", "Environment (Protection) Act 1986", "Affray", "Arson", "Abetment of Suicide",
+      "Juvenile Justice Act 2015", "Adultery",
+      "The Delhi Prevention of Touting and Malpractices Against Tourists Ordinance Act 2010",
+      "Att. to Commit Suicide", "Acid Attack", "Explosive Act 1884", "Acid Attack Attempt",
+      "Immoral Traffic(Prev.) Act, 1956 (SIT Act (Immoral))", "Trespass", "Delhi Police Act 1978",
+      "Culpable Homicide not Amounting to Murder", "Fire Incident", "Dowry Death", "Organised Crime",
+      "Maharashtra Control of Organised Crime Act 1999", "Misappropriation of property & cruelty by inlaws",
+      "Forgery", "Receiver of Stolen Property", "Explosive Substances Act 1908", "Foreigners Act 1946",
+      "Juvenile Justice Act 2000", "Miscarriage Etc.", "Prevention of Atrocities SC/ST Act 1989",
+      "House/Criminal Trespass", "Abduction", "Protection of Women Domestic Violence Act 2005", "Dacoity",
+      "Concealment of birth", "Riot", "Offence against Public Servant", "Stereo Theft",
+      "wrongful Confinement/restraint", "Public Nuisance", "National Security Act 1980", "Impersonation",
+      "Assault on Public Servant", "Passport Act 1967", "Terrorist Act",
+      "Prevention of Damage of Public Property Act 1984", "M.V. Theft", "Drugging/ Poisoning",
+      "Escape from Police Custody", "Civil Rights Act", "Election Offences", "Drugs and Cosmetics Act 1940",
+      "Offences Relating to religion", "Essential Commodities Act 1955", "Central Motor Vehicles Rules 1989",
+      "Motor Vehicle Act,1988", "Delhi Control of vehicular and Other Traffic on Road Act",
+      "Prevention of Corruption Act 1988", "Delhi Preservation of Trees Act, 1994", "Juvenile Justice Act 2010",
+      "Pre-conception and pre-natal diagnostic [pndt]", "Protection of human rights Act 1993", "Cycle Theft",
+      "Sedition or Offences against State", "Poisons Act 1919", "Bombay Prevention of Begging Act 1959",
+      "Child Marriage Restraint Act 1929", "Official Secrets Act,1923", "Un-Natural Death / Inquest Report",
+      "Cattle Theft", "M.V. Accessories Theft", "Unlawful Activities (Prevention) Act 1967",
+      "Personating public servant", "Unnatural Offences(SODOMY)"
+    ];
+    return heads.map(h => ({ value: h, label_en: h, label_hi: h }));
+  }
+
   if (fieldKey === 'gender') {
     return [
       { value: 'male', label_en: 'Male', label_hi: 'पुरुष' },
@@ -195,23 +257,44 @@ function generateFields(recordType, headers) {
       options: options ? JSON.stringify(options) : null,
       sort_order: (index + 1) * 10,
       visible_to_levels: JSON.stringify(['PS', 'DISTRICT', 'HQ']),
-      editable_by_levels: JSON.stringify(['PS'])
+      editable_by_levels: JSON.stringify(['PS']),
+      is_active: true,
+      scope_level: 'global',
     };
   }).filter(Boolean);
 }
 
+
 const arrestHeaders = [
-  "FIR / DD No. With Date and Time, Section of Law",
-  "Act & Sections",
-  "Name, Address of Persons Arrested/Detained",
-  "Date and Time of Arrest ",
-  "Place of Arrest ",
-  "Name, Address & Tel  No. to Whom Information given",
-  "Whether NAFIS, Dossier, Search Slip Prepared ",
-  "Whether Given Address is Found Correct or Not",
-  " Name and Rank of Address Verifying Officer",
-  "Accused Photo",
-  "Crime Head "
+  "UID",
+  "FIR NO./DD No.",
+  "Crime Head",
+  "U/S",
+  "ACT/LAW",
+  "ARRESTED PERSON (NAME)",
+  "ARRESTED PERSON (PARENTS NAME)",
+  "ARRESTED PERSON (ADDRESS)",
+  "ARRESTED PERSON (AGE)",
+  "Date of Arrest",
+  "Time of Arrest",
+  "Place of Arrest",
+  "NAME OF IO",
+  "Contact of IO",
+  "Status of Arrest",
+  "PREV. INVOLVEMENT (NO. OF CASES)",
+  "Is the person PO",
+  "SEIZURE",
+  "WHETHER ACCUSED IS BC OR NOT",
+  "NAFIS Prepared",
+  "Dossier Prepared",
+  "Arresting Officer",
+  "Contact of AO",
+  "ARRESTED IN (INTEGRATED PI)",
+  "ARRESTED IN (GROUP PATROLLING)",
+  "ARRESTED IN (CYCLE PATROLLING)",
+  "ARRESTED IN (BY ANTI-SNATCHING TEAM)",
+  "ARRESTED IN (BY PRAHARI)",
+  "ARRESTED IN (BY EYES & EARS SCHEME MEMBERS)"
 ];
 
 const pcrHeaders = [
@@ -227,70 +310,93 @@ const pcrHeaders = [
 
 const caseHeaders = [
   "UID",
-  "Local Head",
-  "FIR No & Date",
-  "Under Section",
-  "Time",
-  "Beat No",
-  "District",
-  "Police Station",
-  "Date & Place of Occurance",
-  "Brief Fact Of The Case",
-  "Property (Stolen Recovered)",
-  "Name & Address Of Complainant",
-  "Name & Address Of Accused",
-  "Date Of Arrest",
-  "Name Of IO",
-  "PIS No of IO",
-  "Mobile No of IO",
-  "Status/Remarks",
-  "CASE Type",
-  "SID No",
-  "CCTNS"
+  "P.S.",
+  "Case Reg. Type",
+  "FIR NO.",
+  "Crime Head",
+  "U/S",
+  "ACT/LAW",
+  "DETAILS OF COMPLAINANT (NAME)",
+  "DETAILS OF COMPLAINANT (Parents NAME)",
+  "DETAILS OF COMPLAINANT (Address)",
+  "DATE OF OCCURRENCE",
+  "TIME OF OCCURRENCE",
+  "PLACE OF OCCURRENCE",
+  "GIST",
+  "ARRESTED PERSON (NAME)",
+  "ARRESTED PERSON (PARENTS NAME)",
+  "ARRESTED PERSON (ADDRESS)",
+  "ARRESTED PERSON (AGE)",
+  "Stolen Property",
+  "Recovery Property",
+  "Case status",
+  "NAME OF IO",
+  "CONTACT OF IO",
+  "PIS No. OF IO"
 ];
 
 const uidbHeaders = [
-  "District",
-  "Police Station",
-  "DD No., Date & Time",
-  "Duty Officer",
-  "I.O.",
-  "Informant",
-  "Found Place",
-  "UIDB Date",
-  "Personal Description Details",
-  "Gender",
-  "Status",
-  "ZIPNET No.",
-  "Is Identified"
+  "S.NO.",
+  "DD NO.",
+  "DD DATE",
+  "U/S (If inquest)",
+  "Name of Deceased",
+  "Address of Deceased",
+  "FOUND PLACE(with Lat. & Long.)",
+  "FOUND DATE",
+  "PHYSICAL DESCRIPTION (SEX)",
+  "PHYSICAL DESCRIPTION (AGE)",
+  "PHYSICAL DESCRIPTION (HEIGHT)",
+  "PHYSICAL DESCRIPTION (BUILT)",
+  "PHYSICAL DESCRIPTION (COMPLEXION)",
+  "PHYSICAL DESCRIPTION (FACE)",
+  "PHYSICAL DESCRIPTION (HAIR)",
+  "PHYSICAL DESCRIPTION (BEARD)",
+  "PHYSICAL DESCRIPTION (MUSTACHES)",
+  "PHYSICAL DESCRIPTION (UPPER DRESS COLOR)",
+  "PHYSICAL DESCRIPTION (LOWER DRESS COLOR)",
+  "NAME OF I.O.",
+  "Contact OF I.O.",
+  "CAUSE OF DEATH",
+  "IF filed by ACP/SDM"
 ];
 
 const missingHeaders = [
-  "DD No.",
-  " Date & Time",
-  "Duty Officer",
-  "I.O.",
-  "Informed by",
-  "Missing Place",
-  "Missing Date",
-  "Personal Description Details",
-  "Gender",
-  "Track The Missing Child No.",
-  "Track The Missing Child Date",
-  "Major/Minor",
-  "Age",
-  "Status",
-  "ZIPNET No.",
-  "If Traced DD No.",
-  "Fir No./Year",
-  "Fir Date"
+  "S.NO.",
+  "DD NO.",
+  "DD DATE",
+  "TYPE",
+  "PCR Call",
+  "NAME OF OPERATOR TO WHOM MPS",
+  "NAME OF MISSING PERSON",
+  "ADDRESS OF MISSING PERSON",
+  "MISSING DATE",
+  "Sex",
+  "PHYSICAL DESCRIPTION (AGE)",
+  "PHYSICAL DESCRIPTION (HEIGHT)",
+  "PHYSICAL DESCRIPTION (BUILT)",
+  "PHYSICAL DESCRIPTION (COMPLEXION)",
+  "PHYSICAL DESCRIPTION (FACE)",
+  "PHYSICAL DESCRIPTION (HAIR)",
+  "PHYSICAL DESCRIPTION (BEARD)",
+  "PHYSICAL DESCRIPTION (MUSTACHES)",
+  "PHYSICAL DESCRIPTION (UPPER DRESS COLOR)",
+  "PHYSICAL DESCRIPTION (LOWER DRESS COLOR)",
+  "NAME OF I.O.",
+  "Status"
 ];
 
 const seedFields = async () => {
   await connectDB();
   try {
-    logger.info('Clearing existing field registry...');
-    await db('field_registry').del();
+    // ── SKIPPED ──────────────────────────────────────────────────────────────
+    // seed.js (run via `npm run db:seed`) is the authoritative source for
+    // field_registry. This script previously wiped and replaced the registry
+    // with stale headers, overwriting all fields added to seed.js.
+    // It is now disabled so seed.js remains the sole source of truth.
+    // ─────────────────────────────────────────────────────────────────────────
+    logger.info('seed-fields.js: skipped — field_registry is managed by seeds/seed.js');
+    return;
 
     logger.info('Preparing Master Fields...');
     

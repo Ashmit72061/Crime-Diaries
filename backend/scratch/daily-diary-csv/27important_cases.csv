@@ -1,0 +1,3 @@
+s_no,case_type_category_of_offence,police_station,district,fir_no,date_ddmmyyyy,under_sections_act_ipc_bns_bnss,brief_facts_of_the_case,accused_person_name,fathers_name,recovery_made_property_weapon_cash_etc
+1,Murder,PS Parliament Street,New Delhi District,FIR/2026/0125,19/06/2026,BNS 103 (Murder),Information received regarding a fight. Police reached the spot and found one person dead. FIR registered.,John Doe,Richard Doe,"One Knife, Blood-stained soil"
+2,Robbery,PS Parliament Street,New Delhi District,FIR/2026/0126,19/06/2026,BNS 309(4) (Robbery),Complainant was robbed of his mobile phone and wallet at knife point.,Sohan Lal,Mohan Lal,"Wallet containing Rs. 2,000, iPhone 14"

@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
 import { env } from './config/env.js';
+import { logger } from './utils/logger.js';
 import * as eventBus from './events/eventBus.js';
 import * as auditHandler from './events/handlers/auditHandler.js';
 import * as notifyHandler from './events/handlers/notifyHandler.js';
@@ -19,6 +20,7 @@ import recordsRouter from './modules/records/records.router.js';
 import workflowRouter from './modules/workflow/workflow.router.js';
 import analyticsRouter from './modules/analytics/analytics.router.js';
 import reportsRouter from './modules/reports/reports.router.js';
+import importRouter from './modules/import/import.router.js';
 import usersRouter from './modules/users/users.router.js';
 import hierarchyRouter from './modules/hierarchy/hierarchy.router.js';
 import adminRouter from './modules/admin/admin.router.js';
@@ -28,6 +30,10 @@ import legacyRouter from './modules/legacy/legacy.router.js';
 import levelContractsRouter from './modules/level-contracts/levelContracts.router.js';
 import filtersRouter from './modules/filters/filters.router.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
+import dailyDiaryRouter from './modules/daily-diary/daily-diary.router.js';
+import warehouseRouter from './modules/warehouse/warehouse.router.js';
+
+
 
 const app = express();
 
@@ -89,6 +95,9 @@ app.use('/api/compilations', compilationRouter);
 app.use('/api/v1/reports', reportsRouter);
 app.use('/api/reports', reportsRouter);
 
+app.use('/api/v1/import', importRouter);
+app.use('/api/import', importRouter);
+
 app.use('/api/v1/admin/users', usersRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/users', usersRouter);
@@ -115,6 +124,14 @@ app.use('/api/filters', filtersRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/notifications', notificationsRouter);
 
+app.use('/api/v1/daily-diary', dailyDiaryRouter);
+app.use('/api/daily-diary', dailyDiaryRouter);
+
+app.use('/api/v1/warehouse', warehouseRouter);
+app.use('/api/warehouse', warehouseRouter);
+
+
+
 // Health check
 app.get('/api/v1/health', (req, res) => {
   return res.status(200).json({ success: true, message: 'PHAROS Backend Operational API online' });
@@ -130,7 +147,7 @@ app.use((req, res, next) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('[AppError] Caught global error:', err.stack || err.message);
+  logger.error('[AppError] Caught global error:', err.stack || err.message);
   return res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error'
@@ -140,23 +157,23 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   // Connect Event Broker
   await eventBus.connect();
-  
+
   // Start background handlers
   await auditHandler.init();
   await notifyHandler.init();
   await initScheduler();
 
   app.listen(env.PORT, () => {
-    console.log(`===================================================`);
-    console.log(`  PHAROS API Server listening on port ${env.PORT}`);
-    console.log(`  Mode: ${env.NODE_ENV}`);
-    console.log(`===================================================`);
+    logger.info('===================================================');
+    logger.info(`  PHAROS API Server listening on port ${env.PORT}`);
+    logger.info(`  Mode: ${env.NODE_ENV}`);
+    logger.info('===================================================');
   });
 };
 
 if (process.env.PHAROS_TEST !== 'true' && process.argv[1] && (process.argv[1].endsWith('app.js') || process.argv[1].endsWith('app'))) {
   startServer().catch(err => {
-    console.error('[App] Failed to start server:', err.message);
+    logger.error('[App] Failed to start server:', err.message);
     process.exit(1);
   });
 }

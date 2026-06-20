@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import puppeteer from 'puppeteer';
 import ExcelJS from 'exceljs';
+import { publish } from '../../events/eventBus.js';
+import { logger } from '../../utils/logger.js';
 
 const parseJsonField = (val) => {
   if (val === null || val === undefined) return null;
@@ -16,50 +18,85 @@ const parseJsonField = (val) => {
 // Fallback in-memory templates
 const templates = [
   { id: "arrest-summary",       name_en: "Arrest Summary Report",       name_hi: "गिरफ्तारी सारांश रिपोर्ट",       format: ["pdf","csv","excel"], applicable_record_types: ["ARREST"] },
-  { id: "pcr-call-log",         name_en: "PCR Call Log",                name_hi: "पीसीआर कॉल लॉग",                format: ["pdf","csv","excel"], applicable_record_types: ["PCR"] },
-  { id: "cases-register",       name_en: "Cases Register",              name_hi: "मामले रजिस्टर",              format: ["pdf","csv","excel"], applicable_record_types: ["CASES"] },
-  { id: "daily-status",         name_en: "Daily Status Report",         name_hi: "दैनिक स्थिति रिपोर्ट",         format: ["pdf","excel"], applicable_record_types: ["ARREST", "PCR", "CASES"] },
+  { id: "pcr-call-log",         name_en: "PCR Call Log",                name_hi: "पीसीआर कॉल लॉग",                format: ["pdf","csv","excel"], applicable_record_types: ["PCR_CALL"] },
+  { id: "cases-register",       name_en: "Cases Register",              name_hi: "मामले रजिस्टर",              format: ["pdf","csv","excel"], applicable_record_types: ["CASE"] },
+  { id: "daily-status",         name_en: "Daily Status Report",         name_hi: "दैनिक स्थिति रिपोर्ट",         format: ["pdf","excel"], applicable_record_types: ["ARREST", "PCR_CALL", "CASE"] },
   { id: "district-compilation", name_en: "District Compilation Report", name_hi: "जिला संकलन रिपोर्ट",         format: ["pdf","excel"], applicable_record_types: ["COMPILATION"] },
-  { id: "io-performance",       name_en: "IO Investigation Performance", name_hi: "जांच अधिकारी जांच प्रदर्शन",  format: ["pdf","excel"], applicable_record_types: ["CASES"] },
-  { id: "beat-incidents",       name_en: "Beat Incident Summary",       name_hi: "बीट घटना सारांश",               format: ["pdf","excel"], applicable_record_types: ["CASES", "PCR"] },
-  { id: "legacy-summary",       name_en: "Legacy Data Summary",         name_hi: "विरासत डेटा सारांश",            format: ["pdf","excel"], applicable_record_types: ["CASES", "ARREST"] },
-  { id: "sla-breaches",         name_en: "SLA Breaches Audit Log",      name_hi: "समय सीमा उल्लंघन ऑडिट लॉग",      format: ["pdf","csv","excel"], applicable_record_types: ["CASES", "ARREST", "PCR"] },
+  { id: "io-performance",       name_en: "IO Investigation Performance", name_hi: "जांच अधिकारी जांच प्रदर्शन",  format: ["pdf","excel"], applicable_record_types: ["CASE"] },
+  { id: "beat-incidents",       name_en: "Beat Incident Summary",       name_hi: "बीट घटना सारांश",               format: ["pdf","excel"], applicable_record_types: ["CASE", "PCR_CALL"] },
+  { id: "legacy-summary",       name_en: "Legacy Data Summary",         name_hi: "विरासत डेटा सारांश",            format: ["pdf","excel"], applicable_record_types: ["CASE", "ARREST"] },
+  { id: "sla-breaches",         name_en: "SLA Breaches Audit Log",      name_hi: "समय सीमा उल्लंघन ऑडिट लॉग",      format: ["pdf","csv","excel"], applicable_record_types: ["CASE", "ARREST", "PCR_CALL"] },
   { id: "ops-compilation",      name_en: "Ops Chain Compilation",       name_hi: "संचालन श्रृंखला संकलन",          format: ["pdf","excel"], applicable_record_types: ["COMPILATION"] }
 ];
 
 export const getTemplates = async (req, res) => {
+  const userId = req.user ? (req.user.userId || req.user.id) : null;
+  const { record_type, template_type } = req.query;
+
   try {
-    const dbTemplates = await db('report_templates').where({ is_active: true });
-    if (dbTemplates && dbTemplates.length > 0) {
-      const formatted = dbTemplates.map(t => ({
+    let query = db('report_templates')
+      .where(function() {
+        this.where('is_active', true)
+            .orWhere('created_by', userId);
+      });
+
+    if (template_type) {
+      query = query.andWhere('template_type', template_type.toUpperCase());
+    }
+
+    const dbTemplates = await query;
+    let formatted = dbTemplates.map(t => {
+      let formats = [];
+      try {
+        formats = typeof t.output_formats === 'string' ? JSON.parse(t.output_formats) : t.output_formats;
+      } catch (e) {
+        formats = ["PDF", "CSV", "EXCEL"];
+      }
+      
+      let recTypes = [];
+      try {
+        recTypes = typeof t.applicable_record_types === 'string' ? JSON.parse(t.applicable_record_types) : t.applicable_record_types;
+      } catch (e) {
+        recTypes = ["CASE"];
+      }
+
+      return {
         id: t.id,
         name_en: t.name_en,
         name_hi: t.name_hi,
-        format: typeof t.output_formats === 'string' ? JSON.parse(t.output_formats) : t.output_formats || ["pdf", "csv", "excel"],
-        applicable_record_types: typeof t.applicable_record_types === 'string' ? JSON.parse(t.applicable_record_types) : t.applicable_record_types
-      }));
-      return res.status(200).json({
-        status: 'success',
-        success: true,
-        data: { templates: formatted }
-      });
-    }
-  } catch (e) {
-    // fallback below
-  }
+        template_type: t.template_type || 'PROFORMA',
+        applicable_record_types: recTypes,
+        output_formats: formats || ["PDF", "CSV", "EXCEL"],
+        template_definition: parseJsonField(t.template_definition)
+      };
+    });
 
-  return res.status(200).json({
-    status: 'success',
-    success: true,
-    data: { templates }
-  });
+    if (record_type) {
+      const filterTypes = record_type.split(',').map(s => s.trim().toUpperCase());
+      formatted = formatted.filter(t => 
+        t.applicable_record_types.some(rt => filterTypes.includes(rt.toUpperCase()))
+      );
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: { templates: formatted }
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: err.message
+    });
+  }
 };
 
 const getRecordsForReport = async (templateId, filters) => {
   let recordType = null;
   if (templateId === 'arrest-summary') recordType = 'ARREST';
-  else if (templateId === 'pcr-call-log') recordType = 'PCR';
-  else if (templateId === 'cases-register') recordType = 'CASES';
+  else if (templateId === 'pcr-call-log') recordType = 'PCR_CALL';
+  else if (templateId === 'cases-register') recordType = 'CASE';
 
   let query = db('records')
     .select('records.*', 'ps.name_en as ps_name', 'dist.name_en as district_name')
@@ -79,6 +116,30 @@ const getRecordsForReport = async (templateId, filters) => {
   if (districtId) query = query.where('records.district_id', districtId);
   if (from) query = query.where('records.record_date', '>=', from);
   if (to) query = query.where('records.record_date', '<=', to);
+
+  // Dynamic user data filters from request parameters
+  const systemKeys = new Set([
+    'psId', 'station_id', 'districtId', 'district_id', 
+    'from', 'dateFrom', 'from_date', 'to', 'dateTo', 'to_date', 
+    'selected_sub_templates', 'page', 'limit'
+  ]);
+  const isPostgres = db.client.config.client !== 'sqlite3';
+
+  for (const [key, val] of Object.entries(filters)) {
+    if (systemKeys.has(key) || val === undefined || val === null || val === '') {
+      continue;
+    }
+    const coreColumns = ['id', 'current_status', 'current_level'];
+    if (coreColumns.includes(key)) {
+      query = query.where(`records.${key}`, val);
+    } else {
+      if (isPostgres) {
+        query = query.whereRaw("records.data @> ?::jsonb", [JSON.stringify({ [key]: val })]);
+      } else {
+        query = query.whereRaw("json_extract(records.data, ?) = ?", [`$.${key}`, String(val)]);
+      }
+    }
+  }
 
   const results = await query.orderBy('records.record_date', 'desc');
   return results.map(r => ({
@@ -182,29 +243,131 @@ async function generateExcelFile(template_id, records, parsedFilters, psName, fi
   await workbook.xlsx.writeFile(filePath);
 }
 
-export const generateReport = async (req, res) => {
-  const { template_id, filters, format } = req.body;
+const validateCustomDefinition = async (custom_definition) => {
+  if (!custom_definition || !Array.isArray(custom_definition.sheets)) {
+    throw new Error('Invalid custom report definition: sheets must be an array');
+  }
+  for (const sheet of custom_definition.sheets) {
+    const { record_type, field_keys } = sheet;
+    if (!record_type || !Array.isArray(field_keys)) {
+      throw new Error('Invalid sheet definition: record_type and field_keys (array) are required');
+    }
+    
+    // Validate record_type enum
+    const validTypes = ['ARREST', 'PCR_CALL', 'CASE'];
+    if (!validTypes.includes(record_type)) {
+      throw new Error(`Invalid record type '${record_type}'. Allowed types: ${validTypes.join(', ')}`);
+    }
 
-  if (!template_id || !format) {
+    const registered = await db('field_registry')
+      .whereIn('field_key', field_keys)
+      .andWhere('is_active', true);
+    
+    const registeredKeys = registered.map(r => r.field_key);
+    for (const key of field_keys) {
+      if (!registeredKeys.includes(key)) {
+        throw new Error(`Field key '${key}' does not exist or is inactive in the field registry`);
+      }
+    }
+  }
+};
+
+export const generateReport = async (req, res) => {
+  const { template_id, custom_definition, filters, format, selected_sub_templates } = req.body;
+
+  if (!template_id && !custom_definition) {
     return res.status(400).json({
       status: 'error',
       success: false,
       code: 'BAD_REQUEST',
-      message: 'template_id and format are required'
+      message: 'Either template_id or custom_definition is required'
     });
   }
 
-  // Find template in memory or dynamic check
-  const selectedTemplate = templates.find(t => t.id === template_id) || { format: ["pdf", "csv", "excel", "xlsx"] };
+  if (!format) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      code: 'BAD_REQUEST',
+      message: 'format is required'
+    });
+  }
 
-  const fmt = format.toLowerCase();
-  const allowedFormats = [...selectedTemplate.format, 'xlsx', 'excel'];
-  if (!allowedFormats.includes(fmt)) {
+  let selectedTemplate = null;
+  if (template_id) {
+    selectedTemplate = await db('report_templates').where({ id: template_id, is_active: true }).first();
+    if (!selectedTemplate) {
+      const memTemplate = templates.find(t => t.id === template_id);
+      if (!memTemplate) {
+        return res.status(404).json({
+          status: 'error',
+          success: false,
+          code: 'NOT_FOUND',
+          message: 'Template not found'
+        });
+      }
+      selectedTemplate = {
+        id: memTemplate.id,
+        name_en: memTemplate.name_en,
+        name_hi: memTemplate.name_hi,
+        applicable_record_types: JSON.stringify(memTemplate.applicable_record_types),
+        output_formats: JSON.stringify(memTemplate.format.map(f => f.toUpperCase())),
+        template_definition: JSON.stringify({})
+      };
+    }
+  }
+
+  // Validate custom field_keys exist in field_registry
+  if (!template_id && custom_definition) {
+    try {
+      await validateCustomDefinition(custom_definition);
+    } catch (err) {
+      return res.status(400).json({
+        status: 'error',
+        success: false,
+        code: 'BAD_REQUEST',
+        message: err.message
+      });
+    }
+  }
+
+  const fmt = format.toUpperCase();
+  const allowedFormats = selectedTemplate 
+    ? (typeof selectedTemplate.output_formats === 'string' ? JSON.parse(selectedTemplate.output_formats) : selectedTemplate.output_formats).map(f => f.toUpperCase())
+    : ['PDF', 'CSV', 'EXCEL', 'XLSX'];
+  
+  if (!allowedFormats.includes(fmt) && !(fmt === 'XLSX' && allowedFormats.includes('EXCEL'))) {
     return res.status(400).json({
       status: 'error',
       success: false,
       code: 'BAD_REQUEST',
       message: `Unsupported output format: ${format}`
+    });
+  }
+
+  const ext = (fmt === 'EXCEL' || fmt === 'XLSX') ? 'xlsx' : fmt.toLowerCase();
+
+  // RBAC scope checks
+  const userPsId = req.user?.psId || req.user?.station_id;
+  const userDistrictId = req.user?.districtId || req.user?.district_id;
+  const filterPsId = filters?.ps_id || filters?.psId || filters?.station_id;
+  const filterDistrictId = filters?.district_id || filters?.districtId;
+
+  if (req.user?.role === 'HC' && filterPsId && filterPsId !== userPsId) {
+    return res.status(403).json({
+      status: 'error',
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Cannot generate reports outside your PS'
+    });
+  }
+
+  if (req.user?.role === 'DISTRICT_OFFICER' && filterDistrictId && filterDistrictId !== userDistrictId) {
+    return res.status(403).json({
+      status: 'error',
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Cannot generate reports outside your district'
     });
   }
 
@@ -215,32 +378,31 @@ export const generateReport = async (req, res) => {
       fs.mkdirSync(reportsDir, { recursive: true });
     }
 
-    const fileName = `${jobId}.${fmt === 'excel' ? 'xlsx' : fmt}`;
-    const filePath = path.join(reportsDir, fileName);
+    const filePath = path.join(reportsDir, `${jobId}.${ext}`);
     const userId = req.user ? (req.user.userId || req.user.id) : null;
 
     await db('report_jobs').insert({
       id: jobId,
-      template_id,
+      template_id: template_id || null,
+      custom_definition: custom_definition ? JSON.stringify(custom_definition) : null,
       filters: JSON.stringify(filters || {}),
-      format: format.toUpperCase(),
-      status: 'pending',
+      format: fmt,
+      status: 'PENDING',
       file_path: filePath,
       created_by: userId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });
 
-    setImmediate(async () => {
-      try {
-        await generateReportInternal(jobId, template_id, filters || {}, format, filePath, userId);
-      } catch (err) {
-        console.error('[AsyncReportGen] Job generation failed:', err.message);
-        await db('report_jobs').where({ id: jobId }).update({
-          status: 'FAILED',
-          updated_at: new Date().toISOString()
-        });
-      }
+    // Hand off to Python worker via RabbitMQ
+    await publish('report.requested', {
+      job_id: jobId,
+      template_id: template_id || null,
+      custom_definition: custom_definition || null,
+      filters: filters || {},
+      format: fmt,
+      selected_sub_templates: selected_sub_templates || null,
+      user_id: userId
     });
 
     return res.status(201).json({
@@ -248,8 +410,7 @@ export const generateReport = async (req, res) => {
       success: true,
       data: {
         job_id: jobId,
-        status: 'pending',
-        job: { id: jobId, status: 'pending' }
+        status: 'PENDING'
       }
     });
 
@@ -441,8 +602,8 @@ export const generateReportInternal = async (jobId, template_id, parsedFilters, 
 
     if (template_id === 'daily-status') {
       const arrestsCount = records.filter(r => r.record_type === 'ARREST').length;
-      const pcrCount = records.filter(r => r.record_type === 'PCR').length;
-      const casesCount = records.filter(r => r.record_type === 'CASES').length;
+      const pcrCount = records.filter(r => r.record_type === 'PCR_CALL').length;
+      const casesCount = records.filter(r => r.record_type === 'CASE').length;
 
       html = html
         .replace(/{{arrests_count}}/g, arrestsCount)
@@ -808,7 +969,7 @@ export const runScheduleNow = async (req, res) => {
           last_run_status: 'SUCCESS'
         });
       } catch (err) {
-        console.error('[RunScheduleNow] Immediate execution failed:', err.message);
+        logger.error('[RunScheduleNow] Immediate execution failed:', err.message);
         await db('scheduled_reports').where({ id }).update({
           last_run_at: new Date().toISOString(),
           last_run_status: 'FAILED'
@@ -852,3 +1013,69 @@ export const getAdminStats = async (req, res) => {
     });
   }
 };
+
+export const getFields = async (req, res) => {
+  const { record_type } = req.query;
+
+  if (!record_type) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      code: 'BAD_REQUEST',
+      message: 'record_type query parameter is required'
+    });
+  }
+
+  try {
+    const filterTypes = record_type.split(',').map(s => s.trim().toUpperCase());
+
+    const allFields = await db('field_registry')
+      .where('is_active', true)
+      .orderBy('sort_order', 'asc');
+
+    const filtered = allFields.filter(f => {
+      let types = [];
+      try {
+        types = typeof f.applicable_record_types === 'string' 
+          ? JSON.parse(f.applicable_record_types) 
+          : f.applicable_record_types;
+      } catch (e) {
+        types = [f.applicable_record_types];
+      }
+      return Array.isArray(types) && types.some(t => filterTypes.includes(t.toUpperCase()));
+    }).map(f => {
+      let recTypes = [];
+      try {
+        recTypes = typeof f.applicable_record_types === 'string' 
+          ? JSON.parse(f.applicable_record_types) 
+          : f.applicable_record_types;
+      } catch (e) {
+        recTypes = [f.applicable_record_types];
+      }
+      
+      return {
+        field_key: f.field_key,
+        label_en: f.label_en,
+        label_hi: f.label_hi,
+        field_type: f.field_type,
+        section: f.section || 'General Details',
+        applicable_record_types: recTypes
+      };
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      success: true,
+      data: {
+        fields: filtered
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: error.message
+    });
+  }
+};
+
