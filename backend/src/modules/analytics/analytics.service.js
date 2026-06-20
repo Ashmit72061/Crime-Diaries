@@ -92,8 +92,8 @@ export const getTrends = async (filters = {}) => {
   if (filters.to) query = query.where('record_date', '<=', filters.to);
 
   const rows = await query
-    .groupBy(db.raw('day'), 'record_type')
-    .orderBy('day', 'asc')
+    .groupBy(db.raw(dateExpr), 'record_type')
+    .orderBy(db.raw(dateExpr), 'asc')
     .limit(60);
 
   const dayMap = {};

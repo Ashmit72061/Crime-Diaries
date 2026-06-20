@@ -1,4 +1,7 @@
 export async function up(knex) {
+  const hasScope = await knex.schema.hasColumn('field_registry', 'scope_level');
+  if (hasScope) return; // already applied by an earlier migration
+
   await knex.schema.alterTable('field_registry', (table) => {
     table.string('scope_level', 50).notNullable().defaultTo('global');
     table.text('scope_id').nullable();
