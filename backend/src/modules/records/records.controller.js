@@ -4,7 +4,8 @@ import { maskRecordData, maskRecordDetails } from '../level-contracts/levelContr
 import path from 'path';
 
 export const getRecords = async (req, res) => {
-  const { type, status, dateFrom, dateTo, search } = req.query;
+  const type = req.query.type || req.query.record_type;
+  const { status, dateFrom, dateTo, search } = req.query;
 
   try {
     const records = await recordsService.listRecords(
@@ -41,7 +42,8 @@ export const getRecord = async (req, res) => {
 };
 
 export const create = async (req, res) => {
-  const { record_type, record_date, data } = req.body;
+  const { record_type, data } = req.body;
+  const record_date = req.body.record_date || new Date().toISOString().split('T')[0];
   const ipAddress = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
 
   if (!record_type || !record_date || !data) {
