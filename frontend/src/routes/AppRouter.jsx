@@ -59,7 +59,7 @@ function RoleRedirect() {
   const routes = {
     PS: '/records',          // Head Constable (HC)
     HC: '/records',          // Head Constable (HC)
-    SHO: '/queue',           // Station House Officer
+    SHO: '/analytics',           // Station House Officer
     ACP: '/queue',           // Assistant Commissioner of Police
     DISTRICT: '/district',   // District DCP
     DISTRICT_OFFICER: '/district',

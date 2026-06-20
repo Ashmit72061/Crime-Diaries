@@ -1,0 +1,294 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Shield, BookOpen, FileCheck, PhoneCall, TrendingUp, BarChart3, Radio, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
+import api from '../../utils/api.js';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 95, damping: 14 } }
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-xl p-4 min-w-[180px] transition-all">
+        <p className="text-xs font-extrabold text-slate-800 mb-2 font-display uppercase tracking-wider">{label}</p>
+        <div className="space-y-1.5">
+          {payload.map((entry, index) => {
+            const dotColor = entry.name === 'FIR Cases' ? '#cca43b' : entry.name === 'PCR Calls' ? '#0f52ba' : '#16a34a';
+            return (
+              <div key={index} className="flex items-center justify-between gap-4">
+                <span className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                  {entry.name}
+                </span>
+                <span className="text-xs font-bold font-mono text-slate-800">{entry.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+export default function DistrictDashboard() {
+  const navigate = useNavigate();
+
+  // Fetch Analytics Overview Cards
+  const { data: stats = {} } = useQuery({
+    queryKey: ['analytics', 'overview'],
+    queryFn: async () => {
+      const res = await api.get('/analytics/overview');
+      return res.data.data;
+    },
+  });
+
+  // Fetch Station Breakdown Chart Data
+  const { data: chartData = [] } = useQuery({
+    queryKey: ['analytics', 'by-ps'],
+    queryFn: async () => {
+      const res = await api.get('/analytics/by-ps');
+      return res.data.data;
+    },
+  });
+
+  const cards = [
+    { label: 'Total FIR Cases Registered', value: stats.cases_today || 0, color: 'text-amber-600', icon: Shield,    change: '+12%', isUp: true  },
+    { label: 'PCR Response Dispatches',     value: stats.pcr_today   || 0, color: 'text-blue-600',  icon: PhoneCall, change: '-4%',  isUp: false },
+    { label: 'Accused Arrests Filed',       value: stats.arrests_today || 0, color: 'text-emerald-600', icon: FileCheck, change: '+8%', isUp: true },
+  ];
+
+  /* ── per-card icon tile colours matching Dashboard palette ── */
+  const cardTile = [
+    { bg: 'bg-[#FFFBEB]', border: 'border-[#FDE68A]' },
+    { bg: 'bg-[#EFF6FF]', border: 'border-[#BFDBFE]' },
+    { bg: 'bg-[#ECFDF5]', border: 'border-[#6EE7B7]' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#F0F4F9] text-[#1A202C]">
+
+      {/* ══════════════ HERO HEADER ══════════════ */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0A1628] via-[#003087] to-[#0046C0] px-8 py-12">
+        <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-[#0046C0]/50 blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 right-1/4 h-28 w-28 rounded-full bg-white/5 blur-2xl" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'repeating-linear-gradient(0deg,white 0,white 1px,transparent 1px,transparent 48px),repeating-linear-gradient(90deg,white 0,white 1px,transparent 1px,transparent 48px)' }}
+        />
+
+        <div className="relative z-10 mx-auto max-w-screen-xl">
+          {/* Top badge row */}
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/80 backdrop-blur-sm">
+              <Shield size={12} className="text-amber-400" />
+              DELHI POLICE · DISTRICT DCP CONSOLE
+            </span>
+            <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1.5 backdrop-blur-sm">
+              <Radio size={11} className="animate-pulse text-emerald-400" />
+              <span className="text-xs font-semibold tracking-wide text-emerald-300">LIVE DATA</span>
+            </div>
+          </div>
+
+          {/* Heading + CTA */}
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-2xl">
+              <h1 className="text-4xl font-bold leading-tight tracking-tight text-white">
+                District DCP
+              </h1>
+              <p className="mt-1 text-xl font-medium tracking-wide text-white/40">Command Console</p>
+              <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/55">
+                Aggregated operational statistics and crime logs spanning all Police Stations under district jurisdiction.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                  <MapPin size={11} className="text-white/50" />
+                  <span className="text-xs text-white/60">Delhi, India</span>
+                </div>
+                <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1">
+                  <Shield size={11} className="text-white/50" />
+                  <span className="text-xs text-white/60">District Jurisdiction</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Hero metric tiles */}
+            <div className="flex flex-wrap gap-3 xl:flex-shrink-0">
+              {[
+                { label: 'FIR Cases',  value: stats.cases_today   || 0, color: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-400/30'   },
+                { label: 'PCR Calls',  value: stats.pcr_today     || 0, color: 'text-sky-300',     bg: 'bg-sky-500/15',     border: 'border-sky-400/30'     },
+                { label: 'Arrests',    value: stats.arrests_today || 0, color: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-400/30' },
+              ].map((tile) => (
+                <div
+                  key={tile.label}
+                  className={`min-w-[96px] rounded-2xl border ${tile.border} ${tile.bg} px-5 py-4 text-center backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white/20`}
+                >
+                  <div className={`tabular-nums text-3xl font-bold ${tile.color}`}>{tile.value}</div>
+                  <div className="mt-1 text-xs font-medium text-white/50">{tile.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom separator */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      </div>
+
+      {/* ══════════════ PAGE BODY ══════════════ */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="mx-auto max-w-screen-xl px-6 pb-12"
+      >
+
+        {/* ── Action strip ── */}
+        <motion.div variants={itemVariants} className="mt-8 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[#4A5568]">Operational Overview</h2>
+            <div className="h-px w-24 bg-[#E2E8F0]" />
+          </div>
+          <button
+            onClick={() => navigate('/compile')}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#003087] to-[#0046C0] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] cursor-pointer"
+          >
+            <BookOpen size={13} className="text-amber-300" />
+            Compile Daily Logs
+          </button>
+        </motion.div>
+
+        {/* ── Stats Cards ── */}
+        <motion.div
+          variants={containerVariants}
+          className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3"
+        >
+          {cards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <motion.div
+                key={idx}
+                variants={itemVariants}
+                className="group rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5 cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#718096]">{card.label}</span>
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-3xl font-extrabold tracking-tight text-[#0A1628] tabular-nums">
+                        {card.value}
+                      </div>
+                      <span className={`flex items-center gap-0.5 text-xs font-bold ${card.isUp ? 'text-[#059669]' : 'text-[#DC2626]'}`}>
+                        {card.isUp ? '↑' : '↓'} {card.change}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border ${cardTile[idx].border} ${cardTile[idx].bg} transition-transform duration-200 group-hover:scale-110 ${card.color}`}>
+                    <Icon size={22} />
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-[#718096]">Last 30 days</div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        {/* ── Station Chart Panel ── */}
+        <motion.div
+          variants={itemVariants}
+          className="mt-6 overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5"
+        >
+          {/* Panel header */}
+          <div className="relative flex flex-wrap items-center justify-between gap-4 border-b border-[#E2E8F0] bg-gradient-to-r from-[#F8FAFF] via-white to-[#F0F4F9] px-6 py-5">
+            {/* Left accent bar */}
+            <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
+
+            <div className="flex items-center gap-3 pl-4">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+                <BarChart3 size={16} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#1A202C]">Station-wise Operational Volume</h3>
+                <p className="mt-0.5 text-xs text-[#718096]">Comparative FIR Cases · PCR Calls · Arrests across all stations</p>
+              </div>
+            </div>
+
+            {/* Legend pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] px-3 py-1.5 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-[#D97706]" />
+                <span className="text-xs font-semibold text-[#D97706]">FIR Cases</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1.5 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-[#003087]" />
+                <span className="text-xs font-semibold text-[#003087]">PCR Calls</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl border border-[#6EE7B7] bg-[#ECFDF5] px-3 py-1.5 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-[#059669]" />
+                <span className="text-xs font-semibold text-[#059669]">Arrests</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="p-6">
+            <div className="h-[340px] w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="casesGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#cca43b" />
+                      <stop offset="100%" stopColor="#cca43b" stopOpacity={0.7} />
+                    </linearGradient>
+                    <linearGradient id="pcrGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0f52ba" />
+                      <stop offset="100%" stopColor="#0f52ba" stopOpacity={0.7} />
+                    </linearGradient>
+                    <linearGradient id="arrestsGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#16a34a" />
+                      <stop offset="100%" stopColor="#16a34a" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="station" stroke="#A0AEC0" fontSize={10} tickLine={false} axisLine={false} dy={10} className="font-semibold" />
+                  <YAxis stroke="#A0AEC0" fontSize={10} tickLine={false} axisLine={false} dx={-10} className="font-semibold" />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: '#F0F4F9', opacity: 0.6 }} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '15px', fontWeight: 600, color: '#718096' }} />
+                  <Bar dataKey="cases"   name="FIR Cases" fill="url(#casesGrad)"   radius={[6, 6, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="pcr"     name="PCR Calls" fill="url(#pcrGrad)"     radius={[6, 6, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="arrests" name="Arrests"   fill="url(#arrestsGrad)" radius={[6, 6, 0, 0]} maxBarSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Footer */}
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <div className="h-px w-20 bg-[#E2E8F0]" />
+          <p className="text-xs font-medium text-[#A0AEC0]">
+            Delhi Police Command System · Data refreshes on page load · All times IST
+          </p>
+          <div className="h-px w-20 bg-[#E2E8F0]" />
+        </div>
+      </motion.div>
+    </div>
+  );
+}

@@ -69,7 +69,7 @@ export default function CompilationUI() {
   const [compileDate, setCompileDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Dropdown UI states
-  const [selectedPS, setSelectedPS] = useState(null);
+  const [selectedPSIds, setSelectedPSIds] = useState(new Set());
   const [psDropOpen, setPsDropOpen] = useState(false);
   const [psSearch, setPsSearch] = useState('');
 
@@ -162,8 +162,8 @@ export default function CompilationUI() {
     try {
       const params = new URLSearchParams();
       params.set('date', compileDate);
-      if (selectedPS) {
-        params.set('psId', selectedPS.id);
+      if (selectedPSIds.size > 0) {
+        params.set('psId', Array.from(selectedPSIds).join(','));
       }
       if (selectedFields.size < REPORTS.length) {
         params.set('tableNames', Array.from(selectedFields).join(','));
@@ -176,7 +176,11 @@ export default function CompilationUI() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      const psSuffix = selectedPS ? `_${selectedPS.code}` : '_All_Stations';
+      const psSuffix = selectedPSIds.size > 0 
+        ? (selectedPSIds.size === 1 
+            ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}` 
+            : '_Multiple_Stations') 
+        : '_All_Stations';
       link.setAttribute('download', `Daily_Diary_${compileDate}${psSuffix}.xlsx`);
       document.body.appendChild(link);
       link.click();
@@ -206,136 +210,150 @@ export default function CompilationUI() {
   };
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full theme-district-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* Back Header */}
-      <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
+      <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
         <button
           onClick={() => navigate('/district')}
-          className="hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 p-2 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-zinc-700"
+          className="hover:bg-slate-100 text-slate-500 hover:text-slate-800 p-2 rounded-lg transition-colors cursor-pointer border border-slate-200 active:scale-95"
         >
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-            <BookOpen className="text-[#cca43b]" size={20} />
+          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2 font-display">
+            <BookOpen className="text-[var(--accent-color)]" size={20} />
             <span>District Compilation Workspace</span>
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1 font-semibold">
             Aggregate approved station records for{' '}
-            <span className="text-amber-400 font-semibold">
+            <span className="text-[var(--accent-color)] font-semibold">
               {user?.district_id || user?.districtId || 'your district'}
             </span>{' '}
             into a unified district operations log before sending to Headquarters.
           </p>
         </div>
       </div>
-
+ 
       {/* Date trigger card */}
-      <div className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl p-5 shadow-lg space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-          <Calendar size={14} className="text-[#cca43b]" />
+      <div className="border border-slate-200 bg-white rounded-xl p-5 shadow-sm space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <Calendar size={14} className="text-[var(--accent-color)]" />
           <span>Select Target Compilation Date</span>
         </h3>
-
-        <p className="text-xs text-zinc-500">
-          This will bundle all records currently at <span className="text-amber-400 font-semibold">DISTRICT_REVIEW</span> status in your district into a single compilation packet.
+ 
+        <p className="text-xs text-slate-500 font-medium">
+          This will bundle all records currently at <span className="text-[var(--accent-color)] font-semibold">DISTRICT_REVIEW</span> status in your district into a single compilation packet.
         </p>
-
+ 
         <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
           <input
             type="date"
             value={compileDate}
             onChange={(e) => setCompileDate(e.target.value)}
-            className="bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2.5 outline-none focus:border-[#cca43b] transition-all shrink-0"
+            className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all shrink-0 font-semibold"
           />
-
+ 
           {/* POLICE STATION DROPDOWN */}
           <div ref={psDropRef} className="relative flex-1 min-w-[200px]">
             <button
               type="button"
               onClick={() => setPsDropOpen(!psDropOpen)}
-              className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2.5 outline-none focus:border-[#cca43b] transition-all cursor-pointer h-full"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer h-full font-semibold"
             >
               <div className="flex items-center gap-2 overflow-hidden">
-                <Shield size={14} className="text-[#cca43b] shrink-0" />
+                <Shield size={14} className="text-[var(--accent-color)] shrink-0" />
                 <span className="truncate text-left">
-                  {psLoading ? 'Loading stations...' : selectedPS ? selectedPS.name : 'All Stations (District)'}
+                  {psLoading 
+                    ? 'Loading stations...' 
+                    : selectedPSIds.size === 0 
+                      ? 'All Stations (District)' 
+                      : selectedPSIds.size === psList.length
+                        ? `All Stations (${psList.length}/${psList.length})`
+                        : `${selectedPSIds.size} Stations Selected`}
                 </span>
               </div>
-              <ChevronDown size={14} className="text-zinc-500 shrink-0" />
+              <ChevronDown size={14} className="text-slate-500 shrink-0" />
             </button>
             
             {psDropOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-950 border border-zinc-850 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-64 animate-fade-in">
-                <div className="p-2 border-b border-zinc-850 bg-zinc-900/60">
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-72 animate-fade-in">
+                <div className="p-2 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
                   <input
                     type="text"
                     placeholder="Search station..."
                     value={psSearch}
                     onChange={(e) => setPsSearch(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] text-zinc-200 outline-none focus:border-[#cca43b]"
+                    className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 outline-none focus:border-[var(--accent-color)] font-semibold"
                   />
+                  <div className="flex items-center justify-between text-[10px] px-1 text-slate-500">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedPSIds.size === psList.length) {
+                          setSelectedPSIds(new Set());
+                        } else {
+                          setSelectedPSIds(new Set(psList.map(ps => ps.id)));
+                        }
+                      }}
+                      className="hover:text-[var(--accent-color)] transition-colors cursor-pointer font-bold border-none bg-transparent"
+                    >
+                      {selectedPSIds.size === psList.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    <span>{selectedPSIds.size} of {psList.length} selected</span>
+                  </div>
                 </div>
-                <div className="overflow-y-auto flex-1 max-h-48 scrollbar-thin">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPS(null);
-                      setPsDropOpen(false);
-                      setPsSearch('');
-                    }}
-                    className={`w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-900 transition-colors flex items-center justify-between cursor-pointer ${
-                      !selectedPS ? 'text-[#cca43b] font-bold bg-zinc-900/40' : 'text-zinc-300'
-                    }`}
-                  >
-                    <span>All Stations (District-wide)</span>
-                    {!selectedPS && <CheckCircle size={10} className="text-[#cca43b]" />}
-                  </button>
-                  <div className="h-px bg-zinc-850" />
+                <div className="overflow-y-auto flex-1 max-h-52 scrollbar-thin">
                   {psList
                     .filter(ps => 
                       ps.name.toLowerCase().includes(psSearch.toLowerCase()) || 
                       ps.code.toLowerCase().includes(psSearch.toLowerCase())
                     )
                     .map(ps => {
-                      const isSelected = selectedPS?.id === ps.id;
+                      const isSelected = selectedPSIds.has(ps.id);
                       return (
-                        <button
+                        <label
                           key={ps.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPS(ps);
-                            setPsDropOpen(false);
-                            setPsSearch('');
-                          }}
-                          className={`w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-900 transition-colors flex items-center justify-between cursor-pointer ${
-                            isSelected ? 'text-[#cca43b] font-bold bg-zinc-900/40' : 'text-zinc-300'
-                          }`}
+                          className="w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 transition-colors flex items-center gap-2 text-slate-700 cursor-pointer select-none"
                         >
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-zinc-500 font-mono w-6 text-left shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedPSIds(prev => {
+                                const next = new Set(prev);
+                                if (next.has(ps.id)) {
+                                  next.delete(ps.id);
+                                } else {
+                                  next.add(ps.id);
+                                }
+                                return next;
+                              });
+                            }}
+                            className="rounded border-slate-200 bg-white text-[var(--accent-color)] focus:ring-0 focus:ring-offset-0 focus:outline-none w-3.5 h-3.5 cursor-pointer accent-[var(--accent-color)]"
+                          />
+                          <div className="flex items-center gap-1.5 overflow-hidden">
+                            <span className="text-[10px] text-slate-400 font-mono w-6 text-left shrink-0">
                               {ps.code}
                             </span>
                             <span className="truncate">{ps.name}</span>
                           </div>
-                          {isSelected && <CheckCircle size={10} className="text-[#cca43b]" />}
-                        </button>
+                        </label>
                       );
                     })}
                 </div>
               </div>
             )}
           </div>
-
+ 
           {/* REPORTS DROPDOWN */}
           <div ref={reportsDropRef} className="relative flex-1 min-w-[200px]">
             <button
               type="button"
               onClick={() => setReportsDropOpen(!reportsDropOpen)}
-              className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-200 px-3 py-2.5 outline-none focus:border-[#cca43b] transition-all cursor-pointer h-full"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer h-full font-semibold"
             >
               <div className="flex items-center gap-2 overflow-hidden">
-                <FileText size={14} className="text-[#cca43b] shrink-0" />
+                <FileText size={14} className="text-[var(--accent-color)] shrink-0" />
                 <span className="truncate text-left">
                   {selectedFields.size === REPORTS.length 
                     ? 'All Reports (34/34)' 
@@ -346,16 +364,16 @@ export default function CompilationUI() {
             </button>
             
             {reportsDropOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-950 border border-zinc-850 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-72">
-                <div className="p-2 border-b border-zinc-850 bg-zinc-900/60 flex flex-col gap-2">
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-72">
+                <div className="p-2 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
                   <input
                     type="text"
                     placeholder="Search report fields..."
                     value={reportSearch}
                     onChange={(e) => setReportSearch(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] text-zinc-200 outline-none focus:border-[#cca43b]"
+                    className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 outline-none focus:border-[var(--accent-color)] font-semibold"
                   />
-                  <div className="flex items-center justify-between text-[10px] px-1 text-zinc-400">
+                  <div className="flex items-center justify-between text-[10px] px-1 text-slate-500">
                     <button
                       type="button"
                       onClick={() => {
@@ -365,7 +383,7 @@ export default function CompilationUI() {
                           setSelectedFields(new Set(REPORTS.map(r => r.tableName)));
                         }
                       }}
-                      className="hover:text-amber-400 transition-colors cursor-pointer font-bold"
+                      className="hover:text-[var(--accent-color)] transition-colors cursor-pointer font-bold"
                     >
                       {selectedFields.size === REPORTS.length ? 'Deselect All' : 'Select All'}
                     </button>
@@ -380,7 +398,7 @@ export default function CompilationUI() {
                       return (
                         <label
                           key={report.tableName}
-                          className="w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-900 transition-colors flex items-center gap-2 text-zinc-300 cursor-pointer select-none"
+                          className="w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 transition-colors flex items-center gap-2 text-slate-700 cursor-pointer select-none"
                         >
                           <input
                             type="checkbox"
@@ -388,61 +406,61 @@ export default function CompilationUI() {
                             onChange={() => {
                               setSelectedFields(prev => {
                                 const next = new Set(prev);
-                                if (next.has(report.tableName)) {
-                                  next.delete(report.tableName);
-                                } else {
-                                  next.add(report.tableName);
-                                }
-                                return next;
-                              });
-                            }}
-                            className="rounded border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none w-3.5 h-3.5 cursor-pointer accent-[#cca43b]"
-                          />
-                          <span className="text-[10px] text-zinc-500 font-mono w-4 text-right shrink-0">
-                            {String(report.num).padStart(2, '0')}
-                          </span>
-                          <span className="truncate flex-1">{report.label}</span>
-                          <span className={`text-[8px] font-bold px-1 py-0.2 rounded border shrink-0 ${
-                            report.type === 'summary' 
-                              ? 'bg-blue-950/40 text-blue-400 border-blue-900/40' 
-                              : 'bg-zinc-900 text-zinc-500 border-zinc-850'
-                          }`}>
-                            {report.type === 'summary' ? 'SUM' : 'LIST'}
-                          </span>
-                        </label>
-                      );
-                    })}
+                                  if (next.has(report.tableName)) {
+                                    next.delete(report.tableName);
+                                  } else {
+                                    next.add(report.tableName);
+                                  }
+                                  return next;
+                                });
+                              }}
+                              className="rounded border-slate-200 bg-white text-[var(--accent-color)] focus:ring-0 focus:ring-offset-0 focus:outline-none w-3.5 h-3.5 cursor-pointer accent-[var(--accent-color)]"
+                            />
+                            <span className="text-[10px] text-slate-400 font-mono w-4 text-right shrink-0">
+                              {String(report.num).padStart(2, '0')}
+                            </span>
+                            <span className="truncate flex-1 font-semibold">{report.label}</span>
+                            <span className={`text-[8px] font-bold px-1 py-0.2 rounded border shrink-0 ${
+                              report.type === 'summary' 
+                                ? 'bg-red-50 text-[var(--accent-color)] border-red-200' 
+                                : 'bg-slate-100 text-slate-500 border-slate-200'
+                            }`}>
+                              {report.type === 'summary' ? 'SUM' : 'LIST'}
+                            </span>
+                          </label>
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+  
+            <button
+              onClick={handleCompileTrigger}
+              disabled={createCompMutation.isPending || selectedFields.size === 0}
+              className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0 shadow-md shadow-red-500/20"
+            >
+              {createCompMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                  <span>Aggregating Data...</span>
+                </>
+              ) : (
+                <>
+                  <Database size={14} />
+                  <span>Compile Logs</span>
+                </>
+              )}
+            </button>
           </div>
-
-          <button
-            onClick={handleCompileTrigger}
-            disabled={createCompMutation.isPending || selectedFields.size === 0}
-            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0"
-          >
-            {createCompMutation.isPending ? (
-              <>
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-zinc-900" />
-                <span>Aggregating Data...</span>
-              </>
-            ) : (
-              <>
-                <Database size={14} />
-                <span>Compile Logs</span>
-              </>
-            )}
-          </button>
         </div>
-      </div>
-
-      {/* Compiled Records List */}
-      <div className="space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-          <Database size={14} className="text-[#cca43b]" />
-          <span>Compiled District Archives</span>
-        </h3>
+  
+        {/* Compiled Records List */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 font-display">
+            <Database size={14} className="text-[var(--accent-color)]" />
+            <span>Compiled District Archives</span>
+          </h3>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-12 text-zinc-500">

@@ -69,7 +69,7 @@ export default function StationPerformanceTable({
   };
 
   return (
-    <div className="card border overflow-hidden" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-card)' }}>
+    <div className="overflow-hidden" style={{ backgroundColor: 'transparent' }}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>

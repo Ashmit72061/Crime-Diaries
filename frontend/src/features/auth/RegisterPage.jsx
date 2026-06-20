@@ -15,11 +15,11 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore.js';
 
 const QUICK_PROFILES = [
-  { badge: "HQ001",  abbr: "HQ",  role: "Headquarters",          name: "HQ Analyst"            },
-  { badge: "DO001",  abbr: "DCP", role: "District Officer",       name: "New Delhi District"    },
-  { badge: "ACP001", abbr: "ACP", role: "Asst. Commissioner",     name: "Parliament St Subdiv"  },
-  { badge: "SHO001", abbr: "SHO", role: "Station House Officer",  name: "Parliament St PS"      },
-  { badge: "HC001",  abbr: "HC",  role: "Head Constable",         name: "Parliament St PS"      },
+  { badge: "HQ001",  abbr: "HQ",  role: "Headquarters",          name: "HQ Analyst",          theme: "hq"  },
+  { badge: "DO001",  abbr: "DCP", role: "District Officer",       name: "New Delhi District",    theme: "dcp" },
+  { badge: "ACP001", abbr: "ACP", role: "Asst. Commissioner",     name: "Parliament St Subdiv",  theme: "acp" },
+  { badge: "SHO001", abbr: "SHO", role: "Station House Officer",  name: "Parliament St PS",      theme: "sho" },
+  { badge: "HC001",  abbr: "HC",  role: "Head Constable",         name: "Parliament St PS",      theme: "hc"  },
 ];
 
 export default function LoginPage() {
@@ -61,21 +61,21 @@ export default function LoginPage() {
       loginMutation.mutate({ email: badgeNo, password: "Test@1234" });
     }, 100);
   };
-
   return (
     <div className="login-split-container">
 
+      {/* Floating Global Header: Top Left of the page */}
+      <div className="branding-header">
+        <div className="crest-frame">
+          <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
+        </div>
+        <div className="branding-org">
+          <span className="branding-org-name">Delhi Police</span>
+        </div>
+      </div>
+
       {/* ── Left Panel: Branding ── */}
       <div className="login-branding-panel">
-        <div className="branding-header">
-          <div className="crest-frame">
-            <img src={delhiPoliceLogo} alt="Delhi Police Crest" className="branding-crest-img" />
-          </div>
-          <div className="branding-org">
-            <span className="branding-org-govt">Govt. of NCT of Delhi</span>
-            <span className="branding-org-name">Delhi Police</span>
-          </div>
-        </div>
 
         <div className="branding-hero-center">
           <h2 className="branding-title-sub" style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--accent-gold)', marginBottom: '0.25rem' }}>PRISM</h2>
@@ -109,9 +109,6 @@ export default function LoginPage() {
           transition={{ duration: 0.35 }}
           className="login-panel-header"
         >
-          <div className="crest-frame" style={{ padding: 6 }}>
-            <img src={delhiPoliceLogo} alt="Delhi Police Crest" style={{ width: 40, height: 40, objectFit: 'contain', display: 'block' }} />
-          </div>
           <div>
             <h1 className="login-card-title" style={{ textAlign: 'left', fontSize: '1.35rem', marginBottom: 0 }}>
               PRISM Authorization Console
@@ -207,7 +204,7 @@ export default function LoginPage() {
                   key={p.badge}
                   type="button"
                   onClick={() => handleQuickLogin(p.badge)}
-                  className="login-profile-row"
+                  className={`login-profile-row profile-btn-${p.theme}`}
                 >
                   <div className="login-profile-avatar" aria-hidden="true">{p.abbr}</div>
                   <div className="login-profile-row-info">

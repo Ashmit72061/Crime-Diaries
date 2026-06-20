@@ -1,0 +1,58 @@
+{
+  "login": {
+    "title": "PRISM Command Console",
+    "badge": "Official Badge / PIS Number",
+    "password": "Password / Security Key",
+    "submit": "Establish Secure Connection",
+    "warning": "Authorized personnel only. All access logged and audited."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "records": "My Records",
+    "newRecord": "New Record",
+    "queue": "Approval Desk",
+    "district": "District View",
+    "compile": "Compile Records",
+    "hq": "Command Center",
+    "analytics": "Analytics Console",
+    "reports": "Excel Export Manager",
+    "adminUsers": "Users Register",
+    "adminHierarchy": "Hierarchy Config",
+    "adminFields": "Field Registry"
+  },
+  "actions": {
+    "approve": "Approve & Escalate",
+    "sendBack": "Send Back for Correction",
+    "submit": "Submit to SHO",
+    "saveDraft": "Save Local Draft",
+    "download": "Download Excel",
+    "generate": "Generate Excel Report",
+    "cancel": "Cancel",
+    "confirm": "Are you sure?"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "PENDING_SHO": "Pending SHO Review",
+    "DISTRICT_REVIEW": "DCP Review",
+    "COMPILED": "Compiled",
+    "HQ_RECEIVED": "HQ Received",
+    "ARCHIVED": "Sealed & Archived",
+    "SENT_BACK_HC": "Returned to HC"
+  },
+  "recordTypes": {
+    "CASE": "Cases (FIR) Master",
+    "ARREST": "Arrest Person Master",
+    "PCR_CALL": "PCR / Kalandra Call",
+    "UIDB": "UIDB Unidentified Bodies",
+    "MISSING": "Missing Persons Register"
+  },
+  "common": {
+    "loading": "Loading secure terminal...",
+    "error": "Form schema not found",
+    "errorHint": "No fields configured for this record type. Please contact admin or re-run seed.",
+    "success": "Success",
+    "selected": "selected",
+    "active": "Active",
+    "inactive": "Inactive"
+  }
+}
