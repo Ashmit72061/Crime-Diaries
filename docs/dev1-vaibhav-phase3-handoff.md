@@ -341,4 +341,21 @@ All endpoints are mounted at `/api/import/` and `/api/v1/import/`.
   - Temp files land on disk inside `backend/temp-imports/` and expire in 24 hours.
 - **Cleanup Cron**:
   - Scheduled hourly to delete temporary upload sheets older than 24 hours and mark the batch status as `EXPIRED`.
-`.
+
+---
+
+## 8. Recent Development & Conflict Resolutions (June 20)
+
+### 8.1 Merge Conflict Resolutions
+- Resolved branch conflicts in `backend/scripts/seed-dummy-data.js`, `backend/scripts/seed-fields.js`, `backend/seeds/seed.js`, and `backend/src/modules/fields/fields.controller.js` after pulling updates from `main`. The `feature/daily-diary-compilation` branch is now up to date with `main`.
+
+### 8.2 Python Worker Stability (Winsock Sandbox Fix)
+- **Issue**: The Python worker was hanging indefinitely on Windows due to a networking sandbox issue when trying to establish a connection using SQLAlchemy and Pika over localhost (Winsock anomaly).
+- **Resolution**: Refactored `generator.py` to bypass SQLAlchemy and Pika completely when the `DB_CLIENT` is set to `sqlite3`. The worker now uses Python's built-in `sqlite3` module to directly query the local database, resulting in flawless performance without network-layer hangs.
+
+### 8.3 Custom Multi-Sheet Reports Engine
+- **Cross-Table Filtering**: Implemented the `generate_custom_workbook` function in the Python worker. The frontend can now send custom definitions that dictate specific filters per table (e.g., specific columns for the CASE table vs the ARREST table).
+- **Dynamic Workbooks**: The engine constructs a multi-sheet Excel workbook based on the `sheets` payload. Each sheet runs its own dynamically built query against its designated record type, applying its specific filters (like Date and PS ID) independently.
+
+### 8.4 File Path Anomalies
+- The Python worker now accurately resolves relative file paths to absolute file paths, ensuring the generated Excel, PDF, or CSV files are correctly stored in the `backend/reports` output directory, regardless of the Current Working Directory (CWD) where the worker was invoked from.
