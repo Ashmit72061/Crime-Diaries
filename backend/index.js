@@ -4,6 +4,7 @@ import { connectEventBus } from './src/events/eventBus.js';
 import { logger } from './src/utils/logger.js';
 import app from './src/app.js';
 import { createServer } from 'http';
+import { startWarehouseSync } from './src/modules/warehouse/warehouse.scheduler.js';
 
 const httpServer = createServer(app);
 
@@ -27,6 +28,9 @@ const start = async () => {
       logger.info(`  🌐 URL:  http://localhost:${env.PORT}`);
       logger.info(`  🔧 Mode: ${env.NODE_ENV}`);
       logger.info('===================================================');
+
+      // Start warehouse sync scheduler
+      startWarehouseSync();
     });
   } catch (error) {
     logger.error(`Startup failed: ${error.message}`);
@@ -35,3 +39,4 @@ const start = async () => {
 };
 
 start();
+

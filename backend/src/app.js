@@ -19,6 +19,7 @@ import recordsRouter from './modules/records/records.router.js';
 import workflowRouter from './modules/workflow/workflow.router.js';
 import analyticsRouter from './modules/analytics/analytics.router.js';
 import reportsRouter from './modules/reports/reports.router.js';
+import importRouter from './modules/import/import.router.js';
 import usersRouter from './modules/users/users.router.js';
 import hierarchyRouter from './modules/hierarchy/hierarchy.router.js';
 import adminRouter from './modules/admin/admin.router.js';
@@ -29,6 +30,8 @@ import levelContractsRouter from './modules/level-contracts/levelContracts.route
 import filtersRouter from './modules/filters/filters.router.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
 import dailyDiaryRouter from './modules/daily-diary/daily-diary.router.js';
+import warehouseRouter from './modules/warehouse/warehouse.router.js';
+
 
 
 const app = express();
@@ -91,6 +94,9 @@ app.use('/api/compilations', compilationRouter);
 app.use('/api/v1/reports', reportsRouter);
 app.use('/api/reports', reportsRouter);
 
+app.use('/api/v1/import', importRouter);
+app.use('/api/import', importRouter);
+
 app.use('/api/v1/admin/users', usersRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/users', usersRouter);
@@ -119,6 +125,10 @@ app.use('/api/notifications', notificationsRouter);
 
 app.use('/api/v1/daily-diary', dailyDiaryRouter);
 app.use('/api/daily-diary', dailyDiaryRouter);
+
+app.use('/api/v1/warehouse', warehouseRouter);
+app.use('/api/warehouse', warehouseRouter);
+
 
 
 // Health check

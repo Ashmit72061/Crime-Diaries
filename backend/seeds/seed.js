@@ -208,5 +208,13 @@ export async function seed(knex) {
     { id: 'U_13',  field_key: 'uidb_physical_desc',  field_type: 'TEXTAREA', applicable_record_types: JSON.stringify(['UIDB']), label_en: 'Physical Description',       label_hi: 'शारीरिक हुलिया',                 visible_to_levels: L, editable_by_levels: E, section: 'uidb_details', sort_order: 13, is_active: true, scope_level: 'global', full_width: true },
   ];
 
-  await knex('field_registry').insert(fields);
+  await knex('field_registry').insert(fields.map(f => ({ 
+    is_active: true, 
+    scope_level: 'global',
+    scope_id: null,
+    created_by: null,
+    section_label_en: null,
+    section_label_hi: null,
+    ...f 
+  })));
 }
