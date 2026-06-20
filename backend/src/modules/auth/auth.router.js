@@ -18,8 +18,10 @@ router.post('/refresh', authLimiter, authController.refresh);
 router.post('/logout', authMiddleware, authController.logout);
 router.get('/me', authMiddleware, authController.me);
 router.put('/change-password', authMiddleware, authController.changePassword);
+router.post('/change-password', authMiddleware, authController.changePassword);
 router.get('/notifications', authMiddleware, authController.getNotifications);
 router.put('/notifications/:id/read', authMiddleware, authController.markNotificationRead);
+router.patch('/notifications/:id/read', authMiddleware, authController.markNotificationRead);
 
 export default router;
 

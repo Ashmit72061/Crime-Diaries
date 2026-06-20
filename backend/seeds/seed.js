@@ -20,7 +20,7 @@ export async function seed(knex) {
   // 1. Hierarchy nodes are now seeded via migrations (20260620000000_full_delhi_hierarchy.js)
 
   // 2. Seed users
-  const passwordHash = bcrypt.hashSync('test123', 10);
+  const passwordHash = bcrypt.hashSync('Test@1234', 10);
   const users = [
     { id: 'U_HC001', username: 'hc_parliament_street', badge_no: 'HC001', name_en: 'Ramesh Kumar', name_hi: 'रमेश कुमार', password_hash: passwordHash, role: 'HC', station_id: 'PS_NDD_PARLIAMENTSTREET', district_id: 'DIST_NDD', sub_div_id: 'SUBDIV_DIST_NDD_1', is_active: true },
     { id: 'U_SHO001', username: 'sho_parliament_street', badge_no: 'SHO001', name_en: 'Vikram Singh', name_hi: 'विक्रम सिंह', password_hash: passwordHash, role: 'SHO', station_id: 'PS_NDD_PARLIAMENTSTREET', district_id: 'DIST_NDD', sub_div_id: 'SUBDIV_DIST_NDD_1', is_active: true },

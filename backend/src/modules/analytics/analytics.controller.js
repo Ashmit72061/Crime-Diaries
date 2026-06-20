@@ -220,7 +220,7 @@ export const getByCrimeHead = async (req, res) => {
     if (jq.district_id) query = query.where('district_id', jq.district_id);
     if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
 
-    const rows = await query.groupBy(db.raw('crime_head')).orderBy('count', 'desc').limit(10);
+    const rows = await query.groupBy(db.raw(jsonPath)).orderBy('count', 'desc').limit(10);
     const data = rows.map(r => ({
       name: r.crime_head || 'UNCATEGORIZED',
       count: parseInt(r.count, 10) || 0
@@ -248,7 +248,7 @@ export const getCombinedTrends = async (req, res) => {
     if (jq.sub_div_id) query = query.where('sub_div_id', jq.sub_div_id);
 
     const rows = await query
-      .groupBy(db.raw('day'), 'record_type')
+      .groupBy([db.raw(dateExpr), 'record_type'])
       .orderBy('day', 'desc')
       .limit(42);
 
