@@ -26,7 +26,7 @@ export const createCompilation = async (req, res, next) => {
     const userId = req.user?.id || req.user?.userId;
     // Resolve district from JWT first (authoritative), fall back to request body for admin overrides
     const districtId = req.user?.district_id || req.user?.districtId || req.body.district_id;
-    const { period } = req.body;
+    const period = req.body.period || req.body.date;
 
     if (!period) {
       return res.status(400).json({ status: 'error', success: false, message: 'period is required' });
