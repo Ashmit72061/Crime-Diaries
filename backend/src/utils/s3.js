@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './logger.js';
 
 const uploadDir = path.resolve('uploads');
 
@@ -38,7 +39,7 @@ export const uploadToS3 = async (file) => {
       const url = `${process.env.MINIO_ENDPOINT}/${bucket}/${filename}`;
       return { id: fileId, url, size: file.size, filename: file.originalname };
     } catch (err) {
-      console.warn('[Storage] S3/MinIO upload failed, falling back to local file system.', err.message);
+      logger.warn('[Storage] S3/MinIO upload failed, falling back to local file system.', err.message);
     }
   }
 
@@ -57,7 +58,7 @@ export const deleteFromS3 = async (url) => {
       try {
         fs.unlinkSync(filePath);
       } catch (err) {
-        console.error('[Storage] Failed to delete local file:', err.message);
+        logger.error('[Storage] Failed to delete local file:', err.message);
       }
     }
   }

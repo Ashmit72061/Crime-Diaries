@@ -5,6 +5,7 @@ import fs from 'fs';
 import ExcelJS from 'exceljs';
 import { publish } from '../../events/eventBus.js';
 import { computeRowHash } from '../../utils/hash.js';
+import { logger } from '../../utils/logger.js';
 
 // Helper to check if a field is required
 const isRequired = (field) => {
@@ -236,7 +237,7 @@ export const downloadImportTemplate = async (req, res) => {
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    console.error('[TemplateExport] Error generating template:', error);
+    logger.error('[TemplateExport] Error generating template:', error.message);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -537,7 +538,7 @@ export const validateImportBatch = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[ValidateImport] Parsing/processing file error:', error);
+    logger.error('[ValidateImport] Parsing/processing file error:', error.message);
     try { fs.unlinkSync(req.file.path); } catch (_) {}
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -748,7 +749,7 @@ export const confirmImportBatch = async (req, res) => {
         fs.unlinkSync(batch.file_path);
       }
     } catch (e) {
-      console.error('[ConfirmImport] Temp file deletion failed:', e.message);
+      logger.warn('[ConfirmImport] Temp file deletion failed:', e.message);
     }
 
     await db('import_batches')
@@ -776,7 +777,7 @@ export const confirmImportBatch = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('[ConfirmImport] Database transaction confirm error:', error);
+    logger.error('[ConfirmImport] Database transaction confirm error:', error.message);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

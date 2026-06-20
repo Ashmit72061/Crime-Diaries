@@ -2,6 +2,7 @@ import * as eventBus from '../eventBus.js';
 import db from '../../config/db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { computeRowHash, getPreviousHash } from '../../utils/hash.js';
+import { logger } from '../../utils/logger.js';
 
 export async function init() {
   await eventBus.subscribe('record.*', 'audit-queue', async (payload) => {
@@ -33,7 +34,7 @@ export async function init() {
           .orderBy('revision_number', 'desc')
           .first();
         if (existing) {
-          console.log(`[AuditHandler] Revision for ${changeType} on record ${recordId} already written inline. Skipping background insert.`);
+          logger.debug(`[AuditHandler] Revision for ${changeType} on record ${recordId} already written inline. Skipping background insert.`);
           return;
         }
       }
@@ -73,9 +74,9 @@ export async function init() {
         row_hash
       });
 
-      console.log(`[AuditHandler] Background revision written for record: ${recordId}, revision_number: ${nextRevNo}, type: ${changeType}`);
+      logger.info(`[AuditHandler] Background revision written for record: ${recordId}, revision_number: ${nextRevNo}, type: ${changeType}`);
     } catch (err) {
-      console.error('[AuditHandler] Failed to log revision:', err.message);
+      logger.error('[AuditHandler] Failed to log revision:', err.message);
     }
   });
 }
