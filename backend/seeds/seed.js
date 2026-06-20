@@ -173,5 +173,13 @@ export async function seed(knex) {
     { id: 'U_11', field_key: 'status',              field_type: 'TEXT',     applicable_record_types: JSON.stringify(['UIDB']), label_en: 'Current Status / Mortuary Remarks', label_hi: 'वर्तमान स्थिति / शवगृह टिप्पणी', visible_to_levels: L, editable_by_levels: E, section: 'zipnet_status', sort_order: 11 },
   ];
 
-  await knex('field_registry').insert(fields);
+  await knex('field_registry').insert(fields.map(f => ({ 
+    is_active: true, 
+    scope_level: 'global',
+    scope_id: null,
+    created_by: null,
+    section_label_en: null,
+    section_label_hi: null,
+    ...f 
+  })));
 }
