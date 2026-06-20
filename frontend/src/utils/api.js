@@ -156,10 +156,15 @@ const initMockDB = () => {
           io_name: 'SI Harish Rawat',
           io_pis: 'PIS-49281034',
           io_mobile: '9876543210',
-          property_description: 'Black leather shoulder bag containing cash and paper transcripts',
+          stolen_property: 'Black leather shoulder bag containing cash and paper transcripts',
           property_status: 'Stolen',
           status: 'Open',
           remarks: 'CCTV footage of adjacent cameras is being analysed.',
+          property_description: 'Black leather shoulder bag containing cash and paper transcripts',
+          recovered_property: '',
+          recovered_property_status: 'NA',
+          recovered_case_status: 'Open',
+          recovered_remarks: '',
           cctns_flag: true,
           etheft_flag: false,
           emvt_flag: false,
@@ -463,37 +468,68 @@ const formSchemas = {
       ]
     },
     {
-      section: 'property_status',
-      title_en: 'Property Details & Case Status',
-      title_hi: 'संपत्ति विवरण और केस की स्थिति',
+      section: 'stolen_property',
+      title_en: 'Stolen Property',
+      title_hi: 'चोरी की गई संपत्ति',
       fields: [
-        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
+        { field_key: 'stolen_property', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
         {
           field_key: 'property_status',
           field_type: 'SELECT',
           label_en: 'Property Status',
           label_hi: 'संपत्ति की स्थिति',
           options: [
-            { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी' },
-            { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
-            { value: 'Partly Recovered', label_en: 'Partly Recovered', label_hi: 'आंशिक रूप से बरामद' },
-            { value: 'Not Applicable', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+            { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' },
+            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
           ],
           validation_rules: { required: true }
         },
         {
           field_key: 'status',
           field_type: 'SELECT',
-          label_en: 'Investigation Status',
-          label_hi: 'जांच की स्थिति',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
           options: [
-            { value: 'Open', label_en: 'Active / Under Investigation', label_hi: 'सक्रिय / जांच के अधीन' },
-            { value: 'Chargesheeted', label_en: 'Chargesheet Submitted', label_hi: 'आरोप पत्र दाखिल' },
-            { value: 'Closed', label_en: 'Closed / Final Report', label_hi: 'बंद / अंतिम रिपोर्ट दाखिल' }
+            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
+            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
+            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
           ],
           validation_rules: { required: true }
         },
-        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'General Remarks', label_hi: 'सामान्य टिप्पणी', validation_rules: { required: false } }
+        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
+      ]
+    },
+    {
+      section: 'recovered_property',
+      title_en: 'Recovered Property',
+      title_hi: 'बरामद संपत्ति',
+      fields: [
+        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
+        { field_key: 'recovered_property', field_type: 'TEXTAREA', label_en: 'Recovery Property', label_hi: 'बरामद की गई संपत्ति', validation_rules: { required: false } },
+        {
+          field_key: 'recovered_property_status',
+          field_type: 'SELECT',
+          label_en: 'Property Status',
+          label_hi: 'संपत्ति की स्थिति',
+          options: [
+            { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
+            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'recovered_case_status',
+          field_type: 'SELECT',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
+          options: [
+            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
+            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
+            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
+          ],
+          validation_rules: { required: true }
+        },
+        { field_key: 'recovered_remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
       ]
     },
     {
@@ -923,9 +959,9 @@ api.interceptors.request.use(
       if (!badgeNo || !password) {
         throw createMockError('Missing badge number or security key', 400);
       }
-      
+
       const node = findNodeById(selectedNodeId || 'PS_NDD_PARLIAMENT_STREET') || POLICE_HIERARCHY.children[0].children[1].children[0].children[0];
-      
+
       let mockRole = node.type;
       const lowerB = badgeNo.toLowerCase();
       if (lowerB.includes('sho')) {
@@ -956,13 +992,13 @@ api.interceptors.request.use(
         rank: node.rank || 'Head Constable',
         pis: node.pis || 'PIS-28521904',
       };
-      
+
       const tokens = {
         access_token: 'mock-jwt-access-token',
         refresh_token: 'mock-jwt-refresh-token',
         user: mockUser
       };
-      
+
       return Promise.reject({
         isMock: true,
         response: createMockResponse(tokens)
@@ -1002,7 +1038,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) defaultUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
       return Promise.reject({
         isMock: true,
@@ -1074,14 +1110,14 @@ api.interceptors.request.use(
       const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
       const { record_type, data } = payload;
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
-      
+
       const userJSON = localStorage.getItem('crime-diaries-auth');
       let currentUser = { psId: 'PS_NDD_PARLIAMENT_STREET', districtId: 'DIST_NDD', username: 'HC Ramesh Kumar' };
       if (userJSON) {
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       const newRecord = {
@@ -1109,7 +1145,7 @@ api.interceptors.request.use(
         ],
         transitions: []
       };
-      
+
       allRecords.push(newRecord);
       localStorage.setItem('prism_mock_records', JSON.stringify(allRecords));
       return Promise.reject({
@@ -1127,7 +1163,7 @@ api.interceptors.request.use(
       if (idx === -1) {
         throw createMockError('Record not found', 404);
       }
-      
+
       const record = allRecords[idx];
       if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
         throw createMockError('Lock violation: Record can only be modified in DRAFT or SENT_BACK state', 400);
@@ -1139,7 +1175,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user?.username) currentUsername = parsed.state.user.username;
-        } catch(e){}
+        } catch (e) { }
       }
 
       // Compute changes
@@ -1202,7 +1238,7 @@ api.interceptors.request.use(
       if (idx === -1) {
         throw createMockError('Record not found', 404);
       }
-      
+
       const record = allRecords[idx];
       record.current_status = 'PENDING_SHO';
       record.updated_at = new Date().toISOString();
@@ -1240,12 +1276,12 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
-      
+
       const record = allRecords[idx];
       const oldStatus = record.current_status;
-      
+
       if (record.current_status === 'PENDING_SHO') {
         record.current_status = 'DISTRICT_REVIEW';
         record.current_level = 'DISTRICT';
@@ -1253,7 +1289,7 @@ api.interceptors.request.use(
         record.current_status = 'COMPILED';
         record.current_level = 'HQ';
       }
-      
+
       record.updated_at = new Date().toISOString();
       record.transitions.unshift({
         from_level: oldStatus === 'PENDING_SHO' ? 'PS' : 'DISTRICT',
@@ -1290,15 +1326,15 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
-      
+
       const record = allRecords[idx];
       const oldStatus = record.current_status;
       record.current_status = 'SENT_BACK_HC';
       record.current_level = 'PS';
       record.updated_at = new Date().toISOString();
-      
+
       record.transitions.unshift({
         from_level: oldStatus === 'PENDING_SHO' ? 'PS' : 'DISTRICT',
         to_level: 'PS',
@@ -1328,7 +1364,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       let filteredQueue = [];
@@ -1355,7 +1391,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       let count = 0;
@@ -1398,7 +1434,7 @@ api.interceptors.request.use(
     if (url.match(/\/compilations$/) && method === 'POST') {
       const { period, district_id } = JSON.parse(config.data);
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
-      
+
       // Filter records in district for the date
       const matched = allRecords.filter(r => r.record_date === period && r.current_status === 'COMPILED');
       const firs = matched.filter(r => r.record_type === 'CASE').length;

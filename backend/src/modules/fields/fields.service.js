@@ -7,33 +7,35 @@ const typeFilter = (query, record_type) =>
   query.whereRaw('applicable_record_types LIKE ?', [`%"${record_type}"%`]);
 
 const SECTION_TITLES = {
-  general_info:            { en: 'General Information',        hi: 'सामान्य जानकारी' },
-  identity:                { en: 'Identity',                   hi: 'पहचान' },
-  incident_details:        { en: 'Incident Details',           hi: 'घटना विवरण' },
-  complainant_accused_info:{ en: 'Complainant & Accused',      hi: 'शिकायतकर्ता और आरोपी' },
-  investigation_officer:   { en: 'Investigation Officer',      hi: 'जांच अधिकारी' },
-  property_status:         { en: 'Property & Status',          hi: 'संपत्ति और स्थिति' },
-  intranet_flags:          { en: 'Intranet Flags',             hi: 'इंट्रानेट झंडे' },
-  offence_info:            { en: 'Offence Information',        hi: 'अपराध जानकारी' },
-  arrestee_info:           { en: 'Arrested Person Details',    hi: 'गिरफ्तार व्यक्ति विवरण' },
-  custody_status:          { en: 'Custody Status',             hi: 'हिरासत स्थिति' },
-  procedure_slips:         { en: 'Procedure & Slips',          hi: 'प्रक्रिया और पर्ची' },
-  informant_contact:       { en: 'Informant & Contact',        hi: 'सूचनाकर्ता और संपर्क' },
-  complaint_details:       { en: 'Complaint Details',          hi: 'शिकायत विवरण' },
-  response_io:             { en: 'Response & IO',              hi: 'प्रतिक्रिया और जांच अधिकारी' },
-  arrival_geo:             { en: 'Arrival & Location',         hi: 'पहुंचना और स्थान' },
-  person_details:          { en: 'Person Details',             hi: 'व्यक्ति विवरण' },
-  location_particulars:    { en: 'Location Particulars',       hi: 'स्थान विशेष' },
-  physical_bio:            { en: 'Physical Description',       hi: 'शारीरिक हुलिया' },
-  contacts_assigned:       { en: 'Contacts & Assigned IO',     hi: 'संपर्क और आवंटित जांच अधिकारी' },
-  discovery_details:       { en: 'Discovery Details',          hi: 'खोज विवरण' },
-  corpse_desc:             { en: 'Body Description',           hi: 'शव विवरण' },
-  officer_informant:       { en: 'Officer & Informant',        hi: 'अधिकारी और सूचनाकर्ता' },
-  zipnet_status:           { en: 'ZIPNET & Status',            hi: 'जिपनेट और स्थिति' },
-  linked_case:             { en: 'Linked Case',                hi: 'संबंधित मामला' },
-  classification:          { en: 'Classification',             hi: 'वर्गीकरण' },
-  gist:                    { en: 'Call Gist',                  hi: 'कॉल का विवरण' },
-  category:                { en: 'Category',                   hi: 'श्रेणी' },
+  general_info: { en: 'General Information', hi: 'सामान्य जानकारी' },
+  identity: { en: 'Identity', hi: 'पहचान' },
+  incident_details: { en: 'Incident Details', hi: 'घटना विवरण' },
+  complainant_accused_info: { en: 'Complainant & Accused', hi: 'शिकायतकर्ता और आरोपी' },
+  investigation_officer: { en: 'Investigation Officer', hi: 'जांच अधिकारी' },
+  property_status: { en: 'Property & Status', hi: 'संपत्ति और स्थिति' },
+  intranet_flags: { en: 'Intranet Flags', hi: 'इंट्रानेट झंडे' },
+  offence_info: { en: 'Offence Information', hi: 'अपराध जानकारी' },
+  arrestee_info: { en: 'Arrested Person Details', hi: 'गिरफ्तार व्यक्ति विवरण' },
+  custody_status: { en: 'Custody Status', hi: 'हिरासत स्थिति' },
+  procedure_slips: { en: 'Procedure & Slips', hi: 'प्रक्रिया और पर्ची' },
+  informant_contact: { en: 'Informant & Contact', hi: 'सूचनाकर्ता और संपर्क' },
+  complaint_details: { en: 'Complaint Details', hi: 'शिकायत विवरण' },
+  response_io: { en: 'Response & IO', hi: 'प्रतिक्रिया और जांच अधिकारी' },
+  arrival_geo: { en: 'Arrival & Location', hi: 'पहुंचना और स्थान' },
+  person_details: { en: 'Person Details', hi: 'व्यक्ति विवरण' },
+  location_particulars: { en: 'Location Particulars', hi: 'स्थान विशेष' },
+  physical_bio: { en: 'Physical Description', hi: 'शारीरिक हुलिया' },
+  contacts_assigned: { en: 'Contacts & Assigned IO', hi: 'संपर्क और आवंटित जांच अधिकारी' },
+  discovery_details: { en: 'Discovery Details', hi: 'खोज विवरण' },
+  corpse_desc: { en: 'Body Description', hi: 'शव विवरण' },
+  officer_informant: { en: 'Officer & Informant', hi: 'अधिकारी और सूचनाकर्ता' },
+  zipnet_status: { en: 'ZIPNET & Status', hi: 'जिपनेट और स्थिति' },
+  linked_case: { en: 'Linked Case', hi: 'संबंधित मामला' },
+  classification: { en: 'Classification', hi: 'वर्गीकरण' },
+  gist: { en: 'Call Gist', hi: 'कॉल का विवरण' },
+  category: { en: 'Category', hi: 'श्रेणी' },
+  stolen_property: { en: 'Stolen Property', hi: 'चोरी की गई संपत्ति' },
+  recovered_property: { en: 'Recovered Property', hi: 'बरामद संपत्ति' },
 };
 
 function sectionTitle(sec) {
@@ -92,7 +94,7 @@ export const updateField = async (id, fieldData) => {
     .where({ id })
     .update(fieldData)
     .returning('*');
-  
+
   if (!updatedField) throw new Error('Field not found');
   return updatedField;
 };
@@ -102,7 +104,7 @@ export const toggleFieldStatus = async (id, is_active) => {
     .where({ id })
     .update({ is_active })
     .returning('*');
-    
+
   if (!updatedField) throw new Error('Field not found');
   return updatedField;
 };
