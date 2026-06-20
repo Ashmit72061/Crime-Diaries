@@ -13,14 +13,13 @@ import { useAuth } from '../../hooks/useAuth.js';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore.js';
-import LanguageToggle from '../../components/ui/LanguageToggle.jsx';
 
 const QUICK_PROFILES = [
-  { badge: "HQ001", abbr: "HQ", role: "Research Cell", name: "HQ Analyst", theme: "hq" },
-  { badge: "DO001", abbr: "DCP", role: "SO Branch/DCP", name: "New Delhi District", theme: "dcp" },
-  { badge: "ACP001", abbr: "ACP", role: "ACP Sub Division", name: "Parliament St Subdiv", theme: "acp" },
-  { badge: "SHO001", abbr: "SHO", role: "SHO", name: "Parliament St PS", theme: "sho" },
-  { badge: "HC001", abbr: "HC", role: "Record Branch/HC", name: "Parliament St PS", theme: "hc" },
+  { badge: "HQ001",  abbr: "HQ",  role: "Research Cell",          name: "HQ Analyst",          theme: "hq"  },
+  { badge: "DO001",  abbr: "DCP", role: "SO Branch/DCP",       name: "New Delhi District",    theme: "dcp" },
+  { badge: "ACP001", abbr: "ACP", role: "ACP Sub Division",     name: "Parliament St Subdiv",  theme: "acp" },
+  { badge: "SHO001", abbr: "SHO", role: "SHO",  name: "Parliament St PS",      theme: "sho" },
+  { badge: "HC001",  abbr: "HC",  role: "Record Branch/HC",         name: "Parliament St PS",      theme: "hc"  },
 ];
 
 export default function LoginPage() {
@@ -62,10 +61,8 @@ export default function LoginPage() {
       loginMutation.mutate({ email: badgeNo, password: "Test@1234" });
     }, 100);
   };
-    return (
+  return (
     <div className="login-split-container">
-      {/* Floating Language Toggle */}
-      <LanguageToggle variant="badge" />
 
       {/* Floating Global Header: Top Left of the page */}
       <div className="branding-header">
@@ -79,7 +76,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Left Panel: Branding ── */}
-      <div className="login-branding-panel" style={{ paddingTop: '100px' }}>
+      <div className="login-branding-panel" style={{paddingTop: '100px'}}>
         <div className="branding-hero-center">
           <p className="text-xs font-bold text-slate-300 mb-4 tracking-wider">
             POLICE REPORTING, INTELLIGENCE &amp; STATISTICS MANAGEMENT
@@ -104,16 +101,13 @@ export default function LoginPage() {
       {/* ── Right Panel: Full-height structured layout ── */}
       <div className="login-form-panel">
 
-        {/* Header (Completed with Crest Logo for Mobile) */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
           className="login-panel-header"
         >
-          <div className="crest-frame" style={{ padding: 6 }}>
-            <img src={delhiPoliceLogo} alt="Delhi Police Crest" style={{ width: 40, height: 40, objectFit: 'contain', display: 'block' }} />
-          </div>
           <div>
             <h1 className="login-card-title" style={{ textAlign: 'left', fontSize: '1.35rem', marginBottom: 0 }}>
               PRISM Authorization Console

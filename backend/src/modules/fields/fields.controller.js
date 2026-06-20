@@ -55,7 +55,7 @@ const SECTION_TITLES = {
   special_scheme:           { en: 'If Arrested During Special Scheme',      hi: 'यदि विशेष योजना के दौरान गिरफ्तार' },
   missing_details:          { en: 'Missing Person Details',                 hi: 'लापता व्यक्ति का विवरण' },
   physical_description:     { en: 'Physical Description',                   hi: 'शारीरिक हुलिया' },
-  uidb_details:             { en: 'UIDB Details',                           hi: 'अज्ञात शव विवरण' },
+  uidb_details:             { en: 'If Filed by ACP/SDM',                    hi: 'यदि एसीपी/एसडीएम द्वारा दायर किया गया' },
   stolen_property:          { en: 'Stolen Property',                        hi: 'चोरी की गई संपत्ति' },
   recovered_property:       { en: 'Recovered Property',                     hi: 'बरामद संपत्ति' },
 };
