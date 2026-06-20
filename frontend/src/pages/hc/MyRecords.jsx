@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
 import UnifiedFilterStrip from '../../components/common/UnifiedFilterStrip.jsx';
 import FilterPresetsPanel from '../../components/common/FilterPresetsPanel.jsx';
+import useAuthStore from '../../store/authStore.js';
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -28,6 +29,7 @@ export default function MyRecords() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   const [filters, setFilters] = useState({
     type: 'CASE',
@@ -118,11 +120,14 @@ export default function MyRecords() {
 
   return (
     /* ── Full-page background matching Dashboard's deep navy gradient ── */
-    <div className="min-h-screen bg-[#F0F4F9]">
-      <div className="bg-gradient-to-br from-[#0A1628] via-[#003087] to-[#0046C0] px-8 py-10 relative overflow-hidden shadow-xl">
+    <div className="min-h-screen theme-hc-page page-bg">
+      <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden shadow-xl">
+        <span className="user-greeting-badge text-base font-semibold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+          Hi, {user?.username || 'User'}
+        </span>
         <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
-
+        <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+  
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/20 mb-4">
@@ -138,10 +143,10 @@ export default function MyRecords() {
             <p className="mt-2 text-sm text-white/60 font-medium m-0">
               {t('common.recordsSubtitle', 'Manage and submit your daily diary entries.')}
             </p>
-          </div>
         </div>
       </div>
-
+    </div>
+ 
       {/* ── Content area overlaid on the light bg ── */}
       <motion.div
         variants={pageVariants}
@@ -149,7 +154,7 @@ export default function MyRecords() {
         animate="show"
         className="mx-auto max-w-7xl px-6 pb-10 -mt-4 space-y-5"
       >
-
+ 
         {/* Unified Filter Strip — card floating over the page bg */}
         <motion.div
           variants={itemVariants}
@@ -161,7 +166,7 @@ export default function MyRecords() {
             allowedStatuses={['ALL', 'DRAFT', 'PENDING_SHO', 'ACP_REVIEW', 'DISTRICT_REVIEW', 'SENT_BACK_HC', 'COMPILED']}
           />
         </motion.div>
-
+ 
         {/* Saved Filter Presets — card */}
         <motion.div
           variants={itemVariants}
@@ -178,11 +183,11 @@ export default function MyRecords() {
             }}
           />
         </motion.div>
-
+ 
         {/* Records Listing */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-20 bg-white rounded-3xl shadow-md border border-[#E2E8F0] text-[#4A5568]">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#003087] mb-4"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent-color)] mb-4"></div>
             <p className="text-xs font-semibold tracking-wide text-[#718096]">
               {t('common.loading', 'Syncing digital registry logs...')}
             </p>
@@ -192,8 +197,8 @@ export default function MyRecords() {
             variants={itemVariants}
             className="bg-white rounded-3xl border border-dashed border-[#CBD5E0] p-16 text-center shadow-md"
           >
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mb-4 shadow-inner">
-              <FileText size={32} className="text-[#003087]" />
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-[var(--accent-glow)] flex items-center justify-center mb-4 shadow-inner">
+              <FileText size={32} className="text-[var(--accent-color)]" />
             </div>
             <p className="text-base font-bold text-[#1A202C]">
               {t('common.noRecords', 'No Daily Log Entries Found')}
@@ -210,7 +215,7 @@ export default function MyRecords() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gradient-to-r from-[#0A1628] to-[#003087] text-white/80 uppercase font-bold text-xs tracking-wider">
+                  <tr className="bg-gradient-to-r from-[var(--accent-color-hover)] to-[var(--accent-color)] text-white/80 uppercase font-bold text-xs tracking-wider">
                     <th className="p-4 pl-6">{t('common.referenceId', 'Ref ID / Number')}</th>
                     <th className="p-4">{t('common.recordDate', 'Record Date')}</th>
                     <th className="p-4">{t('common.details', 'Brief Gist')}</th>
@@ -227,7 +232,7 @@ export default function MyRecords() {
                       rec.data.dd_fir_no ||
                       rec.data.uidbNumber ||
                       'N/A';
-
+ 
                     const gist =
                       rec.data.brief_facts ||
                       rec.data.call_gist ||
@@ -236,18 +241,18 @@ export default function MyRecords() {
                       rec.data.description ||
                       rec.data.foundPlace ||
                       'No description text logged';
-
+ 
                     const isEditable = rec.current_status === 'DRAFT' || rec.current_status === 'SENT_BACK_HC';
-
+ 
                     return (
                       <motion.tr
                         key={rec.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.02, duration: 0.3 }}
-                        className="hover:bg-[#EFF6FF] transition-colors duration-150 group"
+                        className="hover:bg-[var(--accent-glow)] transition-colors duration-150 group"
                       >
-                        <td className="p-4 pl-6 font-mono font-bold text-[#003087] text-sm group-hover:text-[#0046C0] transition-colors">
+                        <td className="p-4 pl-6 font-mono font-bold text-[var(--accent-color)] text-sm group-hover:text-[var(--accent-color-hover)] transition-colors">
                           {refId}
                         </td>
                         <td className="p-4 font-mono text-[#4A5568] font-semibold text-xs">
@@ -258,16 +263,16 @@ export default function MyRecords() {
                         </td>
                         <td className="p-4">{renderStatusBadge(rec.current_status)}</td>
                         <td className="p-3.5 pr-6 text-right space-x-2 whitespace-nowrap">
-
+ 
                           {/* View Action */}
                           <button
                             onClick={() => navigate(`/records/${rec.id}`)}
-                            className="bg-[#EFF6FF] hover:bg-[#003087] text-[#003087] hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-[#BFDBFE] hover:border-[#003087] hover:shadow-lg hover:shadow-blue-500/20 active:scale-95"
+                            className="bg-[var(--accent-glow)] hover:bg-[var(--accent-color)] text-[var(--accent-color)] hover:text-white p-2 rounded-xl transition-all duration-200 inline-flex items-center justify-center cursor-pointer border border-[var(--accent-color)]/30 hover:border-[var(--accent-color)] hover:shadow-lg hover:shadow-emerald-500/20 active:scale-95"
                             title="View Details"
                           >
                             <Eye size={14} />
                           </button>
-
+ 
                           {/* Edit Action */}
                           {isEditable && (
                             <button
@@ -278,7 +283,7 @@ export default function MyRecords() {
                               <FileEdit size={14} />
                             </button>
                           )}
-
+ 
                           {/* Submit Action */}
                           {isEditable && (
                             <button
@@ -293,7 +298,7 @@ export default function MyRecords() {
                               <Send size={14} />
                             </button>
                           )}
-
+ 
                           {/* Delete Action */}
                           {rec.current_status === 'DRAFT' && (
                             <button

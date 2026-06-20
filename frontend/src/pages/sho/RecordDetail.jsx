@@ -134,18 +134,18 @@ export default function RecordDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-zinc-500">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4"></div>
-        <p>{t('common.loading', 'Syncing digital registry logs...')}</p>
+      <div className="flex flex-col items-center justify-center p-20 text-slate-500">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-color)] mb-4"></div>
+        <p className="font-semibold">{t('common.loading', 'Syncing digital registry logs...')}</p>
       </div>
     );
   }
 
   if (!record) {
     return (
-      <div className="p-8 text-center text-zinc-400">
+      <div className="p-8 text-center text-slate-500 bg-white border border-slate-200 rounded-3xl shadow-sm">
         <AlertTriangle className="mx-auto text-amber-500 mb-2" />
-        <p>Record details not found</p>
+        <p className="font-bold">Record details not found</p>
       </div>
     );
   }
@@ -163,26 +163,50 @@ export default function RecordDetail() {
     return schemas.flatMap(sec => sec.fields);
   };
 
+  const getThemeClass = () => {
+    const role = user?.role;
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc-page';
+      case 'SHO':
+        return 'theme-sho-page';
+      case 'ACP':
+        return 'theme-acp-page';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district-page';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq-page';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin-page';
+      default:
+        return 'theme-shared-page';
+    }
+  };
+
   return (
-    <div className="space-y-6 w-full pb-16">
+    <div className={`space-y-6 w-full pb-16 ${getThemeClass()} page-bg font-sans text-[var(--text-main-theme)]`}>
       {/* Detail Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-5 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border-card-theme)]/70 pb-5 gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="hover:bg-slate-100 text-slate-500 hover:text-slate-800 p-2.5 rounded-xl transition-all cursor-pointer border border-slate-200 hover:border-slate-300 hover:shadow-sm"
+            className="hover:bg-[var(--bg-page-main)]/80 text-[var(--text-main-theme)] p-2.5 rounded-xl transition-all cursor-pointer border border-[var(--border-card-theme)] hover:shadow-sm"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-[var(--text-main-theme)] flex items-center gap-2.5 font-display">
               <span>Record Registry Details</span>
-              <span className="text-xs bg-slate-100 border border-slate-200 text-slate-500 px-2.5 py-1 rounded-lg uppercase font-mono font-bold tracking-wider">
+              <span className="text-xs bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] text-[var(--text-main-theme)] px-2.5 py-1 rounded-lg uppercase font-mono font-bold tracking-wider">
                 {record.record_type}
               </span>
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Author: <strong className="text-slate-700">{record.created_by}</strong> · Created on: <span className="font-mono">{new Date(record.created_at).toLocaleString()}</span>
+            <p className="text-xs text-[var(--text-main-theme)] opacity-70 mt-1 font-semibold">
+              Author: <strong className="text-[var(--text-main-theme)]">{record.created_by}</strong> · Created on: <span className="font-mono">{new Date(record.created_at).toLocaleString()}</span>
             </p>
           </div>
         </div>
@@ -193,7 +217,7 @@ export default function RecordDetail() {
             <>
               <button
                 onClick={() => setSendBackModalOpen(true)}
-                className="bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border-2 border-red-200 hover:border-red-500 px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer hover:shadow-md hover:shadow-red-500/25 hover:-translate-y-0.5"
+                className="bg-red-55/10 hover:bg-red-500 text-red-600 hover:text-white border-2 border-red-200/50 hover:border-red-500 px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer hover:shadow-md hover:shadow-red-500/25 hover:-translate-y-0.5"
               >
                 {t('actions.sendBack', 'Send Back')}
               </button>
@@ -203,7 +227,7 @@ export default function RecordDetail() {
                     approveMutation.mutate();
                   }
                 }}
-                className="bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
+                className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-[var(--accent-glow)] border-none active:scale-95"
               >
                 <ShieldCheck size={16} />
                 <span>{t('actions.approve', 'Approve & Escalate')}</span>
@@ -214,9 +238,9 @@ export default function RecordDetail() {
           {isDCP && (
             <button
               onClick={() => setOverrideOpen(true)}
-              className="bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-[#cca43b] px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 hover:shadow-md"
+              className="bg-[var(--bg-page-main)] hover:bg-[var(--bg-page-main)]/80 text-[var(--text-main-theme)] border-2 border-[var(--border-card-theme)] hover:border-[var(--accent-color)] px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 hover:shadow-md border-none"
             >
-              <Edit size={16} className="text-[#cca43b]" />
+              <Edit size={16} className="text-[var(--accent-color)]" />
               <span>Override Classification</span>
             </button>
           )}
@@ -236,45 +260,45 @@ export default function RecordDetail() {
         {/* Right Col: Timeline history details */}
         <div className="space-y-6">
           {/* Status info box */}
-          <div className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl p-5 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Current Status</h3>
+          <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-xl p-5 space-y-3 shadow-sm">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] opacity-70">Current Status</h3>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-zinc-200">
+              <span className="text-sm font-bold text-[var(--text-main-theme)]">
                 {t(`status.${record.current_status}`, record.current_status)}
               </span>
-              <span className="text-[10px] bg-zinc-800 border border-zinc-700 text-zinc-400 px-2 py-0.5 rounded">
+              <span className="text-[10px] bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] text-[var(--text-main-theme)] font-semibold px-2 py-0.5 rounded">
                 Level: {record.current_level}
               </span>
             </div>
-            <p className="text-zinc-500 text-[11px] leading-relaxed">
+            <p className="text-[var(--text-main-theme)] opacity-60 text-[11px] leading-relaxed font-semibold">
               Records are visible in the hierarchy immediately after HC submission.
             </p>
           </div>
 
           {/* Workflow logs timeline */}
-          <div className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <History size={14} className="text-[#cca43b]" />
+          <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-xl p-5 space-y-4 shadow-sm">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] opacity-80 flex items-center gap-1.5">
+              <History size={14} className="text-[var(--accent-color)]" />
               <span>Workflow Transition History</span>
             </h3>
 
-            <div className="relative border-l border-zinc-800 pl-4 ml-1 space-y-5 text-xs">
+            <div className="relative border-l border-[var(--border-card-theme)]/70 pl-4 ml-1 space-y-5 text-xs">
               {transitions.length === 0 ? (
-                <p className="text-zinc-500 italic p-1">No hierarchy transitions completed yet.</p>
+                <p className="text-[var(--text-main-theme)] opacity-65 italic p-1">No hierarchy transitions completed yet.</p>
               ) : (
                 transitions.map((tran, i) => (
                   <div key={i} className="relative">
-                    <div className="absolute -left-[21px] top-1 bg-zinc-950 border border-zinc-800 h-2.5 w-2.5 rounded-full" />
+                    <div className="absolute -left-[21px] top-1 bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] h-2.5 w-2.5 rounded-full shadow-sm" />
                     <div className="space-y-1">
                       <div className="flex justify-between items-center gap-2">
-                        <strong className="text-zinc-200">{tran.action}</strong>
-                        <span className="text-[10px] text-zinc-500 font-mono">
+                        <strong className="text-[var(--text-main-theme)] font-bold">{tran.action}</strong>
+                        <span className="text-[10px] text-[var(--text-main-theme)] opacity-60 font-mono font-semibold">
                           {new Date(tran.performed_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-zinc-400 text-[11px]">By: {tran.performed_by}</p>
+                      <p className="text-[var(--text-main-theme)] opacity-80 font-medium">By: {tran.performed_by}</p>
                       {tran.comment && (
-                        <p className="bg-zinc-950/40 text-zinc-400 p-2 rounded border border-zinc-800/60 mt-1 italic text-[11px]">
+                        <p className="bg-[var(--bg-page-main)]/45 text-[var(--text-main-theme)] p-2 rounded border border-[var(--border-card-theme)]/50 mt-1 italic text-[11px] font-semibold">
                           "{tran.comment}"
                         </p>
                       )}
@@ -286,29 +310,29 @@ export default function RecordDetail() {
           </div>
 
           {/* Diffs & Revisions logs */}
-          <div className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <FileSpreadsheet size={14} className="text-[#cca43b]" />
+          <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-xl p-5 space-y-4 shadow-sm">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] opacity-80 flex items-center gap-1.5">
+              <FileSpreadsheet size={14} className="text-[var(--accent-color)]" />
               <span>Field revision log</span>
             </h3>
 
             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
               {revisions.map((rev, idx) => (
-                <div key={idx} className="bg-zinc-950/30 border border-zinc-850 p-3 rounded-lg text-xs space-y-1">
-                  <div className="flex justify-between items-center border-b border-zinc-850 pb-1">
-                    <span className="font-bold text-zinc-200">Revision #{rev.revision_number}</span>
-                    <span className="text-[10px] text-zinc-500">{new Date(rev.changed_at).toLocaleDateString()}</span>
+                <div key={idx} className="bg-[var(--bg-page-main)]/45 border border-[var(--border-card-theme)]/50 p-3 rounded-lg text-xs space-y-1">
+                  <div className="flex justify-between items-center border-b border-[var(--border-card-theme)]/50 pb-1">
+                    <span className="font-bold text-[var(--text-main-theme)]">Revision #{rev.revision_number}</span>
+                    <span className="text-[10px] text-[var(--text-main-theme)] opacity-60 font-semibold">{new Date(rev.changed_at).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-[10px] text-zinc-400">By: {rev.changed_by}</p>
+                  <p className="text-[10px] text-[var(--text-main-theme)] opacity-60 font-semibold">By: {rev.changed_by}</p>
                   
                   {rev.field_changes?.length > 0 && (
                     <div className="space-y-1.5 mt-2">
                       {rev.field_changes.map((ch, cIdx) => (
-                        <div key={cIdx} className="bg-zinc-950/50 p-1.5 rounded text-[11px] border border-zinc-900">
-                          <div className="text-[#cca43b] font-semibold">{ch.field_key}</div>
-                          <div className="grid grid-cols-2 gap-1.5 text-zinc-400 mt-0.5">
-                            <span className="truncate border-r border-zinc-800 pr-1">Old: <span className="line-through text-red-400">{String(ch.old_value)}</span></span>
-                            <span className="truncate pl-1">New: <span className="text-emerald-400">{String(ch.new_value)}</span></span>
+                        <div key={cIdx} className="bg-[var(--bg-page-main)]/80 p-1.5 rounded text-[11px] border border-[var(--border-card-theme)]/60 shadow-sm">
+                          <div className="text-[var(--accent-color)] font-semibold">{ch.field_key}</div>
+                          <div className="grid grid-cols-2 gap-1.5 text-[var(--text-main-theme)] opacity-85 mt-0.5 font-medium">
+                            <span className="truncate border-r border-[var(--border-card-theme)]/60 pr-1">Old: <span className="line-through text-red-500 font-bold">{String(ch.old_value)}</span></span>
+                            <span className="truncate pl-1">New: <span className="text-emerald-600 font-bold">{String(ch.new_value)}</span></span>
                           </div>
                         </div>
                       ))}
@@ -324,12 +348,12 @@ export default function RecordDetail() {
       {/* ── SEND BACK CORRECTION MODAL ────────────────────────────────────────── */}
       {sendBackModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
-            <div className="flex justify-between items-center bg-slate-50 border-b border-slate-200 px-6 py-4">
-              <h3 className="text-base font-bold text-slate-800">Return record for correction</h3>
+          <div className="bg-[var(--bg-card-theme)] border border-[var(--border-card-theme)] rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl text-[var(--text-main-theme)]">
+            <div className="flex justify-between items-center bg-[var(--bg-page-main)] border-b border-[var(--border-card-theme)]/70 px-6 py-4">
+              <h3 className="text-base font-bold text-[var(--text-main-theme)]">Return record for correction</h3>
               <button
                 onClick={() => setSendBackModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-lg hover:bg-slate-100"
+                className="text-[var(--text-main-theme)] opacity-50 hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-[var(--bg-page-main)]"
               >
                 <X size={18} />
               </button>
@@ -337,8 +361,8 @@ export default function RecordDetail() {
 
             <div className="p-6 space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Select fields requiring correction (Optional):</label>
-                <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <label className="text-sm font-bold text-[var(--text-main-theme)] opacity-80">Select fields requiring correction (Optional):</label>
+                <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto bg-[var(--bg-page-main)]/50 p-3 rounded-xl border border-[var(--border-card-theme)]">
                   {getAvailableFields().map((f) => (
                     <button
                       key={f.field_key}
@@ -346,7 +370,7 @@ export default function RecordDetail() {
                       className={`text-left p-2 rounded-lg transition-all text-sm flex items-center gap-2 cursor-pointer ${
                         selectedFields.includes(f.field_key)
                           ? 'bg-amber-50 border border-amber-300 text-amber-700 font-semibold'
-                          : 'hover:bg-white border border-transparent text-slate-500 hover:border-slate-200'
+                          : 'hover:bg-[var(--bg-page-main)] border border-transparent text-[var(--text-main-theme)] opacity-60 hover:opacity-100 hover:border-[var(--border-card-theme)]'
                       }`}
                     >
                       <input
@@ -362,21 +386,21 @@ export default function RecordDetail() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Mandatory Feedback Comment for HC:</label>
+                <label className="text-sm font-bold text-[var(--text-main-theme)] opacity-80">Mandatory Feedback Comment for HC:</label>
                 <textarea
                   rows={4}
                   value={sendBackComment}
                   onChange={(e) => setSendBackComment(e.target.value)}
                   placeholder="Explain exactly what correction is needed..."
-                  className="w-full bg-white border-2 border-slate-200 rounded-xl p-3.5 text-sm text-slate-700 outline-none focus:border-red-400 transition-all resize-none"
+                  className="w-full bg-[var(--bg-page-main)]/40 border-2 border-[var(--border-card-theme)] rounded-xl p-3.5 text-sm text-[var(--text-main-theme)] outline-none focus:border-red-400 transition-all resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 bg-slate-50 border-t border-slate-200 px-6 py-4">
+            <div className="flex justify-end gap-3 bg-[var(--bg-page-main)] border-t border-[var(--border-card-theme)]/70 px-6 py-4">
               <button
                 onClick={() => setSendBackModalOpen(false)}
-                className="bg-white border-2 border-slate-200 hover:border-slate-400 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all hover:shadow-sm"
+                className="bg-[var(--bg-page-main)] border-2 border-[var(--border-card-theme)] hover:border-[var(--accent-color)] text-[var(--text-main-theme)] px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all hover:shadow-sm"
               >
                 {t('actions.cancel', 'Cancel')}
               </button>
@@ -394,12 +418,12 @@ export default function RecordDetail() {
       {/* ── DCP OVERRIDE CLASSIFICATION MODAL ───────────────────────────────────── */}
       {overrideOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
-            <div className="flex justify-between items-center bg-slate-50 border-b border-slate-200 px-6 py-4">
-              <h3 className="text-base font-bold text-slate-800">Override crime classification</h3>
+          <div className="bg-[var(--bg-card-theme)] border border-[var(--border-card-theme)] rounded-2xl max-w-md w-full overflow-hidden shadow-2xl text-[var(--text-main-theme)]">
+            <div className="flex justify-between items-center bg-[var(--bg-page-main)] border-b border-[var(--border-card-theme)]/70 px-6 py-4">
+              <h3 className="text-base font-bold text-[var(--text-main-theme)]">Override crime classification</h3>
               <button
                 onClick={() => setOverrideOpen(false)}
-                className="text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-lg hover:bg-slate-100"
+                className="text-[var(--text-main-theme)] opacity-50 hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-[var(--bg-page-main)]"
               >
                 <X size={18} />
               </button>
@@ -407,45 +431,45 @@ export default function RecordDetail() {
 
             <div className="p-6 space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Current Classification:</label>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm text-slate-700 font-mono">
+                <label className="text-sm font-bold text-[var(--text-main-theme)] opacity-80">Current Classification:</label>
+                <div className="bg-[var(--bg-page-main)]/50 p-3 rounded-xl border border-[var(--border-card-theme)] text-sm text-[var(--text-main-theme)] font-mono">
                   {record.data.local_head || record.data.crime_head || 'Not Classified'}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">New Classification Category:</label>
+                <label className="text-sm font-bold text-[var(--text-main-theme)] opacity-80">New Classification Category:</label>
                 <select
                   value={overrideVal}
                   onChange={(e) => setOverrideVal(e.target.value)}
-                  className="w-full bg-white border-2 border-slate-200 text-sm text-slate-700 px-3.5 py-2.5 rounded-xl outline-none focus:border-[#0f52ba] transition-all"
+                  className="w-full bg-[var(--bg-page-main)]/40 border-2 border-[var(--border-card-theme)] text-sm text-[var(--text-main-theme)] px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all font-bold"
                 >
-                  <option value="">-- Choose Category --</option>
-                  <option value="Theft">Theft</option>
-                  <option value="Robbery">Robbery</option>
-                  <option value="Snatching">Snatching</option>
-                  <option value="Burglary">Burglary</option>
-                  <option value="Murder">Murder / Attempt</option>
-                  <option value="Other">Other BNS offences</option>
+                  <option value="" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">-- Choose Category --</option>
+                  <option value="Theft" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">Theft</option>
+                  <option value="Robbery" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">Robbery</option>
+                  <option value="Snatching" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">Snatching</option>
+                  <option value="Burglary" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">Burglary</option>
+                  <option value="Murder" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">Murder / Attempt</option>
+                  <option value="Other" className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">Other BNS offences</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Mandatory Override Reason (min 10 chars):</label>
+                <label className="text-sm font-bold text-[var(--text-main-theme)] opacity-80">Mandatory Override Reason (min 10 chars):</label>
                 <textarea
                   rows={3}
                   value={overrideReason}
                   onChange={(e) => setOverrideReason(e.target.value)}
                   placeholder="Explain why this re-classification is being made..."
-                  className="w-full bg-white border-2 border-slate-200 rounded-xl p-3.5 text-sm text-slate-700 outline-none focus:border-[#0f52ba] transition-all resize-none"
+                  className="w-full bg-[var(--bg-page-main)]/40 border-2 border-[var(--border-card-theme)] rounded-xl p-3.5 text-sm text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 bg-slate-50 border-t border-slate-200 px-6 py-4">
+            <div className="flex justify-end gap-3 bg-[var(--bg-page-main)] border-t border-[var(--border-card-theme)]/70 px-6 py-4">
               <button
                 onClick={() => setOverrideOpen(false)}
-                className="bg-white border-2 border-slate-200 hover:border-slate-400 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all hover:shadow-sm"
+                className="bg-[var(--bg-page-main)] border-2 border-[var(--border-card-theme)] hover:border-[var(--accent-color)] text-[var(--text-main-theme)] px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all hover:shadow-sm"
               >
                 {t('actions.cancel', 'Cancel')}
               </button>

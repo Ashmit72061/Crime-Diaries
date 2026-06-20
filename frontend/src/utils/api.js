@@ -137,6 +137,7 @@ const initMockDB = () => {
         created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
         updated_at: new Date(Date.now() - 3600000 * 2).toISOString(),
         data: {
+          case_type: 'cctns(manual FIR)',
           fir_no: '210/2026',
           fir_date: '2026-06-15',
           gd_no: '12A',
@@ -392,11 +393,25 @@ const formSchemas = {
       title_en: 'General Case Metadata',
       title_hi: 'सामान्य मामला मेटाडेटा',
       fields: [
+        {
+          field_key: 'case_type',
+          field_type: 'SELECT',
+          label_en: 'Case Registration Type',
+          label_hi: 'मामला पंजीकरण प्रकार',
+          validation_rules: { required: true },
+          options: [
+            { value: 'cctns(manual FIR)', label_en: 'cctns(manual FIR)', label_hi: 'सीसीटीएनएस (मैनुअल एफआईआर)' },
+            { value: 'eTheft', label_en: 'eTheft', label_hi: 'ई-चोरी' },
+            { value: 'eMVT', label_en: 'eMVT', label_hi: 'ई-एमवीटी' },
+            { value: 'NCRP', label_en: 'NCRP', label_hi: 'एनसीआरपी' },
+            { value: 'zero FIR', label_en: 'zero FIR', label_hi: 'जीरो एफआईआर' }
+          ]
+        },
         { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number', label_hi: 'प्राथमिकी (FIR) संख्या', validation_rules: { required: true } },
         { field_key: 'fir_date', field_type: 'DATE', label_en: 'FIR Date', label_hi: 'प्राथमिकी की तिथि', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TEXT', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: false } },
+        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: false } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -406,6 +421,7 @@ const formSchemas = {
       title_hi: 'घटना का विवरण',
       fields: [
         { field_key: 'occurrence_date', field_type: 'DATE', label_en: 'Date of Occurrence', label_hi: 'घटना की तिथि', validation_rules: { required: true } },
+        { field_key: 'time_of_occurrence', field_type: 'TIME', label_en: 'Time of Occurrence', label_hi: 'घटना का समय', validation_rules: { required: true } },
         { field_key: 'occurrence_place', field_type: 'TEXT', label_en: 'Place of Occurrence', label_hi: 'घटना का स्थान', validation_rules: { required: true } },
         { field_key: 'brief_facts', field_type: 'TEXTAREA', label_en: 'Brief Facts of the Case', label_hi: 'मामले के संक्षिप्त तथ्य', validation_rules: { required: true } },
         {
@@ -426,7 +442,7 @@ const formSchemas = {
         },
         { field_key: 'act_name', field_type: 'TEXT', label_en: 'Act Name', label_hi: 'अधिनियम का नाम', validation_rules: { required: true } },
         { field_key: 'sections', field_type: 'TEXT', label_en: 'Section(s) Code', label_hi: 'संबद्ध धारा संख्या(एँ)', validation_rules: { required: true } },
-        { field_key: 'beat_no', field_type: 'TEXT', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
+        { field_key: 'beat_no', field_type: 'NUMBER', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
       ]
     },
     {
@@ -537,7 +553,7 @@ const formSchemas = {
       fields: [
         { field_key: 'linked_fir_dd_no', field_type: 'TEXT', label_en: 'Linked Case FIR / DD Number', label_hi: 'संबद्ध प्राथमिकी / डी.डी. संख्या', validation_rules: { required: false } },
         { field_key: 'linked_fir_dd_date', field_type: 'DATE', label_en: 'Linked Case FIR Date', label_hi: 'संबद्ध प्राथमिकी तिथि', validation_rules: { required: false } },
-        { field_key: 'linked_fir_dd_time', field_type: 'TEXT', label_en: 'Linked Case Occurrence Time', label_hi: 'संबद्ध घटना का समय', validation_rules: { required: false } },
+        { field_key: 'linked_fir_dd_time', field_type: 'TIME', label_en: 'Linked Case Occurrence Time', label_hi: 'संबद्ध घटना का समय', validation_rules: { required: false } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -549,7 +565,7 @@ const formSchemas = {
         { field_key: 'arrested_name', field_type: 'TEXT', label_en: 'Name of Arrested/Detained Person', label_hi: 'गिरफ्तार/हिरासत में लिए गए व्यक्ति का नाम', validation_rules: { required: true } },
         { field_key: 'arrested_address', field_type: 'TEXTAREA', label_en: 'Address of Arrested Person', label_hi: 'गिरफ्तार व्यक्ति का पता', validation_rules: { required: true } },
         { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Date of Arrest', label_hi: 'गिरफ्तारी की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrest_time', field_type: 'TEXT', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
+        { field_key: 'arrest_time', field_type: 'TIME', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
         { field_key: 'arrest_place', field_type: 'TEXT', label_en: 'Place of Arrest', label_hi: 'गिरफ्तारी का स्थान', validation_rules: { required: true } },
       ]
     },
@@ -698,7 +714,7 @@ const formSchemas = {
       fields: [
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TEXT', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: true } },
+        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -757,10 +773,10 @@ const formSchemas = {
       fields: [
         { field_key: 'arrival_dd_no', field_type: 'TEXT', label_en: 'Arrival DD Entry Number', label_hi: 'घटनास्थल पर आगमन DD संख्या', validation_rules: { required: true } },
         { field_key: 'arrival_date', field_type: 'DATE', label_en: 'Arrival Date at Scene', label_hi: 'घटनास्थल पर आगमन की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrival_time', field_type: 'TEXT', label_en: 'Arrival Time at Scene', label_hi: 'घटनास्थल पर आगमन का समय', validation_rules: { required: true } },
+        { field_key: 'arrival_time', field_type: 'TIME', label_en: 'Arrival Time at Scene', label_hi: 'घटनास्थल पर आगमन का समय', validation_rules: { required: true } },
         { field_key: 'latitude', field_type: 'TEXT', label_en: 'Incident Location Latitude', label_hi: 'घटना स्थल अक्षांश', validation_rules: { required: false } },
         { field_key: 'longitude', field_type: 'TEXT', label_en: 'Incident Location Longitude', label_hi: 'घटना स्थल रेखांश', validation_rules: { required: false } },
-        { field_key: 'beat_no', field_type: 'TEXT', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
+        { field_key: 'beat_no', field_type: 'NUMBER', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
       ]
     }
   ],
@@ -817,7 +833,7 @@ const formSchemas = {
         { field_key: 'last_seen_location', field_type: 'TEXT', label_en: 'Last Seen Location Address', label_hi: 'अंतिम बार देखे जाने का पता', validation_rules: { required: false } },
         { field_key: 'found_location', field_type: 'TEXT', label_en: 'Found / Recovery Location Address', label_hi: 'बरामदगी / मिलने का पता', validation_rules: { required: false } },
         { field_key: 'missing_recovered_date', field_type: 'DATE', label_en: 'Date Missing / Recovered', label_hi: 'लापता होने / बरामद होने की तिथि', validation_rules: { required: true } },
-        { field_key: 'missing_recovered_time', field_type: 'TEXT', label_en: 'Time Missing / Recovered', label_hi: 'लापता होने / बरामद होने का समय', validation_rules: { required: true } },
+        { field_key: 'missing_recovered_time', field_type: 'TIME', label_en: 'Time Missing / Recovered', label_hi: 'लापता होने / बरामद होने का समय', validation_rules: { required: true } },
       ]
     },
     {

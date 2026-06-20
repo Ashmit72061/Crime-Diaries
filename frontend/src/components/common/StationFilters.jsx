@@ -62,7 +62,7 @@ export default function StationFilters({
 
 
   return (
-    <div className="card p-4 mb-6" style={{ borderColor: 'var(--border-light)', backgroundColor: 'var(--bg-card)' }}>
+    <div className="mb-2" style={{ backgroundColor: 'transparent' }}>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* District Filter (HQ only) */}
         {isHq && (

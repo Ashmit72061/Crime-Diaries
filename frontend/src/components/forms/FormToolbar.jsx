@@ -59,8 +59,8 @@ export default function FormToolbar({
           <button
             type="button"
             onClick={onNext}
-            className="flex items-center gap-2.5 px-8 py-3 bg-gradient-to-r from-[#0d2a4a] to-[#0f52ba] hover:from-[#0f52ba] hover:to-[#16406d]
-              text-white rounded-xl text-base font-extrabold transition-all shadow-md shadow-[#0f52ba]/25 hover:shadow-lg hover:shadow-[#0f52ba]/30 hover:-translate-y-0.5 cursor-pointer"
+            className="flex items-center gap-2.5 px-8 py-3 bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)]
+              text-white rounded-xl text-base font-extrabold transition-all shadow-md shadow-[var(--accent-glow)] hover:-translate-y-0.5 cursor-pointer"
           >
             <span>{lang === 'hi' ? 'अगला' : 'Next Step'}</span>
             <ArrowRight size={18} />
@@ -70,7 +70,7 @@ export default function FormToolbar({
             <button
               type="button"
               onClick={onSubmit}
-              className="flex items-center gap-2.5 px-10 py-3 bg-gradient-to-r from-[#0f52ba] to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white
+              className="flex items-center gap-2.5 px-10 py-3 bg-gradient-to-r from-[var(--accent-color)] to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white
                 font-extrabold rounded-xl text-base shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all cursor-pointer hover:-translate-y-0.5
                 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
             >

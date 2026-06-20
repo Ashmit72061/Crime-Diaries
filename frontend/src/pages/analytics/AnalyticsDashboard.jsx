@@ -11,19 +11,20 @@ import {
   TrendingUp, AlertCircle, Radio,
 } from 'lucide-react';
 import api from '../../utils/api.js';
+import useAuthStore from '../../store/authStore.js';
 
 // ── Shared chart tooltip style ────────────────────────────────────────────────
 const CHART_TOOLTIP = {
   contentStyle: {
-    background: '#FFFFFF',
-    border: '1px solid #E2E8F0',
+    background: 'var(--bg-page-main, #F0F4F9)',
+    border: '1px solid var(--border-card-theme, #E2E8F0)',
     borderRadius: '12px',
-    color: '#1A202C',
+    color: 'var(--text-main-theme, #1A202C)',
     fontSize: '11px',
-    boxShadow: '0 4px 24px rgba(0,48,135,0.08)',
+    boxShadow: '0 4px 24px var(--accent-glow, rgba(0,0,0,0.05))',
   },
-  labelStyle: { color: '#4A5568', fontWeight: 600 },
-  itemStyle:  { color: '#1A202C' },
+  labelStyle: { color: 'var(--text-main-theme, #4A5568)', fontWeight: 600 },
+  itemStyle:  { color: 'var(--text-main-theme, #1A202C)' },
 };
 
 const COLORS = ['#003087', '#D97706', '#059669', '#DC2626', '#7C3AED', '#0891B2', '#EA580C'];
@@ -38,11 +39,11 @@ function KpiCard({ label, value, icon: Icon, color, sub }) {
   };
   const tile = tileMeta[color] || { bg: 'bg-[#F0F4F9]', border: 'border-[#E2E8F0]' };
   return (
-    <div className="group rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5">
+    <div className="group rounded-2xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[0_8px_30px_var(--accent-glow)] text-[var(--text-main-theme)]">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <span className="text-xs font-semibold uppercase tracking-wider text-[#718096]">{label}</span>
-          <div className="text-3xl font-bold tabular-nums text-[#0A1628]">{value ?? '—'}</div>
+          <div className="text-3xl font-bold tabular-nums text-[var(--text-main-theme)]">{value ?? '—'}</div>
           {sub && <span className="text-[10px] text-[#718096]">{sub}</span>}
         </div>
         <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border ${tile.border} ${tile.bg} transition-transform duration-200 group-hover:scale-110 ${color}`}>
@@ -72,21 +73,45 @@ const STATUS_BAR = {
   SENT_BACK_HC:    'bg-[#DC2626]',
   PENDING_SHO:     'bg-[#D97706]',
   ACP_REVIEW:      'bg-[#EA580C]',
-  DISTRICT_REVIEW: 'bg-[#003087]',
+  DISTRICT_REVIEW: 'bg-[var(--accent-color)]',
   HQ_RECEIVED:     'bg-[#7C3AED]',
   CLOSED:          'bg-[#059669]',
   COMPILED:        'bg-[#0891B2]',
 };
 
 export default function AnalyticsDashboard() {
+  const { user } = useAuthStore();
   const [period, setPeriod] = useState('weekly');
+
+  const getThemeClass = () => {
+    const role = user?.role;
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc-page';
+      case 'SHO':
+        return 'theme-sho-page';
+      case 'ACP':
+        return 'theme-acp-page';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district-page';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq-page';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin-page';
+      default:
+        return 'theme-shared-page';
+    }
+  };
 
   // ── 1. Summary KPI data: GET /analytics/summary ───────────────────────────
   const { data: summary = {}, isLoading: summaryLoading } = useQuery({
     queryKey: ['analytics', 'summary'],
     queryFn: async () => {
       const res = await api.get('/analytics/summary');
-      // Backend returns { success: true, data: { summary: { CASES, ARREST, PCR, MISSING } } }
       return res.data?.data?.summary ?? {};
     },
   });
@@ -96,13 +121,11 @@ export default function AnalyticsDashboard() {
     queryKey: ['analytics', 'by-crime-head'],
     queryFn: async () => {
       const res = await api.get('/analytics/by-crime-head');
-      // Returns { success: true, data: [{ name, count }] }
       return Array.isArray(res.data?.data) ? res.data.data : [];
     },
   });
 
   // ── 3. Combined time-series trends: GET /analytics/trends ────────────────
-  // No recordType → getCombinedTrends → returns [{ name, cases, pcr, arrests }]
   const { data: trendData = [] } = useQuery({
     queryKey: ['analytics', 'trends', period],
     queryFn: async () => {
@@ -139,16 +162,16 @@ export default function AnalyticsDashboard() {
   // ── Shared panel section label ─────────────────────────────────────────────
   const SectionLabel = ({ children }) => (
     <div className="mb-5 flex items-center gap-3">
-      <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
+      <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
       <h2 className="text-xs font-bold uppercase tracking-widest text-[#4A5568]">{children}</h2>
-      <div className="h-px flex-1 bg-[#E2E8F0]" />
+      <div className="h-px flex-1 bg-[var(--border-card-theme)]/70" />
     </div>
   );
 
   // ── Shared empty-state ─────────────────────────────────────────────────────
   const EmptyState = ({ icon: EIcon, message }) => (
     <div className="flex h-full flex-col items-center justify-center gap-3 py-12">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#E2E8F0] bg-[#F0F4F9]">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/80">
         <EIcon size={24} className="text-[#A0AEC0]" />
       </div>
       <p className="text-xs font-medium text-[#718096]">{message}</p>
@@ -156,13 +179,13 @@ export default function AnalyticsDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F0F4F9] text-[#1A202C]">
+    <div className={`min-h-screen ${getThemeClass()} page-bg text-[var(--text-main-theme)]`}>
 
       {/* ══════════════ HERO HEADER ══════════════ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0A1628] via-[#003087] to-[#0046C0] px-8 py-12">
+      <div className="relative overflow-hidden hero-banner-gradient px-8 py-8">
         {/* Decorative blur orbs */}
         <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-[#0046C0]/50 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-[var(--accent-color)]/20 blur-3xl" />
         <div className="pointer-events-none absolute top-1/2 right-1/4 h-28 w-28 rounded-full bg-white/5 blur-2xl" />
         {/* Grid texture */}
         <div
@@ -172,7 +195,7 @@ export default function AnalyticsDashboard() {
 
         <div className="relative z-10 mx-auto max-w-screen-xl">
           {/* Top badge row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/80 backdrop-blur-sm">
               <BarChart3 size={12} className="text-amber-400" />
               DELHI POLICE · OPERATIONAL ANALYTICS
@@ -184,7 +207,7 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* Heading + period toggle */}
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <h1 className="text-4xl font-bold leading-tight tracking-tight text-white">
                 Operational Analytics
@@ -197,8 +220,8 @@ export default function AnalyticsDashboard() {
               </p>
             </div>
 
-            {/* Period toggle — same logic, reskinned */}
-            <div className="flex flex-shrink-0 items-center gap-1.5 self-start rounded-2xl border border-white/20 bg-white/10 p-1.5 backdrop-blur-sm xl:self-end">
+            {/* Period toggle */}
+            <div className="flex flex-shrink-0 items-center gap-1.5 self-start rounded-2xl border border-white/20 bg-white/10 p-1.5 backdrop-blur-sm lg:self-end">
               <div className="flex items-center pl-2 pr-1">
                 <Calendar size={13} className="text-white/50" />
               </div>
@@ -208,7 +231,7 @@ export default function AnalyticsDashboard() {
                   onClick={() => setPeriod(p)}
                   className={`rounded-xl px-4 py-1.5 text-xs font-semibold capitalize cursor-pointer transition-all duration-150 ${
                     period === p
-                      ? 'bg-white text-[#003087] shadow-sm'
+                      ? 'bg-white text-[var(--text-accent)] shadow-sm'
                       : 'text-white/60 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -232,7 +255,7 @@ export default function AnalyticsDashboard() {
           {summaryLoading ? (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-28 animate-pulse rounded-2xl border border-[#E2E8F0] bg-white shadow-sm" />
+                <div key={i} className="h-28 animate-pulse rounded-2xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 shadow-sm" />
               ))}
             </div>
           ) : (
@@ -250,15 +273,15 @@ export default function AnalyticsDashboard() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
             {/* Crime Head Breakdown — Donut */}
-            <div className="overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5">
-              <div className="relative flex items-center gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-[#F8FAFF] to-white px-6 py-4">
-                <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
-                <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+            <div className="overflow-hidden rounded-3xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[0_8px_30px_var(--accent-glow)]">
+              <div className="relative flex items-center gap-3 border-b border-[var(--border-card-theme)]/70 bg-gradient-to-r from-[var(--bg-page-main)]/80 to-[var(--bg-page-main)]/40 px-6 py-4">
+                <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
+                <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-color-hover)] shadow-[0_4px_12px_var(--accent-glow)]">
                   <PieIcon size={14} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#1A202C]">Category Incident Ratios</p>
-                  <p className="text-xs text-[#718096]">Crime head breakdown · Donut view</p>
+                  <p className="text-sm font-bold text-[var(--text-main-theme)]">Category Incident Ratios</p>
+                  <p className="text-xs text-[var(--text-main-theme)] opacity-70">Crime head breakdown · Donut view</p>
                 </div>
               </div>
               <div className="p-5">
@@ -292,15 +315,15 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* Combined Time-Series Trends — Line */}
-            <div className="overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5">
-              <div className="relative flex items-center gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-[#F8FAFF] to-white px-6 py-4">
-                <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
-                <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+            <div className="overflow-hidden rounded-3xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[0_8px_30px_var(--accent-glow)]">
+              <div className="relative flex items-center gap-3 border-b border-[var(--border-card-theme)]/70 bg-gradient-to-r from-[var(--bg-page-main)]/80 to-[var(--bg-page-main)]/40 px-6 py-4">
+                <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
+                <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-color-hover)] shadow-[0_4px_12px_var(--accent-glow)]">
                   <LineIcon size={14} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#1A202C]">Daily Activity Timeline</p>
-                  <p className="text-xs text-[#718096]">Combined trends · {period} view</p>
+                  <p className="text-sm font-bold text-[var(--text-main-theme)]">Daily Activity Timeline</p>
+                  <p className="text-xs text-[var(--text-main-theme)] opacity-70">Combined trends · {period} view</p>
                 </div>
               </div>
               <div className="p-5">
@@ -316,7 +339,7 @@ export default function AnalyticsDashboard() {
                         <Tooltip {...CHART_TOOLTIP} />
                         <Legend wrapperStyle={{ fontSize: '10px', color: '#718096' }} />
                         <Line type="monotone" dataKey="cases"   name="FIR Cases" stroke="#D97706" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: '#D97706' }} />
-                        <Line type="monotone" dataKey="pcr"     name="PCR Calls" stroke="#003087" strokeWidth={2}   dot={false} activeDot={{ r: 4, fill: '#003087' }} />
+                        <Line type="monotone" dataKey="pcr"     name="PCR Calls" stroke="var(--accent-color)" strokeWidth={2}   dot={false} activeDot={{ r: 4, fill: 'var(--accent-color)' }} />
                         <Line type="monotone" dataKey="arrests" name="Arrests"   stroke="#059669" strokeWidth={2}   dot={false} activeDot={{ r: 4, fill: '#059669' }} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -331,15 +354,15 @@ export default function AnalyticsDashboard() {
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
 
           {/* Workflow Status Distribution */}
-          <div className="overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5">
-            <div className="relative flex items-center gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-[#F8FAFF] to-white px-6 py-4">
-              <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
-              <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+          <div className="overflow-hidden rounded-3xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[0_8px_30px_var(--accent-glow)]">
+            <div className="relative flex items-center gap-3 border-b border-[var(--border-card-theme)]/70 bg-gradient-to-r from-[var(--bg-page-main)]/80 to-[var(--bg-page-main)]/40 px-6 py-4">
+              <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
+              <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-color-hover)] shadow-[0_4px_12px_var(--accent-glow)]">
                 <Activity size={14} className="text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#1A202C]">Workflow Status Distribution</p>
-                <p className="text-xs text-[#718096]">{statusData.length} status stages · All record types</p>
+                <p className="text-sm font-bold text-[var(--text-main-theme)]">Workflow Status Distribution</p>
+                <p className="text-xs text-[var(--text-main-theme)] opacity-70">{statusData.length} status stages · All record types</p>
               </div>
             </div>
             <div className="p-5">
@@ -351,22 +374,22 @@ export default function AnalyticsDashboard() {
                     const total = statusData.reduce((s, r) => s + r.count, 0) || 1;
                     const pct = Math.round((row.count / total) * 100);
                     const cls = STATUS_COLORS[row.status] || 'bg-[#F0F4F9] text-[#718096] border-[#E2E8F0]';
-                    const bar = STATUS_BAR[row.status]  || 'bg-[#003087]';
+                    const bar = STATUS_BAR[row.status]  || 'bg-[var(--accent-color)]';
                     return (
-                      <div key={row.status} className="group flex items-center gap-3 rounded-xl border border-transparent px-2 py-1.5 text-xs transition-all duration-150 hover:border-[#E2E8F0] hover:bg-[#F8FAFF]">
+                      <div key={row.status} className="group flex items-center gap-3 rounded-xl border border-transparent px-2 py-1.5 text-xs transition-all duration-150 hover:border-[var(--border-card-theme)] hover:bg-[var(--bg-page-main)]/40">
                         <span className={`inline-flex w-36 flex-shrink-0 justify-center rounded-lg border px-2 py-1 text-[10px] font-bold ${cls}`}>
                           {row.status}
                         </span>
-                        <div className="flex-1 h-2 overflow-hidden rounded-full bg-[#F0F4F9]">
+                        <div className="flex-1 h-2 overflow-hidden rounded-full bg-[var(--bg-page-main)]">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${bar}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className="w-10 text-right font-mono font-semibold tabular-nums text-[#4A5568]">
+                        <span className="w-10 text-right font-mono font-semibold tabular-nums text-[var(--text-main-theme)]">
                           {row.count}
                         </span>
-                        <span className="w-8 text-right font-mono text-[#A0AEC0]">{pct}%</span>
+                        <span className="w-8 text-right font-mono text-[var(--text-main-theme)] opacity-60">{pct}%</span>
                       </div>
                     );
                   })}
@@ -376,15 +399,15 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* Station Comparative Performance */}
-          <div className="overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5">
-            <div className="relative flex items-center gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-[#F8FAFF] to-white px-6 py-4">
-              <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
-              <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+          <div className="overflow-hidden rounded-3xl border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[0_8px_30px_var(--accent-glow)]">
+            <div className="relative flex items-center gap-3 border-b border-[var(--border-card-theme)]/70 bg-gradient-to-r from-[var(--bg-page-main)]/80 to-[var(--bg-page-main)]/40 px-6 py-4">
+              <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
+              <div className="ml-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-color)] to-[var(--accent-color-hover)] shadow-[0_4px_12px_var(--accent-glow)]">
                 <BarChart3 size={14} className="text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#1A202C]">Station Comparative Performance</p>
-                <p className="text-xs text-[#718096]">Top {Math.min(8, stationData.length)} stations · Cases, Arrests, PCR</p>
+                <p className="text-sm font-bold text-[var(--text-main-theme)]">Station Comparative Performance</p>
+                <p className="text-xs text-[var(--text-main-theme)] opacity-70">Top {Math.min(8, stationData.length)} stations · Cases, Arrests, PCR</p>
               </div>
             </div>
             <div className="p-5">
@@ -409,7 +432,7 @@ export default function AnalyticsDashboard() {
                       <Legend wrapperStyle={{ fontSize: '10px', color: '#718096' }} />
                       <Bar dataKey="cases"   name="Cases"   fill="#D97706" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="arrests" name="Arrests" fill="#059669" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="pcr"     name="PCR"     fill="#003087" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pcr"     name="PCR"     fill="var(--accent-color)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -420,11 +443,11 @@ export default function AnalyticsDashboard() {
 
         {/* Footer */}
         <div className="mt-8 flex items-center justify-center gap-2">
-          <div className="h-px w-20 bg-[#E2E8F0]" />
-          <p className="text-xs font-medium text-[#A0AEC0]">
+          <div className="h-px w-20 bg-[var(--border-card-theme)]" />
+          <p className="text-xs font-medium text-[var(--text-main-theme)] opacity-60">
             Delhi Police Command System · Data refreshes on page load · All times IST
           </p>
-          <div className="h-px w-20 bg-[#E2E8F0]" />
+          <div className="h-px w-20 bg-[var(--border-card-theme)]" />
         </div>
       </div>
     </div>

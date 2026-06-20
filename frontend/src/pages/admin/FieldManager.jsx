@@ -177,94 +177,94 @@ export default function FieldManager() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 theme-admin-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-            <Settings className="text-[#cca43b]" />
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 font-display">
+            <Settings className="text-[var(--accent-color)]" />
             Field Registry Manager
           </h1>
-          <p className="text-zinc-400 text-xs mt-1">
+          <p className="text-slate-500 text-xs mt-1 font-semibold">
             Define form fields for all police stations or specific districts — no code changes required.
           </p>
         </div>
         {activeTab === 'global' && (
           <button onClick={openCreate}
-            className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
+            className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer border-none active:scale-95">
             <Plus size={14} /> Add Global Field
           </button>
         )}
       </div>
-
+ 
       {/* Tabs */}
-      <div className="border-b border-zinc-800 flex gap-1">
+      <div className="border-b border-slate-200 flex gap-1">
         {[
           { key: 'global',   label: 'Global Field Registry', icon: <Globe size={12} /> },
           { key: 'district', label: 'District Extensions' },
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-3 text-xs font-bold tracking-wide border-b-2 transition-all -mb-[2px] flex items-center gap-1.5 cursor-pointer ${
+            className={`px-5 py-3 text-xs font-bold tracking-wide border-b-2 transition-all -mb-[2px] flex items-center gap-1.5 cursor-pointer border-none bg-transparent ${
               activeTab === tab.key
-                ? 'border-[#cca43b] text-[#cca43b]'
-                : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                ? 'border-[var(--accent-color)] text-[var(--accent-color)]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}>
             {tab.icon}{tab.label}
-            <span className="ml-1 text-[9px] bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded font-mono">
+            <span className="ml-1 text-[9px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-600">
               {tab.key === 'global' ? globalFields.length : districtFields.length}
             </span>
           </button>
         ))}
       </div>
-
+ 
       {/* Record type filter */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-zinc-500 text-xs font-semibold">Filter:</span>
+        <span className="text-slate-500 text-xs font-semibold">Filter:</span>
         {['ALL', ...RECORD_TYPES].map((type) => (
           <button key={type} onClick={() => setFilterType(type)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
               filterType === type
-                ? 'bg-[#cca43b] text-zinc-950 shadow-md'
-                : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-200 hover:border-zinc-600'
+                ? 'bg-[var(--accent-color)] text-white border-transparent shadow-md'
+                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50'
             }`}>
             {type}
           </button>
         ))}
       </div>
-
+ 
       {/* Field list */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-12 text-zinc-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4" />
+        <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-color)] mb-4" />
           <p className="text-sm">Loading field registry…</p>
         </div>
       ) : Object.keys(grouped).length === 0 ? (
-        <div className="text-center text-zinc-500 py-12 border border-dashed border-zinc-800 rounded-xl">
-          <Settings size={40} className="mx-auto mb-3 text-zinc-700" />
-          <p className="text-sm">No fields found</p>
+        <div className="text-center text-slate-500 py-12 border border-dashed border-slate-200 bg-white rounded-xl shadow-sm">
+          <Settings size={40} className="mx-auto mb-3 text-slate-350" />
+          <p className="text-sm font-semibold">No fields found</p>
         </div>
       ) : (
         <div className="space-y-3">
           {Object.entries(grouped).map(([sectionKey, { fields, title_en }]) => (
-            <div key={sectionKey} className="border border-zinc-800/80 bg-zinc-900/40 rounded-xl overflow-hidden shadow-sm">
+            <div key={sectionKey} className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
               <button onClick={() => toggleSection(sectionKey)}
-                className="w-full flex items-center justify-between px-5 py-3 bg-zinc-950/60 hover:bg-zinc-900/60 transition-colors cursor-pointer">
-                <span className="text-xs font-bold text-zinc-200 tracking-wide uppercase">{title_en || sectionKey}</span>
+                className="w-full flex items-center justify-between px-5 py-3 bg-slate-50 hover:bg-slate-100/65 transition-colors cursor-pointer border-none">
+                <span className="text-xs font-bold text-slate-800 tracking-wide uppercase font-display">{title_en || sectionKey}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded font-mono">
+                  <span className="text-[10px] text-slate-550 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded font-mono">
                     {fields.length} fields
                   </span>
                   {isSectionExpanded(sectionKey)
-                    ? <ChevronDown size={14} className="text-zinc-500" />
-                    : <ChevronRight size={14} className="text-zinc-500" />}
+                    ? <ChevronDown size={14} className="text-slate-500" />
+                    : <ChevronRight size={14} className="text-slate-500" />}
                 </div>
               </button>
-
+ 
               {isSectionExpanded(sectionKey) && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="text-zinc-500 uppercase font-semibold border-b border-zinc-800 tracking-wider">
+                      <tr className="text-slate-500 uppercase font-semibold border-b border-slate-200 bg-slate-50/50 tracking-wider">
                         <th className="p-3 pl-5">Field Key</th>
                         <th className="p-3">Type</th>
                         <th className="p-3">English Label</th>
@@ -275,21 +275,21 @@ export default function FieldManager() {
                         <th className="p-3">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-800/40">
+                    <tbody className="divide-y divide-slate-100">
                       {fields.map((f) => (
-                        <tr key={f.id} className="hover:bg-zinc-800/20 transition-colors">
-                          <td className="p-3 pl-5 font-mono font-bold text-zinc-300 text-[11px]">{f.field_key}</td>
+                        <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="p-3 pl-5 font-mono font-bold text-[var(--accent-color)] text-[11px]">{f.field_key}</td>
                           <td className="p-3">
-                            <span className="bg-zinc-800 border border-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono">
+                            <span className="bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono">
                               {f.field_type}
                             </span>
                           </td>
-                          <td className="p-3 text-zinc-200">{f.label_en}</td>
-                          <td className="p-3 text-zinc-400 font-sans">{f.label_hi || '—'}</td>
+                          <td className="p-3 text-slate-750 font-medium">{f.label_en}</td>
+                          <td className="p-3 text-slate-500 font-sans">{f.label_hi || '—'}</td>
                           <td className="p-3">
                             <div className="flex flex-wrap gap-1">
                               {ensureArray(f.applicable_record_types).map((rt) => (
-                                <span key={rt} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${TYPE_COLORS[rt] || 'text-zinc-400 border-zinc-700'}`}>
+                                <span key={rt} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${TYPE_COLORS[rt] || 'text-slate-500 border-slate-200'}`}>
                                   {rt}
                                 </span>
                               ))}
@@ -298,8 +298,8 @@ export default function FieldManager() {
                           <td className="p-3">
                             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
                               f.validation_rules?.required
-                                ? 'text-red-400 bg-red-950/30 border-red-800/40'
-                                : 'text-zinc-500 bg-zinc-900 border-zinc-800'
+                                ? 'text-red-605 bg-red-50 border-red-200'
+                                : 'text-slate-450 border-slate-200 bg-slate-50'
                             }`}>
                               {f.validation_rules?.required ? 'REQ' : 'OPT'}
                             </span>
@@ -307,8 +307,8 @@ export default function FieldManager() {
                           <td className="p-3">
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
                               f.is_active
-                                ? 'text-emerald-400 border-emerald-800/40 bg-emerald-950/30'
-                                : 'text-zinc-500 border-zinc-700 bg-zinc-800'
+                                ? 'text-emerald-600 border-emerald-250 bg-emerald-50'
+                                : 'text-slate-450 border-slate-200 bg-slate-50'
                             }`}>
                               {f.is_active ? 'ACTIVE' : 'INACTIVE'}
                             </span>
@@ -316,12 +316,12 @@ export default function FieldManager() {
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               <button onClick={() => openEdit(f)} title="Edit"
-                                className="text-zinc-500 hover:text-[#cca43b] transition-colors cursor-pointer">
+                                className="text-slate-450 hover:text-[var(--accent-color)] transition-colors cursor-pointer border-none bg-transparent">
                                 <Pencil size={13} />
                               </button>
                               <button onClick={() => toggleMutation.mutate(f.id)}
                                 title={f.is_active ? 'Deactivate' : 'Activate'}
-                                className={`transition-colors cursor-pointer ${f.is_active ? 'text-emerald-500 hover:text-red-400' : 'text-zinc-600 hover:text-emerald-400'}`}>
+                                className={`transition-colors cursor-pointer border-none bg-transparent ${f.is_active ? 'text-emerald-500 hover:text-red-450' : 'text-slate-405 hover:text-emerald-500'}`}>
                                 {f.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
                               </button>
                             </div>
