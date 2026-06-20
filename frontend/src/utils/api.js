@@ -907,9 +907,9 @@ api.interceptors.request.use(
       if (!badgeNo || !password) {
         throw createMockError('Missing badge number or security key', 400);
       }
-      
+
       const node = findNodeById(selectedNodeId || 'PS_NDD_PARLIAMENT_STREET') || POLICE_HIERARCHY.children[0].children[1].children[0].children[0];
-      
+
       let mockRole = node.type;
       const lowerB = badgeNo.toLowerCase();
       if (lowerB.includes('sho')) {
@@ -940,13 +940,13 @@ api.interceptors.request.use(
         rank: node.rank || 'Head Constable',
         pis: node.pis || 'PIS-28521904',
       };
-      
+
       const tokens = {
         access_token: 'mock-jwt-access-token',
         refresh_token: 'mock-jwt-refresh-token',
         user: mockUser
       };
-      
+
       return Promise.reject({
         isMock: true,
         response: createMockResponse(tokens)
@@ -986,7 +986,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) defaultUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
       return Promise.reject({
         isMock: true,
@@ -1058,14 +1058,14 @@ api.interceptors.request.use(
       const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
       const { record_type, data } = payload;
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
-      
+
       const userJSON = localStorage.getItem('crime-diaries-auth');
       let currentUser = { psId: 'PS_NDD_PARLIAMENT_STREET', districtId: 'DIST_NDD', username: 'HC Ramesh Kumar' };
       if (userJSON) {
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       const newRecord = {
@@ -1093,7 +1093,7 @@ api.interceptors.request.use(
         ],
         transitions: []
       };
-      
+
       allRecords.push(newRecord);
       localStorage.setItem('prism_mock_records', JSON.stringify(allRecords));
       return Promise.reject({
@@ -1111,7 +1111,7 @@ api.interceptors.request.use(
       if (idx === -1) {
         throw createMockError('Record not found', 404);
       }
-      
+
       const record = allRecords[idx];
       if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
         throw createMockError('Lock violation: Record can only be modified in DRAFT or SENT_BACK state', 400);
@@ -1123,7 +1123,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user?.username) currentUsername = parsed.state.user.username;
-        } catch(e){}
+        } catch (e) { }
       }
 
       // Compute changes
@@ -1186,7 +1186,7 @@ api.interceptors.request.use(
       if (idx === -1) {
         throw createMockError('Record not found', 404);
       }
-      
+
       const record = allRecords[idx];
       record.current_status = 'PENDING_SHO';
       record.updated_at = new Date().toISOString();
@@ -1224,12 +1224,12 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
-      
+
       const record = allRecords[idx];
       const oldStatus = record.current_status;
-      
+
       if (record.current_status === 'PENDING_SHO') {
         record.current_status = 'DISTRICT_REVIEW';
         record.current_level = 'DISTRICT';
@@ -1237,7 +1237,7 @@ api.interceptors.request.use(
         record.current_status = 'COMPILED';
         record.current_level = 'HQ';
       }
-      
+
       record.updated_at = new Date().toISOString();
       record.transitions.unshift({
         from_level: oldStatus === 'PENDING_SHO' ? 'PS' : 'DISTRICT',
@@ -1274,15 +1274,15 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
-      
+
       const record = allRecords[idx];
       const oldStatus = record.current_status;
       record.current_status = 'SENT_BACK_HC';
       record.current_level = 'PS';
       record.updated_at = new Date().toISOString();
-      
+
       record.transitions.unshift({
         from_level: oldStatus === 'PENDING_SHO' ? 'PS' : 'DISTRICT',
         to_level: 'PS',
@@ -1312,7 +1312,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       let filteredQueue = [];
@@ -1339,7 +1339,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       let count = 0;
@@ -1382,7 +1382,7 @@ api.interceptors.request.use(
     if (url.match(/\/compilations$/) && method === 'POST') {
       const { period, district_id } = JSON.parse(config.data);
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
-      
+
       // Filter records in district for the date
       const matched = allRecords.filter(r => r.record_date === period && r.current_status === 'COMPILED');
       const firs = matched.filter(r => r.record_type === 'CASE').length;

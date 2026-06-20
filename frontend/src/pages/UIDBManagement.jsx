@@ -151,8 +151,8 @@ export default function UIDBManagement() {
           <h1>Unidentified Dead Body (UIDB) Log</h1>
           <p className="page-desc">Register recovered unidentified bodies, enter physical descriptions, and sync with ZIPNET national databases.</p>
         </div>
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="btn btn-secondary transition-standard"
           onClick={handleQuickFill}
           aria-label="Pre-fill UIDB form fields with mock tracking data"
@@ -186,8 +186,8 @@ export default function UIDBManagement() {
           </div>
           <div className="form-actions-toolbar-right">
             {activeStep > 1 && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-secondary transition-standard"
                 onClick={() => setActiveStep(prev => prev - 1)}
                 aria-label="Go to previous section"
@@ -195,9 +195,9 @@ export default function UIDBManagement() {
                 <span>Back</span>
               </button>
             )}
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               className="btn btn-secondary transition-standard"
               onClick={handleSaveDraft}
               aria-label="Save draft UIDB record"
@@ -205,10 +205,10 @@ export default function UIDBManagement() {
               <Save size={16} aria-hidden="true" className="menu-icon" />
               <span>Save Draft</span>
             </button>
-            
+
             {activeStep < 3 ? (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-primary transition-standard"
                 onClick={() => setActiveStep(prev => prev + 1)}
                 aria-label="Go to next section"
@@ -216,8 +216,8 @@ export default function UIDBManagement() {
                 <span>Next</span>
               </button>
             ) : (
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary transition-standard"
                 aria-label="Submit UIDB and log to central registry"
               >

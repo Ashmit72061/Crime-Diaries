@@ -48,7 +48,7 @@ const SECTION_TITLES = {
   person_details:           { en: 'Person Details',                         hi: 'व्यक्ति विवरण' },
   officer_informant:        { en: 'Officers & Informant',                   hi: 'अधिकारी और सूचना प्रदाता' },
   discovery_details:        { en: 'Discovery Details',                      hi: 'बरामदगी का विवरण' },
-  corpse_desc:              { en: 'Physical Description',                   hi: 'शारीरिक विवरण' },
+  corpse_desc:              { en: 'Corpse Description',                     hi: 'शव विवरण' },
   zipnet_status:            { en: 'ZIPNET & Status',                        hi: 'ज़िपनेट और स्थिति' },
   // ── New sections added from MUT Form spec ───────────────────────────────────
   arrest_details:           { en: 'Arrest Details',                         hi: 'गिरफ्तारी का विवरण' },
