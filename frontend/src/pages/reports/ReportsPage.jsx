@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Select, Button, Space, Table, Typography, Spin, Alert, message, Progress } from 'antd';
+import { Card, Row, Col, Select, Button, Space, Table, Typography, Spin, Alert, message, Progress, Tabs } from 'antd';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import {
@@ -14,6 +14,8 @@ import {
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
+
+import MultiSheetReportBuilder from './MultiSheetReportBuilder';
 
 export const ReportsPage = () => {
   const { t } = useTranslation();
@@ -191,85 +193,102 @@ export const ReportsPage = () => {
         </Paragraph>
       </div>
 
-      <Row gutter={[24, 24]}>
-        {/* Spreadsheet Export Card */}
-        <Col xs={24} md={8}>
-          <Card
-            title={
-              <Space>
-                <FileSpreadsheet size={18} style={{ color: '#10b981' }} />
-                <span>Operational Sheets Export</span>
-              </Space>
-            }
-            style={{ background: '#10141d', border: '1px solid #1c2430', height: '100%' }}
-          >
-            <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 10 }}>
-              <div>
-                <span style={{ color: '#a0aec0', display: 'block', marginBottom: 8 }}>Select category spreadsheet:</span>
-                <Select
-                  value={exportType}
-                  onChange={(val) => setExportType(val)}
-                  style={{ width: '100%' }}
-                >
-                  <Option value="CASES">{t('dashboard.cases')}</Option>
-                  <Option value="ARREST">{t('dashboard.arrests')}</Option>
-                  <Option value="PCR">{t('dashboard.pcr')}</Option>
-                </Select>
-              </div>
+      <Tabs 
+        defaultActiveKey="1"
+        style={{ color: '#fff' }}
+        items={[
+          {
+            key: '1',
+            label: 'Standard District Reports',
+            children: (
+              <Row gutter={[24, 24]}>
+                {/* Spreadsheet Export Card */}
+                <Col xs={24} md={8}>
+                  <Card
+                    title={
+                      <Space>
+                        <FileSpreadsheet size={18} style={{ color: '#10b981' }} />
+                        <span>Operational Sheets Export</span>
+                      </Space>
+                    }
+                    style={{ background: '#10141d', border: '1px solid #1c2430', height: '100%' }}
+                  >
+                    <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 10 }}>
+                      <div>
+                        <span style={{ color: '#a0aec0', display: 'block', marginBottom: 8 }}>Select category spreadsheet:</span>
+                        <Select
+                          value={exportType}
+                          onChange={(val) => setExportType(val)}
+                          style={{ width: '100%' }}
+                        >
+                          <Option value="CASES">{t('dashboard.cases')}</Option>
+                          <Option value="ARREST">{t('dashboard.arrests')}</Option>
+                          <Option value="PCR">{t('dashboard.pcr')}</Option>
+                        </Select>
+                      </div>
 
-              <Alert
-                message="Comprehensive Sheet Output"
-                description="Contains all fields including full case briefs, dates, names, locations, and audit numbers."
-                type="info"
-                showIcon
-                style={{ background: '#0c1a30', border: '1px solid #1c3d5a', color: '#93c5fd' }}
-              />
+                      <Alert
+                        message="Comprehensive Sheet Output"
+                        description="Contains all fields including full case briefs, dates, names, locations, and audit numbers."
+                        type="info"
+                        showIcon
+                        style={{ background: '#0c1a30', border: '1px solid #1c3d5a', color: '#93c5fd' }}
+                      />
 
-              <Button
-                type="primary"
-                onClick={handleExcelExport}
-                loading={exportLoading}
-                block
-                style={{
-                  background: '#10b981',
-                  borderColor: '#10b981',
-                  height: 40,
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8
-                }}
-              >
-                {exportLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                Export Excel Spreadsheet
-              </Button>
-            </Space>
-          </Card>
-        </Col>
+                      <Button
+                        type="primary"
+                        onClick={handleExcelExport}
+                        loading={exportLoading}
+                        block
+                        style={{
+                          background: '#10b981',
+                          borderColor: '#10b981',
+                          height: 40,
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8
+                        }}
+                      >
+                        {exportLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                        Export Excel Spreadsheet
+                      </Button>
+                    </Space>
+                  </Card>
+                </Col>
 
-        {/* Compiled PDF Templates List */}
-        <Col xs={24} md={16}>
-          <Card
-            title={
-              <Space>
-                <FileText size={18} style={{ color: '#e53e3e' }} />
-                <span>District Compiled Reporting Templates</span>
-              </Space>
-            }
-            style={{ background: '#10141d', border: '1px solid #1c2430' }}
-          >
-            <Table
-              dataSource={templates}
-              columns={templateColumns}
-              loading={loadingTemplates}
-              rowKey="id"
-              pagination={false}
-              style={{ background: 'transparent' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+                {/* Compiled PDF Templates List */}
+                <Col xs={24} md={16}>
+                  <Card
+                    title={
+                      <Space>
+                        <FileText size={18} style={{ color: '#e53e3e' }} />
+                        <span>District Compiled Reporting Templates</span>
+                      </Space>
+                    }
+                    style={{ background: '#10141d', border: '1px solid #1c2430' }}
+                  >
+                    <Table
+                      dataSource={templates}
+                      columns={templateColumns}
+                      loading={loadingTemplates}
+                      rowKey="id"
+                      pagination={false}
+                      style={{ background: 'transparent' }}
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            )
+          },
+          {
+            key: '2',
+            label: 'Custom Multi-Sheet Workbooks',
+            children: <MultiSheetReportBuilder />
+          }
+        ]}
+      />
     </div>
   );
 };
