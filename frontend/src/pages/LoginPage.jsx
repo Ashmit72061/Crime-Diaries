@@ -30,7 +30,7 @@ export const LoginPage = () => {
   const handleQuickLogin = (badgeNo) => {
     form.setFieldsValue({
       badge_no: badgeNo,
-      password: 'test123'
+      password: 'Test@1234'
     });
     form.submit();
   };

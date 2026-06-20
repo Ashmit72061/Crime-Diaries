@@ -34,6 +34,8 @@ const SECTION_TITLES = {
   classification: { en: 'Classification', hi: 'वर्गीकरण' },
   gist: { en: 'Call Gist', hi: 'कॉल का विवरण' },
   category: { en: 'Category', hi: 'श्रेणी' },
+  stolen_property: { en: 'Stolen Property', hi: 'चोरी की गई संपत्ति' },
+  recovered_property: { en: 'Recovered Property', hi: 'बरामद संपत्ति' },
 };
 
 function sectionTitle(sec) {

@@ -56,6 +56,8 @@ const SECTION_TITLES = {
   missing_details:          { en: 'Missing Person Details',                 hi: 'लापता व्यक्ति का विवरण' },
   physical_description:     { en: 'Physical Description',                   hi: 'शारीरिक हुलिया' },
   uidb_details:             { en: 'UIDB Details',                           hi: 'अज्ञात शव विवरण' },
+  stolen_property:          { en: 'Stolen Property',                        hi: 'चोरी की गई संपत्ति' },
+  recovered_property:       { en: 'Recovered Property',                     hi: 'बरामद संपत्ति' },
 };
 
 const VALID_FIELD_TYPES = ['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'DATETIME', 'SELECT', 'BOOLEAN'];

@@ -155,10 +155,15 @@ const initMockDB = () => {
           io_name: 'SI Harish Rawat',
           io_pis: 'PIS-49281034',
           io_mobile: '9876543210',
-          property_description: 'Black leather shoulder bag containing cash and paper transcripts',
+          stolen_property: 'Black leather shoulder bag containing cash and paper transcripts',
           property_status: 'Stolen',
           status: 'Open',
           remarks: 'CCTV footage of adjacent cameras is being analysed.',
+          property_description: 'Black leather shoulder bag containing cash and paper transcripts',
+          recovered_property: '',
+          recovered_property_status: 'NA',
+          recovered_case_status: 'Open',
+          recovered_remarks: '',
           cctns_flag: true,
           etheft_flag: false,
           emvt_flag: false,
@@ -447,37 +452,68 @@ const formSchemas = {
       ]
     },
     {
-      section: 'property_status',
-      title_en: 'Property Details & Case Status',
-      title_hi: 'संपत्ति विवरण और केस की स्थिति',
+      section: 'stolen_property',
+      title_en: 'Stolen Property',
+      title_hi: 'चोरी की गई संपत्ति',
       fields: [
-        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
+        { field_key: 'stolen_property', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
         {
           field_key: 'property_status',
           field_type: 'SELECT',
           label_en: 'Property Status',
           label_hi: 'संपत्ति की स्थिति',
           options: [
-            { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी' },
-            { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
-            { value: 'Partly Recovered', label_en: 'Partly Recovered', label_hi: 'आंशिक रूप से बरामद' },
-            { value: 'Not Applicable', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+            { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' },
+            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
           ],
           validation_rules: { required: true }
         },
         {
           field_key: 'status',
           field_type: 'SELECT',
-          label_en: 'Investigation Status',
-          label_hi: 'जांच की स्थिति',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
           options: [
-            { value: 'Open', label_en: 'Active / Under Investigation', label_hi: 'सक्रिय / जांच के अधीन' },
-            { value: 'Chargesheeted', label_en: 'Chargesheet Submitted', label_hi: 'आरोप पत्र दाखिल' },
-            { value: 'Closed', label_en: 'Closed / Final Report', label_hi: 'बंद / अंतिम रिपोर्ट दाखिल' }
+            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
+            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
+            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
           ],
           validation_rules: { required: true }
         },
-        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'General Remarks', label_hi: 'सामान्य टिप्पणी', validation_rules: { required: false } }
+        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
+      ]
+    },
+    {
+      section: 'recovered_property',
+      title_en: 'Recovered Property',
+      title_hi: 'बरामद संपत्ति',
+      fields: [
+        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
+        { field_key: 'recovered_property', field_type: 'TEXTAREA', label_en: 'Recovery Property', label_hi: 'बरामद की गई संपत्ति', validation_rules: { required: false } },
+        {
+          field_key: 'recovered_property_status',
+          field_type: 'SELECT',
+          label_en: 'Property Status',
+          label_hi: 'संपत्ति की स्थिति',
+          options: [
+            { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
+            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'recovered_case_status',
+          field_type: 'SELECT',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
+          options: [
+            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
+            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
+            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
+          ],
+          validation_rules: { required: true }
+        },
+        { field_key: 'recovered_remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
       ]
     },
     {

@@ -245,7 +245,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       father_husband_name_of_complainant: d.complainant_father_husband_name || '',
       address_of_complainant: d.complainant_address || '',
       time_of_occurrence: d.occurrence_time || d.gd_time || '',
-      stolen_items: d.property_description || d.stolen_items || 'None',
+      stolen_items: d.stolen_property || d.property_description || d.stolen_items || 'None',
       place_of_occurrence: d.occurrence_place || '',
       io_name: d.io_name || '',
       io_mobile_no: d.io_mobile || d.io_mobile_no || '',
@@ -267,7 +267,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       address_of_complainant: d.complainant_address || '',
       place_of_occurrence: d.occurrence_place || '',
       time_of_occurrence: d.occurrence_time || d.gd_time || '',
-      stolen_items: d.property_description || d.stolen_items || 'None',
+      stolen_items: d.stolen_property || d.property_description || d.stolen_items || 'None',
       place_of_occurrence_1: d.occurrence_place || '',
       io_name: d.io_name || '',
       io_mobile_no: d.io_mobile || d.io_mobile_no || '',
@@ -288,7 +288,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       father_husband_name_of_complainant: d.complainant_father_husband_name || '',
       address_of_complainant: d.complainant_address || '',
       time_of_occurrence: d.occurrence_time || d.gd_time || '',
-      stolen_items: d.property_description || d.stolen_items || 'None',
+      stolen_items: d.stolen_property || d.property_description || d.stolen_items || 'None',
       place_of_occurrence: d.occurrence_place || '',
       io_name: d.io_name || '',
       io_mobile_no: d.io_mobile || d.io_mobile_no || '',
@@ -831,7 +831,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       brief_facts_of_the_case: d.brief_facts || '',
       accused_person_name: d.accused_name || 'None Arrested',
       fathers_name: d.accused_father_name || '',
-      recovery_made_property_weapon_cash_etc: d.property_description || 'None'
+      recovery_made_property_weapon_cash_etc: d.recovered_property || d.property_description || 'None'
     };
   });
 
@@ -903,7 +903,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
     district: records[0]?.district_name || 'District',
     no_of_ps: uniquePs || 1,
     cases_registered_under_ndps_act: ndpsCases.length,
-    qty_recovered: ndpsCases.map(r => r.data.property_description || r.data.stolen_items).filter(Boolean).join(', ') || 'Nil',
+    qty_recovered: ndpsCases.map(r => r.data.recovered_property || r.data.property_description || r.data.stolen_items).filter(Boolean).join(', ') || 'Nil',
     persons_arrested_bound_down: ndpsArrests.length
   }];
 
@@ -927,8 +927,8 @@ export const mapRecordsToSheets = (records, targetDate) => {
       fir_no_comp_no: d.fir_no || d.gd_no || '',
       fir_date: fmtDate(d.fir_date || r.record_date),
       police_station: r.ps_name || '',
-      mobile_model: d.mobile_model || d.property_description || 'Mobile Phone',
-      status: d.property_status || 'Recovered',
+      mobile_model: d.mobile_model || d.recovered_property || d.property_description || 'Mobile Phone',
+      status: d.recovered_property_status || d.property_status || 'Recovered',
       recovery_date: fmtDate(d.recovery_date || r.record_date),
       handed_over_seized: d.property_handed_over || 'Seized',
       name_of_police_officer_who_recovered_the_mobile: d.io_name || ''
