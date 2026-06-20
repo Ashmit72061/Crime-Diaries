@@ -174,8 +174,6 @@ export async function seed(knex) {
 
     // ── CASE additions – Incident Details (extended) ─────────────────────────
     { id: 'C_26', field_key: 'time_of_occurrence',   field_type: 'TIME',     applicable_record_types: JSON.stringify(['CASE']), label_en: 'Time of Occurrence',                      label_hi: 'घटना का समय',                         visible_to_levels: L, editable_by_levels: E, section: 'incident_details', sort_order: 26, is_active: true, scope_level: 'global' },
-    { id: 'C_27', field_key: 'relation_accused',     field_type: 'TEXT',     applicable_record_types: JSON.stringify(['CASE']), label_en: 'Relation (Father/Mother) – Accused',      label_hi: 'संबंध (पिता/माता) – आरोपी',           visible_to_levels: L, editable_by_levels: E, section: 'incident_details', sort_order: 27, is_active: true, scope_level: 'global' },
-    { id: 'C_28', field_key: 'relation_complainant', field_type: 'TEXT',     applicable_record_types: JSON.stringify(['CASE']), label_en: 'Relation (Father/Mother) – Complainant',  label_hi: 'संबंध (पिता/माता) – शिकायतकर्ता',    visible_to_levels: L, editable_by_levels: E, section: 'incident_details', sort_order: 28, is_active: true, scope_level: 'global' },
 
     // ── ARREST additions – Arrest Details (new section) ──────────────────────
     { id: 'A_14', field_key: 'age_gender',           field_type: 'TEXT',     applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Age / Gender',              label_hi: 'आयु / लिंग',                    visible_to_levels: L, editable_by_levels: E, section: 'arrest_details', sort_order: 14, is_active: true, scope_level: 'global' },
