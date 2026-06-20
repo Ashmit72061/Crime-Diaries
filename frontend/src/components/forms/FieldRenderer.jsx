@@ -9,7 +9,7 @@ import SelectField   from './SelectField.jsx';
 import CheckboxField from './CheckboxField.jsx';
 import RadioField    from './RadioField.jsx';
 
-const inputBase = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[#0f52ba] transition-colors placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
+const inputBase = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-colors placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
 
 export default function FieldRenderer({ field, value, onChange, readOnly, hasError, lang }) {
   const key     = field.field_key;
@@ -83,7 +83,7 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
         type="file"
         disabled={readOnly}
         onChange={(e) => handleChange(e.target.files?.[0]?.name || '')}
-        className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#0f52ba]/10 file:text-[#0f52ba] hover:file:bg-[#0f52ba]/20 file:cursor-pointer cursor-pointer disabled:opacity-50"
+        className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--accent-glow)] file:text-[var(--accent-color)] hover:file:bg-[var(--accent-color)]/20 file:cursor-pointer cursor-pointer disabled:opacity-50"
       />
     );
   }

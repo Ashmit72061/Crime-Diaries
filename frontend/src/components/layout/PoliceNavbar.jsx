@@ -384,9 +384,9 @@ export default function PoliceNavbar({
               <User size={16} />
             </div>
             <div className="officer-details text-left font-sans flex flex-col justify-center leading-tight">
-              <span className="officer-name block text-sm font-semibold">{user?.username || "HC Ramesh Kumar"}</span>
-              <span className="officer-rank block text-[11px] text-slate-400 font-medium">{user?.rank || "Station Operator"}</span>
-              <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5">
+              <span className="officer-name block text-sm font-semibold truncate max-w-[150px] whitespace-nowrap">{user?.username || "HC Ramesh Kumar"}</span>
+              <span className="officer-rank block text-[11px] text-slate-400 font-medium truncate max-w-[150px] whitespace-nowrap">{user?.rank || "Station Operator"}</span>
+              <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5 truncate max-w-[150px] whitespace-nowrap">
                 {user?.role === 'SYSTEM_ADMIN' ? 'Central Administration' :
                  user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' ? 'Delhi Police HQ' :
                  user?.role === 'DISTRICT_OFFICER' ? jurisdiction?.district?.name_en :

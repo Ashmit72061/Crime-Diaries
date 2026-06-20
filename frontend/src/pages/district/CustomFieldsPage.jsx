@@ -180,25 +180,25 @@ export default function CustomFieldsPage() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 theme-district-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-            <Layers className="text-[#cca43b]" />
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 font-display">
+            <Layers className="text-[var(--accent-color)]" />
             District Custom Fields
           </h1>
-          <p className="text-zinc-400 text-xs mt-1 flex items-center gap-1">
-            <MapPin size={11} className="text-[#cca43b]" />
+          <p className="text-slate-500 text-xs mt-1 flex items-center gap-1 font-semibold">
+            <MapPin size={11} className="text-[var(--accent-color)]" />
             Fields defined here are visible only within your district jurisdiction.
           </p>
         </div>
         <button onClick={openCreate}
-          className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
+          className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer border-none active:scale-95">
           <Plus size={14} /> Add District Field
         </button>
       </div>
-
+ 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -206,46 +206,46 @@ export default function CustomFieldsPage() {
           { label: 'Active',       value: fields.filter((f) => f.is_active).length },
           { label: 'Inactive',     value: fields.filter((f) => !f.is_active).length },
         ].map((s) => (
-          <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-zinc-100">{s.value}</div>
-            <div className="text-zinc-500 text-xs mt-0.5">{s.label}</div>
+          <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+            <div className="text-2xl font-bold text-slate-800">{s.value}</div>
+            <div className="text-slate-500 text-xs mt-0.5 font-semibold">{s.label}</div>
           </div>
         ))}
       </div>
-
+ 
       {/* Filter */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-zinc-500 text-xs font-semibold">Filter:</span>
+        <span className="text-slate-500 text-xs font-semibold">Filter:</span>
         {['ALL', ...RECORD_TYPES].map((type) => (
           <button key={type} onClick={() => setFilterType(type)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
               filterType === type
-                ? 'bg-[#cca43b] text-zinc-950 shadow-md'
-                : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-200 hover:border-zinc-600'
+                ? 'bg-[var(--accent-color)] text-white border-transparent shadow-md shadow-red-500/10'
+                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50'
             }`}>
             {type}
           </button>
         ))}
       </div>
-
+ 
       {/* Table */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-12 text-zinc-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4" />
+        <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-color)] mb-4" />
           <p className="text-sm">Loading district fields…</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="border border-dashed border-zinc-800 rounded-xl p-16 text-center text-zinc-500">
-          <Layers size={48} className="mx-auto text-zinc-700 mb-3" />
+        <div className="border border-dashed border-slate-200 bg-white rounded-xl p-16 text-center text-slate-500">
+          <Layers size={48} className="mx-auto text-slate-350 mb-3" />
           <p className="text-sm font-semibold">No district fields defined</p>
-          <p className="text-xs text-zinc-600 mt-1">Click "Add District Field" to extend forms for your jurisdiction.</p>
+          <p className="text-xs text-slate-450 mt-1">Click "Add District Field" to extend forms for your jurisdiction.</p>
         </div>
       ) : (
-        <div className="border border-zinc-800/80 bg-zinc-900/40 rounded-xl overflow-hidden">
+        <div className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="bg-zinc-950/60 text-zinc-400 uppercase font-semibold border-b border-zinc-800 tracking-wider">
+                <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 tracking-wider">
                   <th className="p-3.5 pl-5">Field Key</th>
                   <th className="p-3.5">English Label</th>
                   <th className="p-3.5">Hindi Label</th>
@@ -257,22 +257,22 @@ export default function CustomFieldsPage() {
                   <th className="p-3.5">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+              <tbody className="divide-y divide-slate-100 text-slate-600">
                 {filtered.map((f) => (
-                  <tr key={f.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="p-3.5 pl-5 font-mono font-bold text-zinc-200 text-[11px]">{f.field_key}</td>
-                    <td className="p-3.5">{f.label_en}</td>
-                    <td className="p-3.5 text-zinc-400 font-sans">{f.label_hi || '—'}</td>
+                  <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-3.5 pl-5 font-mono font-bold text-[var(--accent-color)] text-[11px]">{f.field_key}</td>
+                    <td className="p-3.5 font-medium text-slate-700">{f.label_en}</td>
+                    <td className="p-3.5 text-slate-500 font-sans">{f.label_hi || '—'}</td>
                     <td className="p-3.5">
-                      <span className="bg-zinc-800 border border-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono">
+                      <span className="bg-slate-150 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono">
                         {f.field_type}
                       </span>
                     </td>
-                    <td className="p-3.5 text-zinc-400 text-[11px] font-mono">{f.section}</td>
+                    <td className="p-3.5 text-slate-500 text-[11px] font-mono">{f.section}</td>
                     <td className="p-3.5">
                       <div className="flex flex-wrap gap-1">
                         {ensureArray(f.applicable_record_types).map((rt) => (
-                          <span key={rt} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${TYPE_COLORS[rt] || 'text-zinc-400 border-zinc-700'}`}>
+                          <span key={rt} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${TYPE_COLORS[rt] || 'text-slate-500 border-slate-200'}`}>
                             {rt}
                           </span>
                         ))}
@@ -281,8 +281,8 @@ export default function CustomFieldsPage() {
                     <td className="p-3.5">
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
                         f.validation_rules?.required
-                          ? 'text-red-400 bg-red-950/30 border-red-800/40'
-                          : 'text-zinc-500 border-zinc-700'
+                          ? 'text-red-600 bg-red-50 border-red-200'
+                          : 'text-slate-400 border-slate-200'
                       }`}>
                         {f.validation_rules?.required ? 'REQ' : 'OPT'}
                       </span>
@@ -290,8 +290,8 @@ export default function CustomFieldsPage() {
                     <td className="p-3.5">
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
                         f.is_active
-                          ? 'text-emerald-400 border-emerald-800/40 bg-emerald-950/30'
-                          : 'text-zinc-500 border-zinc-700 bg-zinc-800'
+                          ? 'text-emerald-600 border-emerald-250 bg-emerald-50'
+                          : 'text-slate-400 border-slate-200 bg-slate-50'
                       }`}>
                         {f.is_active ? 'ACTIVE' : 'INACTIVE'}
                       </span>
@@ -299,12 +299,12 @@ export default function CustomFieldsPage() {
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
                         <button onClick={() => openEdit(f)} title="Edit"
-                          className="text-zinc-500 hover:text-[#cca43b] transition-colors cursor-pointer">
+                          className="text-slate-450 hover:text-[var(--accent-color)] transition-colors cursor-pointer border-none bg-transparent">
                           <Pencil size={13} />
                         </button>
                         <button onClick={() => toggleMutation.mutate(f.id)}
                           title={f.is_active ? 'Deactivate' : 'Activate'}
-                          className={`transition-colors cursor-pointer ${f.is_active ? 'text-emerald-500 hover:text-red-400' : 'text-zinc-600 hover:text-emerald-400'}`}>
+                          className={`transition-colors cursor-pointer border-none bg-transparent ${f.is_active ? 'text-emerald-500 hover:text-red-400' : 'text-slate-400 hover:text-emerald-500'}`}>
                           {f.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
                         </button>
                       </div>

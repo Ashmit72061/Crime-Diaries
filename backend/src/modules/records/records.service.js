@@ -610,7 +610,7 @@ export const checkDuplicateRecord = async (recordType, firNumber, accusedName, d
     if (client === 'sqlite3') {
       query = query.andWhere('data', 'like', `%fir_no%${firNumber}%`);
     } else {
-      query = query.whereRaw("data->>'fir_no' = ?", [firNumber]);
+      query = query.whereRaw("(data::jsonb)->>'fir_no' = ?", [firNumber]);
     }
     
     const existing = await query.first();
@@ -628,7 +628,7 @@ export const checkDuplicateRecord = async (recordType, firNumber, accusedName, d
     if (client === 'sqlite3') {
       query = query.andWhere('data', 'like', `%accused_name%${accusedName}%`);
     } else {
-      query = query.whereRaw("data->>'accused_name' = ?", [accusedName]);
+      query = query.whereRaw("(data::jsonb)->>'accused_name' = ?", [accusedName]);
     }
     
     const existing = await query.first();
@@ -714,7 +714,7 @@ const DB_COLUMNS = ['record_type', 'ps_id', 'district_id', 'sub_div_id', 'curren
 const getJsonFieldExpression = (field) => {
   const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
   if (isPostgres) {
-    return `records.data->>'${field}'`;
+    return `(records.data::jsonb)->>'${field}'`;
   } else {
     return `json_extract(records.data, '$.${field}')`;
   }
