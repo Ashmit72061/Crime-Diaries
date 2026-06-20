@@ -714,7 +714,7 @@ const DB_COLUMNS = ['record_type', 'ps_id', 'district_id', 'sub_div_id', 'curren
 const getJsonFieldExpression = (field) => {
   const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
   if (isPostgres) {
-    return `records.data->>'${field}'`;
+    return `CAST(records.data AS jsonb)->>'${field}'`;
   } else {
     return `json_extract(records.data, '$.${field}')`;
   }

@@ -219,6 +219,23 @@ export const generateReport = async (req, res) => {
     const filePath = path.join(reportsDir, fileName);
     const userId = req.user ? (req.user.userId || req.user.id) : null;
 
+    // Ensure template exists in database (foreign key constraint)
+    const templateExists = await db('report_templates').where({ id: template_id }).first();
+    if (!templateExists) {
+      const memTemplate = templates.find(t => t.id === template_id);
+      await db('report_templates').insert({
+        id: template_id,
+        name_en: memTemplate ? memTemplate.name_en : `Template: ${template_id}`,
+        name_hi: memTemplate ? memTemplate.name_hi : `टेम्पलेट: ${template_id}`,
+        applicable_record_types: JSON.stringify(memTemplate ? memTemplate.applicable_record_types : ['CASES']),
+        applicable_levels: JSON.stringify(['PS', 'DISTRICT', 'HQ']),
+        template_definition: JSON.stringify({}),
+        output_formats: JSON.stringify(memTemplate ? memTemplate.format.map(f => f.toUpperCase()) : ['PDF', 'CSV', 'EXCEL']),
+        is_active: true,
+        created_by: userId || 'U_SA001'
+      });
+    }
+
     await db('report_jobs').insert({
       id: jobId,
       template_id,
