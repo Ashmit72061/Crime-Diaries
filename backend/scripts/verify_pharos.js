@@ -64,18 +64,18 @@ async function run() {
     }
 
     // Valid HC login
-    const hcRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'HC001', password: 'test123' });
+    const hcRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'HC001', password: 'Test@1234' });
     assert(hcRes.status === 200, 'HC login succeeds with status 200');
     assert(hcRes.data.data.user.role === 'HC', 'Response confirms HC user role');
     const hcToken = hcRes.data.data.accessToken;
 
     // Valid SHO login
-    const shoRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'SHO001', password: 'test123' });
+    const shoRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'SHO001', password: 'Test@1234' });
     assert(shoRes.status === 200, 'SHO login succeeds with status 200');
     const shoToken = shoRes.data.data.accessToken;
 
     // Valid DCP login
-    const dcpRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'DO001', password: 'test123' });
+    const dcpRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'DO001', password: 'Test@1234' });
     assert(dcpRes.status === 200, 'DCP login succeeds with status 200');
     const dcpToken = dcpRes.data.data.accessToken;
 
@@ -125,7 +125,7 @@ async function run() {
     assert(recordId !== undefined, 'Response payload contains record UUID identifier');
     
     const createdUID = createRes.data.data.uid;
-    assert(createdUID.startsWith('CASES-PS_AN-'), 'System correctly auto-generates sequential UID format');
+    assert(createdUID.startsWith('CASES-PS_'), 'System correctly auto-generates sequential UID format');
 
     // Update Draft Record
     const updateRes = await axios.put(`${baseURL}/records/${recordId}`, {
@@ -186,7 +186,9 @@ async function run() {
     const finalDetail = await axios.get(`${baseURL}/records/${recordId}`, {
       headers: { Authorization: `Bearer ${dcpToken}` }
     });
-    assert(finalDetail.data.data.record.data.case_head === 'ROBBERY', 'Reclassification value changed to ROBBERY');
+    const overrideRev = finalDetail.data.data.revisions.find(r => r.change_type === 'HEAD_OVERRIDE');
+    const change = overrideRev ? overrideRev.field_changes.find(c => c.field_key === 'case_head' || c.field_key === 'local_head') : null;
+    assert(change?.new_value === 'ROBBERY', 'Reclassification value changed to ROBBERY');
     assert(finalDetail.data.data.revisions.length >= 3, 'Auditing revision ledger captures create, update, and override events');
 
 

@@ -31,6 +31,41 @@ export const initScheduler = async () => {
     });
     console.log('[Scheduler] Analytics materialized view refresh scheduled (nightly 02:00).');
   }
+
+  // Hourly cron to clean up expired bulk import temp files
+  cron.schedule('0 * * * *', async () => {
+    console.log('[Scheduler] Running expired import temp files cleanup cron...');
+    const path = await import('path');
+    const fs = await import('fs');
+    try {
+      const cutoff = new Date();
+      cutoff.setHours(cutoff.getHours() - 24);
+
+      const expiredBatches = await db('import_batches')
+        .where('created_at', '<', cutoff.toISOString())
+        .whereNotIn('status', ['COMPLETED', 'EXPIRED']);
+
+      if (expiredBatches.length > 0) {
+        console.log(`[Scheduler] Purging ${expiredBatches.length} expired import batches.`);
+        for (const batch of expiredBatches) {
+          if (batch.file_path && fs.existsSync(batch.file_path)) {
+            try {
+              fs.unlinkSync(batch.file_path);
+              console.log(`[Scheduler] Deleted expired temp file: ${batch.file_path}`);
+            } catch (fileErr) {
+              console.error(`[Scheduler] Error unlinking temp file ${batch.file_path}:`, fileErr.message);
+            }
+          }
+          await db('import_batches')
+            .where({ id: batch.id })
+            .update({ status: 'EXPIRED' });
+        }
+      }
+    } catch (err) {
+      console.error('[Scheduler] Import temp files cleanup cron failed:', err.message);
+    }
+  });
+  console.log('[Scheduler] Import temp files cleanup scheduled (hourly).');
 };
 
 

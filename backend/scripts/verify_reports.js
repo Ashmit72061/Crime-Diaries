@@ -23,7 +23,7 @@ async function run() {
     // 1. Log in
     const loginRes = await axios.post(`${localBaseURL}/auth/login`, {
       badge_no: 'SA001',
-      password: 'test123'
+      password: 'Test@1234'
     });
     const token = loginRes.data.data.accessToken;
     console.log('[Test Reports] Login successful');

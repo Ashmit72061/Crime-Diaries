@@ -38,15 +38,15 @@ async function run() {
 
   try {
     // 1. Log in
-    const saLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'SA001', password: 'test123' });
+    const saLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'SA001', password: 'Test@1234' });
     const saToken = saLogin.data.data.accessToken;
     console.log('[Test P2] System Admin logged in');
 
-    const hcLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'HC001', password: 'test123' });
+    const hcLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'HC001', password: 'Test@1234' });
     const hcToken = hcLogin.data.data.accessToken;
     console.log('[Test P2] Head Constable logged in');
 
-    const doLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'DO001', password: 'test123' });
+    const doLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'DO001', password: 'Test@1234' });
     const doToken = doLogin.data.data.accessToken;
     console.log('[Test P2] District Officer logged in');
 
@@ -82,7 +82,7 @@ async function run() {
     });
     
     // Log in as SHO to approve and send to DISTRICT_REVIEW
-    const shoLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'SHO001', password: 'test123' });
+    const shoLogin = await axios.post(`${localBaseURL}/auth/login`, { badge_no: 'SHO001', password: 'Test@1234' });
     const shoToken = shoLogin.data.data.accessToken;
     await axios.post(`${localBaseURL}/records/${case1Id}/approve`, { comment: 'Approved' }, {
       headers: { Authorization: `Bearer ${shoToken}` }

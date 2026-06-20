@@ -1,0 +1,17 @@
+sn,fir_no,us,name,father_husband_name,address,age,name_of_io,pcjcbail,prev_involvement_no_of_cases,recovery,whether_accused_is_bc_or_not,integrated_pi,group_patrolling,cycle_patrolling,by_antisnatching_team,by_prahari,by_eyes_ears_scheme_members
+1,DD/90A,BNSS 126/170,Rakesh Yadav,Lalji Yadav,"Kondli, Delhi",24,SI Sandeep,Bail,0,No,No,No,No,No,No,No,No
+2,DD/91A,BNSS 126/169,Devender Singh,Prakash Singh,"Gazipur Dairy Farm, Delhi",27,ASI Satish,Bail,0,No,No,No,No,No,No,No,No
+3,DD/92A,BNSS 109G,Gaurav Kumar,Jai Kumar,"Kalyanpuri, Delhi",22,SI Harish,Bail,0,No,No,No,No,No,No,No,No
+4,DD/93A,BNSS 110G,Vinay @ Vicky,Vijay Kumar,"Mayur Vihar, Delhi",29,SI Vijay Singh,JC,0,No,No,No,No,No,No,No,No
+5,DD/94A,DP Act 92/97,Jeetu Kumar,Satbir Singh,"Gazipur, Delhi",30,ASI Satish,Bail,0,No,No,No,No,No,No,No,No
+6,FIR/EX/2026/0011,Sec 40 Excise Act,Sanjay Verma,Ram Verma,"Mandawali, Delhi",28,HC Dinesh,Bail,0,No,No,No,No,No,No,No,No
+7,FIR/EX/2026/0012,Sec 33 Excise Act,Kalu Ram,Shankar Lal,"Kalyanpuri, Delhi",31,HC Dinesh,Bail,0,No,No,No,No,No,No,No,No
+8,FIR/ARMS/2026/0013,Sec 25/54 Arms Act,Pappu @ Shooter,Bhagat Singh,"Khoda Colony, UP",23,SI Harish,JC,0,No,No,No,No,No,No,No,No
+9,FIR/GAM/2026/0014,Sec 12 Gambling Act,Bobby Singh,Gurnam Singh,"Mayur Vihar, Delhi",40,ASI Satish,Bail,0,No,No,No,No,No,No,No,No
+10,FIR/NDPS/2026/0008,Sec 20 NDPS Act,Vicky Dev,Laxman Dev,"Paharganj, Delhi",33,SI Harish,JC,0,No,No,No,No,No,No,No,No
+11,FIR/2026/0125,BNS 103,John Doe,Richard Doe,"Noida Sec 62, UP",28,SI Vijay Singh,Judicial Custody,1,Yes,No,No,No,No,No,No,No
+12,DD/45B,BNSS 109,Madan Lal,Sohan Lal,"Kalyanpuri, Delhi",32,ASI Dharam Singh,Bail,0,No,No,No,No,No,No,No,No
+13,FIR/2024/0410,BNS 303/PO,Karan @ Kalu,Charan Singh,"Trilokpuri, Delhi",35,SI Rajesh,Judicial Custody,0,No,No,No,No,No,No,No,No
+14,FIR/2026/0126,BNS 309,Sohan Lal,Mohan Lal,"Shashi Garden, Delhi",29,SI Harish,Police Custody,0,No,No,No,No,No,No,No,No
+15,FIR/2026/0127,BNS 303 (Theft),Rinku (Name Changed),Baldev Singh,"Kalyanpuri J.J. Cluster, Delhi",16,SI Naveen Malik,Bail by JJB,0,No,No,No,No,No,No,No,No
+16,FIR/CYBER/2026/0010,BNS 318(4) / IT Act 66D,Vikram Adityan,Adityan Pillai,"Dwarka Sector 10, Delhi",26,SI Cyber Cell,JC,0,No,No,No,No,No,No,No,No

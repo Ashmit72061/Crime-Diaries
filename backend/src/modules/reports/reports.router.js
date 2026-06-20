@@ -2,8 +2,14 @@ import { Router } from 'express';
 import * as reportsController from './reports.controller.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 import { allow } from '../../middleware/rbac.middleware.js';
+import reportBuilderRouter from '../report-builder/reportBuilder.router.js';
 
 const router = Router();
+
+// ── Report Builder (Custom Report Engine) ─────────────────────────────────────
+// Mounts at /api/reports/builder and /api/v1/reports/builder
+// Must be declared BEFORE any :id parameterized routes to avoid conflicts.
+router.use('/builder', reportBuilderRouter);
 
 router.get('/templates', authMiddleware, reportsController.getTemplates);
 router.post('/generate', authMiddleware, reportsController.generateReport);
