@@ -13,85 +13,83 @@ export default function ReportBuilder() {
     const role = user?.role;
     switch (role) {
       case 'PS':
-      case 'HC':
-        return 'theme-hc-page';
-      case 'SHO':
-        return 'theme-sho-page';
-      case 'ACP':
-        return 'theme-acp-page';
+      case 'HC':      return 'theme-hc-page';
+      case 'SHO':     return 'theme-sho-page';
+      case 'ACP':     return 'theme-acp-page';
       case 'DISTRICT':
-      case 'DISTRICT_OFFICER':
-        return 'theme-district-page';
+      case 'DISTRICT_OFFICER': return 'theme-district-page';
       case 'HQ':
       case 'HQ_ANALYST':
-      case 'HQ_ADMIN':
-        return 'theme-hq-page';
-      case 'SYSTEM_ADMIN':
-        return 'theme-admin-page';
-      default:
-        return 'theme-hq-page';
+      case 'HQ_ADMIN': return 'theme-hq-page';
+      case 'SYSTEM_ADMIN': return 'theme-admin-page';
+      default:         return 'theme-hq-page';
     }
   };
-  const [template, setTemplate] = useState('Cases Daily Diary Summary');
-  const [fromDate, setFromDate] = useState(() => new Date(Date.now() - 3600000 * 24 * 7).toISOString().split('T')[0]);
-  const [toDate, setToDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [format, setFormat] = useState('xlsx');
 
-  // Background report task state
+  const [templateId, setTemplateId] = useState('');
+  const [fromDate, setFromDate] = useState(() => new Date(Date.now() - 3600000 * 24 * 7).toISOString().split('T')[0]);
+  const [toDate, setToDate]     = useState(() => new Date().toISOString().split('T')[0]);
+  const [format, setFormat]     = useState('EXCEL');
   const [generating, setGenerating] = useState(false);
   const [reportResult, setReportResult] = useState(null);
 
-  // Simulated reports history registry
-  const [history, setHistory] = useState([
-    { id: 'rep-5028', template: 'Arrest Master Registers', period: '2026-06-01 to 2026-06-14', format: 'xlsx', status: 'READY', url: '#' },
-    { id: 'rep-4912', template: 'PCR Kalandra Calls Log', period: '2026-06-10 to 2026-06-15', format: 'csv', status: 'READY', url: '#' }
-  ]);
+  // Fetch templates from API
+  const { data: templatesData, isLoading: templatesLoading } = useQuery({
+    queryKey: ['report-templates'],
+    queryFn: async () => {
+      const res = await api.get('/reports/templates');
+      return res.data.data?.templates || [];
+    },
+    onSuccess: (list) => {
+      if (list.length && !templateId) setTemplateId(list[0].id);
+    }
+  });
+  const templates = templatesData || [];
 
-  // Generate Report Mutation
+  // Set default once loaded
+  React.useEffect(() => {
+    if (templates.length && !templateId) setTemplateId(templates[0].id);
+  }, [templates]);
+
+  // Fetch history from API
+  const { data: historyData, refetch: refetchHistory } = useQuery({
+    queryKey: ['report-history'],
+    queryFn: async () => {
+      const res = await api.get('/reports/history');
+      return res.data.data || [];
+    }
+  });
+  const history = historyData || [];
+
   const generateMutation = useMutation({
     mutationFn: async (payload) => {
-      // Backend expects: { template_id, filters: { dateFrom, dateTo }, format }
       const res = await api.post('/reports/generate', payload);
       return res.data.data;
     },
     onSuccess: (data) => {
-      // Backend returns job_id (not reportId)
       const jobId = data?.job_id || data?.job?.id;
-      if (!jobId) {
-        toast.error('Report job ID missing in response');
-        return;
-      }
+      if (!jobId) { toast.error('Report job ID missing in response'); return; }
 
       setGenerating(true);
-      toast.loading('Compiling spreadsheet report in background...', { id: 'report-toast' });
-      
-      // Poll report status using job_id
+      toast.loading('Compiling report in background...', { id: 'report-toast' });
+
       let attempts = 0;
       const interval = setInterval(async () => {
         attempts += 1;
         try {
           const statusRes = await api.get(`/reports/status/${jobId}`);
           const jobStatus = statusRes.data.data?.status || statusRes.data.data?.job?.status;
-          if (jobStatus === 'READY' || attempts >= 8) {
+
+          if (jobStatus === 'READY' || jobStatus === 'FAILED' || attempts >= 15) {
             clearInterval(interval);
             setGenerating(false);
-            setReportResult({ ...statusRes.data.data, jobId });
-            
-            // Add to history list
-            setHistory(prev => [
-              {
-                id: jobId,
-                template,
-                period: `${fromDate} to ${toDate}`,
-                format,
-                status: jobStatus || 'READY',
-                url: `/api/v1/reports/download/${jobId}`
-              },
-              ...prev
-            ]);
-            
+            refetchHistory();
+
             if (jobStatus === 'READY') {
-              toast.success('Spreadsheet compiled and ready for download!', { id: 'report-toast' });
+              setReportResult({ jobId, format });
+              toast.success('Report ready for download!', { id: 'report-toast' });
+            } else if (jobStatus === 'FAILED') {
+              toast.error('Report generation failed. Check Python worker logs.', { id: 'report-toast' });
             } else {
               toast.error('Report is taking longer than expected. Check history later.', { id: 'report-toast' });
             }
@@ -99,78 +97,51 @@ export default function ReportBuilder() {
         } catch (e) {
           clearInterval(interval);
           setGenerating(false);
-          toast.error('Failed to compile report', { id: 'report-toast' });
+          toast.error('Failed to check report status', { id: 'report-toast' });
         }
       }, 2000);
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to trigger report compilation');
+      toast.error(err.response?.data?.message || 'Failed to trigger report generation');
     }
   });
 
   const handleGenerate = (e) => {
     e.preventDefault();
+    if (!templateId) { toast.error('Select a template first'); return; }
     setReportResult(null);
-    // Map frontend state to backend API field names
-    const templateIdMap = {
-      'Cases Daily Diary Summary': 'cases-register',
-      'Arrest Master Registers': 'arrest-summary',
-      'PCR Kalandra Calls Log': 'pcr-call-log',
-      'Missing Persons Register': 'daily-status',
-    };
     generateMutation.mutate({
-      template_id: templateIdMap[template] || 'cases-register',
+      template_id: templateId,
       filters: { dateFrom: fromDate, dateTo: toDate },
       format,
     });
   };
 
-  // Trigger real download from backend for real report jobs, CSV fallback for mock
-  const handleDownloadFile = async (item) => {
-    // If it's a real report job (UUID-shaped id), download from backend
-    const isRealJob = item.id && item.id.includes('-') && item.id.length > 20;
-    if (isRealJob) {
-      try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch(`/api/v1/reports/download/${item.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Pharos_Report_${item.id}.${item.format === 'xlsx' ? 'xlsx' : item.format}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toast.success('Report downloaded successfully');
-        return;
-      } catch (err) {
-        toast.error('Download failed: ' + err.message);
-        return;
-      }
+  const handleDownload = async (jobId, fmt) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`/api/v1/reports/download/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const blob = await res.blob();
+      const ext = (fmt || 'xlsx').toLowerCase() === 'excel' ? 'xlsx' : (fmt || 'xlsx').toLowerCase();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Pharos_Report_${jobId}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('Report downloaded');
+    } catch (err) {
+      toast.error('Download failed: ' + err.message);
     }
-
-    // Fallback: generate a local CSV for mock history entries
-    const csvContent = 'data:text/csv;charset=utf-8,'
-      + 'Delhi Police Daily Operational Log\n'
-      + `Report Template: ${item.template}\n`
-      + `Scope Period: ${item.period}\n`
-      + `Generated On: ${new Date().toLocaleDateString()}\n\n`
-      + 'Ref ID,Record Type,Gist,Status,Date\n'
-      + '210/2026,CASE,Theft report at Parliament St Market,PENDING_SHO,2026-06-15\n'
-      + '45B,PCR_CALL,Altercation resolved at Parliament St flats,SENT_BACK_HC,2026-06-15\n'
-      + 'Arrest-01,ARREST,Suraj Pal detained at Palika Bazaar,DRAFT,2026-06-16\n';
-    const link = document.createElement('a');
-    link.setAttribute('href', encodeURI(csvContent));
-    link.setAttribute('download', `pharos_compiled_${item.id}.${item.format}`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Spreadsheet downloaded successfully');
   };
+
+  const selectedTemplate = templates.find(t => t.id === templateId);
+  const availableFormats = selectedTemplate?.output_formats || ['EXCEL', 'PDF'];
 
   return (
     <div className={`space-y-6 p-6 rounded-3xl bg-[var(--bg-page-main)]/60 border border-[var(--border-card-theme)] backdrop-blur-md shadow-sm font-sans text-[var(--text-main-theme)] ${getThemeClass()}`}>
@@ -185,9 +156,8 @@ export default function ReportBuilder() {
         </p>
       </div>
 
-      {/* Main Containers Stacked Vertically (Up Down) */}
       <div className="space-y-6">
-        {/* Top: Input Parameter Card */}
+        {/* Parameters Card */}
         <div className="bg-[var(--bg-card-theme)] border border-[var(--border-card-theme)] rounded-2xl p-6 shadow-sm space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] border-b border-[var(--border-card-theme)] pb-2 flex items-center gap-1.5">
             <Calendar size={14} className="text-[var(--accent-color)]" />
@@ -196,19 +166,30 @@ export default function ReportBuilder() {
 
           <form onSubmit={handleGenerate} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-              {/* Report Proforma Selection */}
+              {/* Template Selection */}
               <div className="col-span-1 md:col-span-4 space-y-1.5">
                 <label className="text-[var(--text-main-theme)]/80 font-bold">Report Proforma Template:</label>
-                <select
-                  value={template}
-                  onChange={(e) => setTemplate(e.target.value)}
-                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2.5 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold shadow-sm"
-                >
-                  <option value="Cases Daily Diary Summary">Cases Daily Diary Summary (Cases Master)</option>
-                  <option value="Arrest Master Registers">Arrest Master Registers (Arrests logs)</option>
-                  <option value="PCR Kalandra Calls Log">PCR Kalandra Calls Log (PCR emergency logs)</option>
-                  <option value="Missing Persons Register">Missing Persons Register (Missing logs)</option>
-                </select>
+                {templatesLoading ? (
+                  <div className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2.5 text-[var(--text-main-theme)]/50 text-xs">
+                    Loading templates...
+                  </div>
+                ) : (
+                  <select
+                    value={templateId}
+                    onChange={(e) => {
+                      setTemplateId(e.target.value);
+                      setFormat('EXCEL');
+                    }}
+                    className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2.5 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold shadow-sm"
+                  >
+                    {templates.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name_en}
+                        {t.template_type === 'LINKED' ? ' (Linked)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* From Date */}
@@ -235,59 +216,46 @@ export default function ReportBuilder() {
 
               {/* Format selection */}
               <div className="col-span-1 md:col-span-4 space-y-1.5">
-                <label className="text-[var(--text-main-theme)]/80 font-bold block mb-2">File Spreadsheet Format:</label>
-                <div className="flex gap-4 py-1">
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[var(--text-main-theme)]/80 font-semibold">
-                    <input
-                      type="radio"
-                      checked={format === 'xlsx'}
-                      onChange={() => setFormat('xlsx')}
-                      className="accent-[var(--accent-color)]"
-                    />
-                    <span>Excel (.xlsx)</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[var(--text-main-theme)]/80 font-semibold">
-                    <input
-                      type="radio"
-                      checked={format === 'csv'}
-                      onChange={() => setFormat('csv')}
-                      className="accent-[var(--accent-color)]"
-                    />
-                    <span>CSV File (.csv)</span>
-                  </label>
+                <label className="text-[var(--text-main-theme)]/80 font-bold block mb-2">Output Format:</label>
+                <div className="flex gap-4 py-1 flex-wrap">
+                  {availableFormats.map(f => (
+                    <label key={f} className="flex items-center gap-1.5 cursor-pointer text-[var(--text-main-theme)]/80 font-semibold">
+                      <input
+                        type="radio"
+                        checked={format === f}
+                        onChange={() => setFormat(f)}
+                        className="accent-[var(--accent-color)]"
+                      />
+                      <span>{f === 'EXCEL' ? 'Excel (.xlsx)' : f === 'PDF' ? 'PDF' : f}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Actions button */}
+            {/* Actions */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
                 type="submit"
-                disabled={generating}
+                disabled={generating || !templateId}
                 className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm flex items-center gap-1.5 active:scale-95"
               >
                 {generating ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    <span>Compiling Registry...</span>
-                  </>
+                  <><RefreshCw size={14} className="animate-spin" /><span>Compiling...</span></>
                 ) : (
-                  <>
-                    <FileText size={14} />
-                    <span>Generate Excel Report</span>
-                  </>
+                  <><FileText size={14} /><span>Generate Report</span></>
                 )}
               </button>
 
-              {/* Direct download banner */}
               {reportResult && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-xl px-4 py-2 text-xs flex items-center gap-3 animate-in fade-in duration-200">
                   <div className="flex gap-1.5 items-center font-semibold">
                     <CheckCircle2 size={14} />
-                    <span>Spreadsheet ready!</span>
+                    <span>Report ready!</span>
                   </div>
                   <button
-                    onClick={() => handleDownloadFile({ id: reportResult.jobId, template, format })}
+                    type="button"
+                    onClick={() => handleDownload(reportResult.jobId, reportResult.format)}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-none shadow-sm active:scale-95"
                   >
                     <Download size={12} />
@@ -299,7 +267,7 @@ export default function ReportBuilder() {
           </form>
         </div>
 
-        {/* Bottom: Generated archives logs history */}
+        {/* History Table */}
         <div className="bg-[var(--bg-card-theme)] border border-[var(--border-card-theme)] rounded-2xl p-6 shadow-sm space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] border-b border-[var(--border-card-theme)] pb-2">
             Export History Log
@@ -311,22 +279,48 @@ export default function ReportBuilder() {
                 <tr className="bg-[var(--bg-page-main)]/50 text-[var(--text-main-theme)]/80 uppercase font-semibold border-b border-[var(--border-card-theme)]/70">
                   <th className="p-3 pl-6 font-bold text-[var(--text-main-theme)]">Export ID</th>
                   <th className="p-3 font-bold text-[var(--text-main-theme)]">Template</th>
-                  <th className="p-3 font-bold text-[var(--text-main-theme)]">Scope Date Range</th>
+                  <th className="p-3 font-bold text-[var(--text-main-theme)]">Generated</th>
                   <th className="p-3 font-bold text-[var(--text-main-theme)]">Format</th>
+                  <th className="p-3 font-bold text-[var(--text-main-theme)]">Status</th>
                   <th className="p-3 pr-6 text-right font-bold text-[var(--text-main-theme)]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-card-theme)]/30 text-[var(--text-main-theme)]">
-                {history.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-[var(--bg-page-main)]/30 transition-colors duration-150">
-                    <td className="p-3 pl-6 font-mono font-bold text-[var(--text-main-theme)] opacity-60">{item.id}</td>
-                    <td className="p-3 font-semibold text-[var(--text-main-theme)]">{item.template}</td>
-                    <td className="p-3 text-[11px] text-[var(--text-main-theme)]/70 font-mono">{item.period}</td>
-                    <td className="p-3 uppercase font-bold text-[var(--accent-color)]">{item.format}</td>
+                {history.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-[var(--text-main-theme)]/40 text-xs">
+                      No reports generated yet.
+                    </td>
+                  </tr>
+                )}
+                {history.map((item) => (
+                  <tr key={item.id} className="hover:bg-[var(--bg-page-main)]/30 transition-colors duration-150">
+                    <td className="p-3 pl-6 font-mono font-bold text-[var(--text-main-theme)] opacity-60 text-[10px]">
+                      {item.id?.slice(0, 8)}…
+                    </td>
+                    <td className="p-3 font-semibold text-[var(--text-main-theme)]">
+                      {item.template_id || '—'}
+                    </td>
+                    <td className="p-3 text-[11px] text-[var(--text-main-theme)]/70 font-mono">
+                      {item.created_at ? new Date(item.created_at).toLocaleString() : '—'}
+                    </td>
+                    <td className="p-3 uppercase font-bold text-[var(--accent-color)]">
+                      {item.format || '—'}
+                    </td>
+                    <td className="p-3">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        item.status === 'READY'   ? 'bg-emerald-500/15 text-emerald-600' :
+                        item.status === 'FAILED'  ? 'bg-red-500/15 text-red-500' :
+                        'bg-amber-500/15 text-amber-600'
+                      }`}>
+                        {item.status}
+                      </span>
+                    </td>
                     <td className="p-3 pr-6 text-right">
                       <button
-                        onClick={() => handleDownloadFile(item)}
-                        className="bg-[var(--bg-page-main)] hover:bg-[var(--bg-page-main)]/85 text-[var(--accent-color)] font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors inline-flex items-center gap-1 cursor-pointer border border-[var(--border-card-theme)]/60 shadow-sm active:scale-95"
+                        disabled={item.status !== 'READY'}
+                        onClick={() => handleDownload(item.id, item.format)}
+                        className="bg-[var(--bg-page-main)] hover:bg-[var(--bg-page-main)]/85 text-[var(--accent-color)] font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors inline-flex items-center gap-1 cursor-pointer border border-[var(--border-card-theme)]/60 shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <Download size={10} />
                         <span>Download</span>

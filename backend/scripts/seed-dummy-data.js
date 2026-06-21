@@ -63,16 +63,21 @@ const IPC_SECS    = ['302', '420', '379', '392', '66C'];
 function caseData(i, ps) {
   const loc = (ps === H.PS_PARLIAMENT || ps === H.PS_CONNAUGHT) ? LOCS_NDD[i%5] : LOCS_NWD[i%5];
   const caseType = ['cctns(manual FIR)', 'eTheft', 'eMVT', 'NCRP', 'zero FIR'][i%5];
+  const complainantNames = ['Rahul Kumar','Priya Singh','Amit Jain','Meera Patel','Suresh Verma'];
+  const parentNames = ['Rajesh Kumar','Harpal Singh','Mohan Jain','Ramesh Patel','Dinesh Verma'];
   return {
     case_type: caseType,
     fir_no: `FIR/2026/${1000+i}`, fir_date: `2026-05-${pad(i%28+1)}`,
     gd_no: `GD/2026/${2000+i}`,   gd_date: `2026-05-${pad(i%28+1)}`,
     gd_time: `${pad((i*3)%24)}:${pad((i*7)%60)}`, beat_no: `B-${(i%10)+1}`,
-    occurrence_date: `2026-05-${pad(i%28+1)}`, occurrence_place: `${loc}, New Delhi`,
+    occurrence_date: `2026-05-${pad(i%28+1)}`,
+    time_of_occurrence: `${pad((i*2+8)%24)}:${pad((i*13)%60)}`,
+    occurrence_place: `${loc}, New Delhi`,
     local_head: CRIME_HEADS[i%5], act_name: ['IPC','NDPS Act','IPC'][i%3],
     sections: IPC_SECS[i%5],
     brief_facts: `Complaint received from complainant. ${loc} area. Police reached scene and registered FIR. Investigation ongoing.`,
-    complainant_name: ['Rahul Kumar','Priya Singh','Amit Jain','Meera Patel','Suresh Verma'][i%5],
+    complainant_name: complainantNames[i%5],
+    complainant_parent_name: parentNames[i%5],
     complainant_address: `${100+i}, ${loc}, New Delhi - 110001`,
     accused_name: i%3===0 ? '' : `Accused-${i}`, accused_address: i%3===0 ? '' : `Unknown, New Delhi`,
     io_name: IO_NAMES[i%5], io_pis: `PIS${10000+i}`, io_mobile: `98${pad8(10000000+i*7)}`,
@@ -85,17 +90,26 @@ function caseData(i, ps) {
 
 function arrestData(i, ps) {
   const loc = (ps === H.PS_PARLIAMENT || ps === H.PS_CONNAUGHT) ? LOCS_NDD[i%5] : LOCS_NWD[i%5];
+  const firstNames = ['Mohan','Sohan','Ram','Shyam','Gita'];
+  const lastNames  = ['Lal','Kumar','Singh','Prasad','Devi'];
+  const parentFirstNames = ['Hari','Shiv','Ram','Vishnu','Durga'];
+  const RANKS = ['Inspector','Sub-Inspector','ASI','Head Constable','Inspector'];
   return {
     linked_fir_dd_no: `FIR/2026/${1000+i}`,
     act_name: ['IPC','NDPS Act','Prevention of Corruption Act'][i%3],
     sections: IPC_SECS[i%5],
-    arrested_name: `${['Mohan','Sohan','Ram','Shyam','Gita'][i%5]} ${['Lal','Kumar','Singh','Prasad','Devi'][i%5]}`,
+    arrested_name: `${firstNames[i%5]} ${lastNames[i%5]}`,
+    parents_name: `${parentFirstNames[i%5]} ${lastNames[i%5]}`,
+    age_gender: `${25+(i*3)%30} / ${['Male','Female','Male','Male','Female'][i%5]}`,
     arrested_address: `${50+i}, ${loc}, Delhi`,
     arrest_date: `2026-05-${pad(i%28+1)}`, arrest_place: `Near market, ${loc}`,
     crime_head: ['IPC','LOCAL','PREVENTIVE'][i%3],
     status: ['judicial_custody','police_custody','bail','released','others'][i%5],
     other_status_reason: i%5===4 ? 'Surrendered voluntarily' : '',
-    io_name: IO_NAMES[i%5], nafis_prepared: i%2===0, dossier_prepared: i%3===0,
+    io_name: IO_NAMES[i%5],
+    io_rank: RANKS[i%5],
+    io_mobile: `98${pad8(20000000+i*11)}`,
+    nafis_prepared: i%2===0, dossier_prepared: i%3===0,
   };
 }
 
@@ -597,6 +611,7 @@ async function seed() {
   await db('compilations').del();
   await db('workflow_transitions').del();
   await db('record_revisions').del();
+  try { await db('record_links').del(); } catch (_) {}
   await db('records').del();
   await db('report_jobs').del();
   await db('report_templates').del();
@@ -655,12 +670,36 @@ async function seed() {
   if (allRevisions.length) await db('record_revisions').insert(allRevisions);
   if (allTransitions.length) await db('workflow_transitions').insert(allTransitions);
 
-  // ── 5. Compilations ───────────────────────────────────────────────────────────
+  // ── 5. Record links (CASE ↔ ARREST) ─────────────────────────────────────────
+  console.log('🔗 Seeding record links...');
+  try {
+    const linkType = await db('link_type_registry').where({ code: 'CASE_ARREST' }).first();
+    if (linkType) {
+      const LINKS = [
+        // Parliament Street — 3 CASE→ARREST pairs
+        { source_record_id: 'R_NDD_C01', target_record_id: 'R_NDD_A01', created_by: 'U_HC001' },
+        { source_record_id: 'R_NDD_C02', target_record_id: 'R_NDD_A02', created_by: 'U_HC001' },
+        { source_record_id: 'R_NDD_C03', target_record_id: 'R_NDD_A03', created_by: 'U_HC001' },
+        // Connaught Place — 1 pair
+        { source_record_id: 'R_CP_C01',  target_record_id: 'R_CP_A01',  created_by: 'U_HC004' },
+        // Adarsh Nagar — 1 pair
+        { source_record_id: 'R_NWD_C01', target_record_id: 'R_NWD_A01', created_by: 'U_HC002' },
+      ];
+      await db('record_links').insert(
+        LINKS.map(l => ({ ...l, link_type_id: linkType.id, metadata: '{}' }))
+      );
+      console.log(`   Inserted ${LINKS.length} CASE_ARREST links.`);
+    } else {
+      console.warn('   (skipped — CASE_ARREST link type not found; run migrations.js first)');
+    }
+  } catch (e) { console.warn(`   (record_links skipped: ${e.message})`); }
+
+  // ── 6. Compilations ───────────────────────────────────────────────────────────
   console.log('📦 Seeding compilations...');
   await db('compilations').insert(COMPILATIONS);
   if (COMPILATION_RECORDS.length) await db('compilation_records').insert(COMPILATION_RECORDS);
 
-  // ── 6. Notifications ──────────────────────────────────────────────────────────
+  // ── 7. Notifications ──────────────────────────────────────────────────────────
   console.log('🔔 Seeding notifications...');
   await db('notifications').insert(NOTIFICATIONS.map(n => ({
     ...n, created_at: new Date().toISOString()

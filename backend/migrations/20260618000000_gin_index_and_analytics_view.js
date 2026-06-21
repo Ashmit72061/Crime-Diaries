@@ -17,12 +17,6 @@
  */
 
 export async function up(knex) {
-  const isSqlite = knex.client.config.client === 'sqlite3';
-  if (isSqlite) {
-    console.log('[Migration] Skipping GIN index and materialized view — SQLite detected.');
-    return;
-  }
-
   // 1. GIN index on the data column (stored as text, cast to jsonb for indexing)
   await knex.raw(`
     CREATE INDEX IF NOT EXISTS idx_records_data_gin
@@ -74,9 +68,6 @@ export async function up(knex) {
 }
 
 export async function down(knex) {
-  const isSqlite = knex.client.config.client === 'sqlite3';
-  if (isSqlite) return;
-
   await knex.raw(`DROP MATERIALIZED VIEW IF EXISTS mv_record_stats;`);
   await knex.raw(`DROP INDEX IF EXISTS idx_records_data_gin;`);
   await knex.raw(`DROP INDEX IF EXISTS idx_records_ps_id;`);

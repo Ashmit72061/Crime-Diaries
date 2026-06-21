@@ -3,30 +3,25 @@ import os
 import pandas as pd
 import openpyxl
 from datetime import datetime
-from db import db_client, sqlite_path, engine
+from db import engine
+from sqlalchemy import text
 
-# Defer import of database-specific and network-dependent modules to prevent socket connection hangs in sandboxed tests
-if db_client != 'sqlite3':
-    from sqlalchemy import text
-else:
-    import sqlite3
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), 'templates')
+
+def load_local_template(template_id):
+    """Load a template definition from python_worker/templates/<id>.json if it exists."""
+    path = os.path.join(TEMPLATES_DIR, f'{template_id}.json')
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    return None
 
 def load_template(template_id, engine):
-    if db_client == 'sqlite3':
-        conn = sqlite3.connect(sqlite_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, name_en, template_type, template_definition FROM report_templates WHERE id = ?",
-            (template_id,)
-        )
-        row = cursor.fetchone()
-        conn.close()
-    else:
-        with engine.connect() as conn:
-            row = conn.execute(
-                text("SELECT id, name_en, template_type, template_definition FROM report_templates WHERE id = :id"),
-                {'id': template_id}
-            ).fetchone()
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT id, name_en, template_type, template_definition FROM report_templates WHERE id = :id"),
+            {'id': template_id}
+        ).fetchone()
             
     if row:
         return {
@@ -38,6 +33,9 @@ def load_template(template_id, engine):
     return None
 
 def get_predefined_definition(template_id):
+    local = load_local_template(template_id)
+    if local:
+        return local
     if template_id == 'arrest-summary':
         return {
             'filter_spec': { 'record_type': 'ARREST' },
@@ -66,22 +64,11 @@ def get_predefined_definition(template_id):
 def load_field_registry(field_keys, engine):
     if not field_keys:
         return {}
-    if db_client == 'sqlite3':
-        conn = sqlite3.connect(sqlite_path)
-        cursor = conn.cursor()
-        placeholders = ",".join("?" for _ in field_keys)
-        cursor.execute(
-            f"SELECT field_key, label_en, label_hi, field_type FROM field_registry WHERE field_key IN ({placeholders})",
-            tuple(field_keys)
-        )
-        res = cursor.fetchall()
-        conn.close()
-    else:
-        with engine.connect() as conn:
-            res = conn.execute(
-                text("SELECT field_key, label_en, label_hi, field_type FROM field_registry WHERE field_key IN :keys"),
-                {'keys': tuple(field_keys)}
-            ).fetchall()
+    with engine.connect() as conn:
+        res = conn.execute(
+            text("SELECT field_key, label_en, label_hi, field_type FROM field_registry WHERE field_key IN :keys"),
+            {'keys': tuple(field_keys)}
+        ).fetchall()
         
     meta = {}
     for r in res:
@@ -95,19 +82,12 @@ def load_field_registry(field_keys, engine):
 def query_records(definition, user_filters, engine):
     record_type = definition['filter_spec']['record_type']
     data_filter = definition['filter_spec'].get('data_filter', {})
-    
-    db_type = 'postgres'
-    if db_client == 'sqlite3' or (engine and 'sqlite' in str(engine.url)):
-        db_type = 'sqlite'
-        
+
     field_keys = definition.get('fixed_fields', [])
     selects = []
-    
+
     for k in field_keys:
-        if db_type == 'sqlite':
-            selects.append(f"json_extract(records.data, '$.{k}') as [{k}]")
-        else:
-            selects.append(f"records.data->>'{k}' as {k}")
+        selects.append(f"(records.data::jsonb)->>'{k}' as {k}")
             
     # Include record date and ps name in raw queries
     select_expr = ", ".join(selects) if selects else "records.id"
@@ -138,39 +118,26 @@ def query_records(definition, user_filters, engine):
     # Apply data filters
     if data_filter:
         for k, v in data_filter.items():
-            if db_type == 'sqlite':
-                sql += f" AND json_extract(records.data, '$.{k}') = :{k}_val"
-                params[f"{k}_val"] = v
-            else:
-                sql += f" AND records.data @> :{k}_val::jsonb"
-                params[f"{k}_val"] = json.dumps({k: v})
-                
+            sql += f" AND records.data::jsonb @> :{k}_val::jsonb"
+            params[f"{k}_val"] = json.dumps({k: v})
+
     # Apply dynamic user filters
     system_keys = {'date_from', 'from_date', 'date_to', 'to_date', 'ps_id', 'psId', 'district_id', 'districtId', 'selected_sub_templates', 'page', 'limit'}
     core_columns = {'id', 'current_status', 'current_level'}
-    
+
     for k, v in user_filters.items():
         if k in system_keys or v is None or v == '':
             continue
-            
+
         if k in core_columns:
             sql += f" AND records.{k} = :{k}_user_val"
             params[f"{k}_user_val"] = v
         else:
-            if db_type == 'sqlite':
-                sql += f" AND json_extract(records.data, '$.{k}') = :{k}_user_val"
-                params[f"{k}_user_val"] = v
-            else:
-                sql += f" AND records.data @> :{k}_user_val::jsonb"
-                params[f"{k}_user_val"] = json.dumps({k: v})
-                
-    if db_client == 'sqlite3':
-        conn = sqlite3.connect(sqlite_path)
-        df = pd.read_sql(sql, conn, params=params)
-        conn.close()
-    else:
-        with engine.connect() as conn:
-            df = pd.read_sql(text(sql), conn, params=params)
+            sql += f" AND records.data::jsonb @> :{k}_user_val::jsonb"
+            params[f"{k}_user_val"] = json.dumps({k: v})
+
+    with engine.connect() as conn:
+        df = pd.read_sql(text(sql), conn, params=params)
         
     # Load field registry metadata for header renames
     fields_meta = load_field_registry(field_keys, engine)
@@ -203,15 +170,8 @@ def write_header_rows(ws, header_def, user_filters, engine):
     ps_id = user_filters.get('ps_id') or user_filters.get('psId')
     jurisdiction = "All jurisdictions"
     if ps_id:
-        if db_client == 'sqlite3':
-            conn = sqlite3.connect(sqlite_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT name_en FROM hierarchy_nodes WHERE id = ?", (ps_id,))
-            r = cursor.fetchone()
-            conn.close()
-        else:
-            with engine.connect() as conn:
-                r = conn.execute(text("SELECT name_en FROM hierarchy_nodes WHERE id = :id"), {'id': ps_id}).fetchone()
+        with engine.connect() as conn:
+            r = conn.execute(text("SELECT name_en FROM hierarchy_nodes WHERE id = :id"), {'id': ps_id}).fetchone()
         if r:
             jurisdiction = r[0]
                 
@@ -380,6 +340,194 @@ def generate_custom_workbook(custom_definition, user_filters, engine):
             
     return wb
 
+def query_linked_records(definition, user_filters, engine):
+    direction = definition.get('direction', 'source_to_target')
+    link_code = definition.get('link_type_code', 'CASE_ARREST')
+
+    def jf(col, key):
+        return f"({col}::jsonb)->>'{key}'"
+
+    params = {
+        'date_from': user_filters.get('date_from', user_filters.get('from_date', '2020-01-01')),
+        'date_to':   user_filters.get('date_to',   user_filters.get('to_date',   '2030-01-01')),
+        'link_code': link_code,
+    }
+
+    if direction == 'target_to_source':
+        # ARREST primary, LEFT JOIN to parent CASE
+        coalesce = f"COALESCE({jf('c.data', 'fir_no')}, {jf('a.data', 'linked_fir_dd_no')})"
+        sql = f"""
+            SELECT
+              {jf('a.data', 'arrested_name')}    AS arrested_name,
+              {jf('a.data', 'parents_name')}     AS parents_name,
+              {jf('a.data', 'arrested_address')} AS arrested_address,
+              {jf('a.data', 'age_gender')}       AS age_gender,
+              {coalesce}                          AS fir_dd_no,
+              {jf('a.data', 'arrest_date')}      AS arrest_date,
+              {jf('a.data', 'sections')}         AS sections,
+              hn.name_en                          AS ps_name,
+              {jf('a.data', 'io_name')}          AS io_name,
+              {jf('a.data', 'io_rank')}          AS io_rank,
+              {jf('a.data', 'io_mobile')}        AS io_mobile,
+              {jf('a.data', 'status')}           AS status
+            FROM records a
+            JOIN hierarchy_nodes hn ON hn.id = a.ps_id
+            LEFT JOIN record_links rl
+              ON rl.target_record_id = a.id
+            LEFT JOIN link_type_registry ltr
+              ON ltr.id = rl.link_type_id AND ltr.code = :link_code
+            LEFT JOIN records c ON c.id = rl.source_record_id
+            WHERE a.record_type = 'ARREST'
+              AND a.record_date BETWEEN :date_from AND :date_to
+        """
+        if user_filters.get('ps_id') or user_filters.get('psId'):
+            sql += " AND a.ps_id = :ps_id"
+            params['ps_id'] = user_filters.get('ps_id') or user_filters.get('psId')
+        elif user_filters.get('district_id') or user_filters.get('districtId'):
+            sql += " AND a.district_id = :district_id"
+            params['district_id'] = user_filters.get('district_id') or user_filters.get('districtId')
+        sql += " ORDER BY a.record_date DESC"
+
+    else:
+        # CASE primary, LEFT JOIN to linked ARRESTed persons
+        sql = f"""
+            SELECT
+              hn.name_en                                   AS ps_name,
+              {jf('c.data', 'fir_no')}                    AS fir_no,
+              {jf('c.data', 'sections')}                  AS sections,
+              {jf('c.data', 'complainant_name')}          AS complainant_name,
+              {jf('c.data', 'complainant_parent_name')}   AS complainant_parent_name,
+              {jf('c.data', 'complainant_address')}       AS complainant_address,
+              {jf('c.data', 'time_of_occurrence')}        AS time_of_occurrence,
+              {jf('c.data', 'occurrence_place')}          AS occurrence_place,
+              {jf('c.data', 'occurrence_date')}           AS occurrence_date,
+              {jf('c.data', 'brief_facts')}               AS brief_facts,
+              {jf('a.data', 'arrested_name')}             AS arrested_name,
+              {jf('a.data', 'parents_name')}              AS parents_name,
+              {jf('a.data', 'arrested_address')}          AS arrested_address,
+              {jf('a.data', 'age_gender')}                AS age_gender,
+              {jf('c.data', 'io_name')}                   AS io_name
+            FROM records c
+            JOIN hierarchy_nodes hn ON hn.id = c.ps_id
+            LEFT JOIN record_links rl
+              ON rl.source_record_id = c.id
+            LEFT JOIN link_type_registry ltr
+              ON ltr.id = rl.link_type_id AND ltr.code = :link_code
+            LEFT JOIN records a ON a.id = rl.target_record_id
+            WHERE c.record_type = 'CASE'
+              AND c.record_date BETWEEN :date_from AND :date_to
+        """
+        if user_filters.get('ps_id') or user_filters.get('psId'):
+            sql += " AND c.ps_id = :ps_id"
+            params['ps_id'] = user_filters.get('ps_id') or user_filters.get('psId')
+        elif user_filters.get('district_id') or user_filters.get('districtId'):
+            sql += " AND c.district_id = :district_id"
+            params['district_id'] = user_filters.get('district_id') or user_filters.get('districtId')
+        sql += " ORDER BY c.record_date DESC"
+
+    with engine.connect() as conn:
+        df = pd.read_sql(text(sql), conn, params=params)
+
+    # Map column order to match definition['columns']
+    col_keys = [c['key'] for c in definition.get('columns', [])]
+    ordered_cols = [k for k in col_keys if k in df.columns]
+    df = df[ordered_cols] if ordered_cols else df
+
+    if not df.empty:
+        df.insert(0, 'Sr. No.', range(1, len(df) + 1))
+
+    # Rename to display labels
+    label_map = {c['key']: c['label'] for c in definition.get('columns', [])}
+    df.rename(columns=label_map, inplace=True)
+
+    return df
+
+
+def generate_linked_workbook(definition, user_filters, engine):
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    df = query_linked_records(definition, user_filters, engine)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = definition.get('header', {}).get('short_name_en', 'Report')[:30]
+
+    write_header_rows(ws, definition.get('header', {}), user_filters, engine)
+
+    header_groups = definition.get('header_groups', [])
+
+    dark_blue  = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+    mid_blue   = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    white_bold = Font(name='Arial', size=10, bold=True, color='FFFFFF')
+    white_norm = Font(name='Arial', size=9, bold=False, color='FFFFFF')
+    center     = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    thin_border = Border(
+        left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
+        top=Side(style='thin', color='D9D9D9'),  bottom=Side(style='thin', color='D9D9D9')
+    )
+
+    # Row 4: group headers with merged cells
+    group_row = ws.max_row + 1
+    ws.row_dimensions[group_row].height = 25
+    col = 1
+    for group in header_groups:
+        span = group.get('span', 1)
+        end = col + span - 1
+        if span > 1:
+            ws.merge_cells(start_row=group_row, start_column=col, end_row=group_row, end_column=end)
+        cell = ws.cell(row=group_row, column=col, value=group['label'])
+        cell.fill = dark_blue
+        cell.font = white_bold
+        cell.alignment = center
+        cell.border = thin_border
+        col = end + 1
+
+    # Row 5: sub-column labels (one per actual data column, Sr. No. first)
+    sub_row = group_row + 1
+    ws.row_dimensions[sub_row].height = 22
+    sub_labels = ['Sr. No.'] + [c['label'] for c in definition.get('columns', [])]
+    for ci, label in enumerate(sub_labels, start=1):
+        cell = ws.cell(row=sub_row, column=ci, value=label)
+        cell.fill = mid_blue
+        cell.font = white_norm
+        cell.alignment = center
+        cell.border = thin_border
+
+    if df.empty:
+        ws.append(['No records found for the selected period and filters.'])
+    else:
+        # write data rows manually (write_dataframe starts from current max_row+1)
+        data_font  = Font(name='Arial', size=9)
+        left_align = Alignment(horizontal='left',   vertical='center')
+        ctr_align  = Alignment(horizontal='center', vertical='center')
+        zebra_fill = PatternFill(start_color='F2F6F9', end_color='F2F6F9', fill_type='solid')
+
+        for row_idx, row in enumerate(df.itertuples(index=False), start=sub_row + 1):
+            ws.row_dimensions[row_idx].height = 20
+            use_zebra = (row_idx % 2 == 0)
+            for ci, val in enumerate(row, start=1):
+                cell = ws.cell(row=row_idx, column=ci, value=val)
+                cell.font = data_font
+                cell.border = thin_border
+                if use_zebra:
+                    cell.fill = zebra_fill
+                cell.alignment = ctr_align if isinstance(val, (int, float)) else left_align
+
+        # Auto-fit column widths
+        for col_cells in ws.columns:
+            max_len = 10
+            for cell in col_cells:
+                if cell.row < group_row:
+                    continue
+                val_str = str(cell.value or '')
+                if len(val_str) > max_len:
+                    max_len = len(val_str)
+            col_letter = openpyxl.utils.get_column_letter(col_cells[0].column)
+            ws.column_dimensions[col_letter].width = min(max_len + 3, 45)
+
+    return wb
+
+
 def render_pdf(df, definition, filters, file_path):
     title = definition.get('header', {}).get('title_en', 'PHAROS REPORT')
     html_content = f"""<!DOCTYPE html>
@@ -425,21 +573,11 @@ def render_pdf(df, definition, filters, file_path):
 
 def generate_report(job_id):
     print(f"[Worker] Starting report job: {job_id}")
-    if db_client == 'sqlite3':
-        conn = sqlite3.connect(sqlite_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT template_id, custom_definition, filters, format, file_path, created_by FROM report_jobs WHERE id = ?",
-            (job_id,)
-        )
-        job = cursor.fetchone()
-        conn.close()
-    else:
-        with engine.connect() as conn:
-            job = conn.execute(
-                text("SELECT template_id, custom_definition, filters, format, file_path, created_by FROM report_jobs WHERE id = :id"),
-                {'id': job_id}
-            ).fetchone()
+    with engine.connect() as conn:
+        job = conn.execute(
+            text("SELECT template_id, custom_definition, filters, format, file_path, created_by FROM report_jobs WHERE id = :id"),
+            {'id': job_id}
+        ).fetchone()
         
     if not job:
         raise Exception(f"Report job {job_id} not found in database")
@@ -492,44 +630,41 @@ def generate_report(job_id):
     if dir_name and not os.path.exists(dir_name):
         os.makedirs(dir_name, exist_ok=True)
         
+    template_type = definition.get('template_type', 'PROFORMA') if definition else 'PROFORMA'
+
     if format_type == 'CSV':
-        if template and template.get('template_type') == 'COMPOSITE':
-            raise Exception("CSV format not supported for COMPOSITE templates")
+        if template_type in ('COMPOSITE', 'LINKED'):
+            raise Exception(f"CSV format not supported for {template_type} templates")
         df = query_records(definition, filters, engine)
         df.to_csv(file_path, index=False)
-        
+
     elif format_type in ['EXCEL', 'XLSX']:
-        if template and template.get('template_type') == 'COMPOSITE':
+        if template_type == 'LINKED':
+            wb = generate_linked_workbook(definition, filters, engine)
+        elif template_type == 'COMPOSITE' or (template and template.get('template_type') == 'COMPOSITE'):
             wb = generate_composite(definition, filters, engine)
         elif not template:
             wb = generate_custom_workbook(definition, filters, engine)
         else:
             wb = generate_single_sheet_workbook(definition, filters, engine)
         wb.save(file_path)
-        
+
     elif format_type == 'PDF':
-        df = query_records(definition, filters, engine)
+        if template_type == 'LINKED':
+            df = query_linked_records(definition, filters, engine)
+        else:
+            df = query_records(definition, filters, engine)
         render_pdf(df, definition, filters, file_path)
         
-    if db_client == 'sqlite3':
-        conn = sqlite3.connect(sqlite_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE report_jobs SET status='READY', updated_at=? WHERE id=?",
-            (datetime.now().isoformat(), job_id)
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE report_jobs SET status='READY', updated_at=:now WHERE id=:id"),
+            {'now': datetime.now().isoformat(), 'id': job_id}
         )
-        conn.commit()
-        conn.close()
-    else:
-        with engine.begin() as conn:
-            conn.execute(
-                text("UPDATE report_jobs SET status='READY', updated_at=:now WHERE id=:id"),
-                {'now': datetime.now().isoformat(), 'id': job_id}
-            )
-        
+
     file_size = os.path.getsize(file_path)
-    if os.getenv('PHAROS_TEST') == 'true' or db_client == 'sqlite3':
-        print(f"[Worker] Skipping event publishing in test/sqlite mode for job: {job_id}")
+    if os.getenv('PHAROS_TEST') == 'true':
+        print(f"[Worker] Skipping event publishing in test mode for job: {job_id}")
     else:
         try:
             from events import publish_event
