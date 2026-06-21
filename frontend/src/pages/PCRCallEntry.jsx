@@ -3,16 +3,19 @@ import { useOutletContext } from "react-router-dom";
 import { Save, FileCheck, PhoneCall, User, MapPin, ShieldAlert, Award, AlertTriangle, Shield, ShieldOff } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
 import useAuthStore from "../store/authStore.js";
+import api from "../utils/api.js";
+import toast from "react-hot-toast";
 
 export default function PCRCallEntry() {
   const { onSubmitReport, addNotification } = useOutletContext();
   const { user } = useAuthStore();
   const [activeStep, setActiveStep] = useState(1);
   const [formData, setFormData] = useState({
+    uid: "",
     district: "New Delhi District (NDD)",
     policeStation: "Parliament Street",
     gdNumber: "",
-    pcrDate: "",
+    pcrDate: new Date().toISOString().split('T')[0],
     pcrTime: "",
     callerName: "",
     callerMobile: "",
@@ -120,17 +123,32 @@ export default function PCRCallEntry() {
     addNotification("PCR call draft entry saved.", "success");
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmitReport("PCR dispatch & action docket", formData, "pcr");
-    } else {
-      addNotification("Please correct the highlighted form errors.", "danger");
+    if (!validate()) {
       const firstErrorKey = Object.keys(errors)[0];
       if (firstErrorKey) {
         const el = document.getElementsByName(firstErrorKey)[0];
         if (el) el.focus();
       }
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await api.post('/v1/records', {
+        record_type: 'PCR_CALL',
+        record_date: formData.pcrDate || new Date().toISOString().split('T')[0],
+        data: formData
+      });
+      const uid = res.data.data?.uid;
+      const savedData = { ...formData, uid: uid || formData.uid };
+      onSubmitReport("PCR dispatch & action docket", savedData, "pcr");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save record.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -210,9 +228,10 @@ export default function PCRCallEntry() {
                 type="submit" 
                 className="btn btn-primary transition-standard"
                 aria-label="Submit PCR entry and log activity"
+                disabled={isSubmitting}
               >
                 <FileCheck size={16} aria-hidden="true" className="menu-icon" />
-                <span>Submit PCR Entry</span>
+                <span>{isSubmitting ? 'Saving…' : 'Submit PCR Entry'}</span>
               </button>
             )}
           </div>
@@ -228,6 +247,20 @@ export default function PCRCallEntry() {
                 <span>PCR General Diary (GD) Details</span>
               </div>
               <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="uid">System UID</label>
+                  <input
+                    type="text"
+                    id="uid"
+                    name="uid"
+                    className="form-control"
+                    value={formData.uid || ""}
+                    readOnly
+                    disabled
+                    placeholder="Auto-assigned upon submission"
+                  />
+                </div>
+
                 <div className="form-group">
                   <label className="form-label required" htmlFor="gdNumber">GD Number</label>
                   <input
