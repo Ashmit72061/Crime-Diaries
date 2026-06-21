@@ -413,8 +413,10 @@ export default function ReportBuilder() {
             link.setAttribute('download', `PHAROS_Report_${selectedTable.toLowerCase()}_${jobId.slice(0,8)}.${format}`);
             document.body.appendChild(link);
             link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+            setTimeout(() => {
+              link.remove();
+              window.URL.revokeObjectURL(url);
+            }, 200);
 
             toast.success(`${format.toUpperCase()} downloaded successfully!`, { id: toastId });
             queryClient.invalidateQueries(['report-builder', 'saved']); // Refresh history

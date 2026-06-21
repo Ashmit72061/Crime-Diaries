@@ -323,7 +323,7 @@ export async function executeSingleTableQuery(spec, jurisdictionQuery, userRole)
       }
     }
 
-    let query = wh(factTable)
+    let query = db(`${whTable(factTable)} as ${factTable}`)
       .select(selectCols)
       .leftJoin('hierarchy_nodes as ps', `${factTable}.ps_id`, 'ps.id')
       .leftJoin('hierarchy_nodes as dist', `${factTable}.district_id`, 'dist.id');
@@ -659,7 +659,7 @@ export async function executeMissingUidbCrossMatch(params, jurisdictionQuery) {
 
   if (queryMode === 'WAREHOUSE') {
     // Warehouse implementation: directly use typed columns
-    let missingQ = wh('fact_missing')
+    let missingQ = db(`${whTable('fact_missing')} as fact_missing`)
       .select('fact_missing.source_record_id as id', 'fact_missing.record_date', 'fact_missing.ps_id', 'fact_missing.district_id',
               'ps.name_en as ps_name', 'dist.name_en as district_name',
               'fact_missing.missing_name', 'fact_missing.age', 'fact_missing.gender', 'fact_missing.missing_date',
@@ -667,7 +667,7 @@ export async function executeMissingUidbCrossMatch(params, jurisdictionQuery) {
       .leftJoin('hierarchy_nodes as ps', 'fact_missing.ps_id', 'ps.id')
       .leftJoin('hierarchy_nodes as dist', 'fact_missing.district_id', 'dist.id');
 
-    let uidbQ = wh('fact_uidb')
+    let uidbQ = db(`${whTable('fact_uidb')} as fact_uidb`)
       .select('fact_uidb.source_record_id as id', 'fact_uidb.record_date', 'fact_uidb.ps_id', 'fact_uidb.district_id',
               'ps.name_en as ps_name', 'dist.name_en as district_name',
               'fact_uidb.approx_age', 'fact_uidb.approx_age_num', 'fact_uidb.gender', 'fact_uidb.found_date',

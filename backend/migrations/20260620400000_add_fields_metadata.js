@@ -1,11 +1,14 @@
 export async function up(knex) {
-  await knex.schema.alterTable('field_registry', (table) => {
-    table.string('scope_level', 50).notNullable().defaultTo('global');
-    table.text('scope_id').nullable();
-    table.text('created_by').nullable();
-    table.string('section_label_en', 120).nullable();
-    table.string('section_label_hi', 120).nullable();
-  });
+  const hasColumn = await knex.schema.hasColumn('field_registry', 'scope_level');
+  if (!hasColumn) {
+    await knex.schema.alterTable('field_registry', (table) => {
+      table.string('scope_level', 50).notNullable().defaultTo('global');
+      table.text('scope_id').nullable();
+      table.text('created_by').nullable();
+      table.string('section_label_en', 120).nullable();
+      table.string('section_label_hi', 120).nullable();
+    });
+  }
 }
 
 export async function down(knex) {
@@ -19,3 +22,4 @@ export async function down(knex) {
     });
   } catch(e) {}
 }
+

@@ -409,6 +409,7 @@ export const generateReport = async (req, res) => {
       success: true,
       data: {
         job_id: jobId,
+        job: { id: jobId, status: 'PENDING' },
         status: 'PENDING'
       }
     });
@@ -645,12 +646,43 @@ export const generateReportInternal = async (jobId, template_id, parsedFilters, 
     fs.writeFileSync(filePath, csvString);
 
   } else if (fmt === 'EXCEL' || fmt === 'XLSX') {
-    if (template_id === 'district-compilation' || template_id === 'ops-compilation') {
-      records = await getCompilationsForReport(parsedFilters);
+    if (template_id === 'daily-status') {
+      const date = parsedFilters.from || parsedFilters.dateFrom || new Date().toISOString().split('T')[0];
+      const templatePath = path.resolve(__dirname, '../../../../Master/Daily_Diary_ProperHeaders.xlsx');
+      const scriptPath = path.resolve(__dirname, '../../../../Master/files/export_daily_report.py');
+      
+      let dbHost = 'localhost';
+      let dbPort = '5435';
+      let dbUser = 'postgres';
+      let dbPass = 'postgres';
+      let dbName = 'pharos_db';
+
+      if (process.env.DATABASE_URL) {
+        try {
+          const url = new URL(process.env.DATABASE_URL);
+          dbHost = url.hostname || dbHost;
+          dbPort = url.port || dbPort;
+          dbUser = url.username || dbUser;
+          dbPass = url.password || dbPass;
+          dbName = url.pathname.replace(/^\//, '') || dbName;
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const cmd = `python "${scriptPath}" --date "${date}" --template "${templatePath}" --out "${filePath}" --host "${dbHost}" --port "${dbPort}" --dbname "${dbName}" --user "${dbUser}" --password "${dbPass}"`;
+      
+      console.log(`[generateReportInternal] Executing custom daily report script: ${cmd}`);
+      const { execSync } = await import('child_process');
+      execSync(cmd);
     } else {
-      records = await getRecordsForReport(template_id, parsedFilters);
+      if (template_id === 'district-compilation' || template_id === 'ops-compilation') {
+        records = await getCompilationsForReport(parsedFilters);
+      } else {
+        records = await getRecordsForReport(template_id, parsedFilters);
+      }
+      await generateExcelFile(template_id, records, parsedFilters, psName, filePath);
     }
-    await generateExcelFile(template_id, records, parsedFilters, psName, filePath);
   }
 
   await db('report_jobs').where({ id: jobId }).update({

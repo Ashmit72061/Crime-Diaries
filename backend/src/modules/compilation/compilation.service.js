@@ -80,20 +80,34 @@ export const createCompilation = async (districtId, period, userId) => {
     compiled_by: userId,
   };
 
-  const compilationId = uuidv4();
+  // Upsert: refresh an existing DRAFT rather than accumulating duplicate rows.
+  const existing = await db('compilations')
+    .where({ source_entity_id: districtId, period, status: 'DRAFT' })
+    .first();
 
-  await db('compilations').insert({
-    id: compilationId,
-    source_level: 'DISTRICT',
-    target_level: 'HQ',
-    route: 'OPS_CHAIN',
-    source_entity_id: districtId,
-    period,
-    status: 'DRAFT',
-    record_ids: JSON.stringify(recordIds),
-    compiled_summary: JSON.stringify(compiledSummary),
-    submitted_by: userId,
-  });
+  let compilationId;
+  if (existing) {
+    compilationId = existing.id;
+    await db('compilations').where({ id: compilationId }).update({
+      record_ids: JSON.stringify(recordIds),
+      compiled_summary: JSON.stringify(compiledSummary),
+      submitted_by: userId,
+    });
+  } else {
+    compilationId = uuidv4();
+    await db('compilations').insert({
+      id: compilationId,
+      source_level: 'DISTRICT',
+      target_level: 'HQ',
+      route: 'OPS_CHAIN',
+      source_entity_id: districtId,
+      period,
+      status: 'DRAFT',
+      record_ids: JSON.stringify(recordIds),
+      compiled_summary: JSON.stringify(compiledSummary),
+      submitted_by: userId,
+    });
+  }
 
   const created = await db('compilations').where({ id: compilationId }).first();
   return parseSummary(created);

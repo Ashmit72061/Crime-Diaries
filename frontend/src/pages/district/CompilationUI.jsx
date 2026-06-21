@@ -18,29 +18,19 @@ const REPORTS = [
   { tableName: "excel_9arrested_efir_theft",       label: "Arrested - E-FIR Theft",            type: "list",    num: 9  },
   { tableName: "excel_10arrested_efir_mv_theft",   label: "Arrested - E-FIR MV Theft",         type: "list",    num: 10 },
   { tableName: "excel_11proclaimed_offenders",     label: "Proclaimed Offenders",              type: "list",    num: 11 },
-  { tableName: "excel_12listed_criminals_action",  label: "Listed Criminals Action",           type: "list",    num: 12 },
   { tableName: "excel_13arrested_24_hrs_list",     label: "Arrested - Last 24 Hrs",            type: "list",    num: 13 },
   { tableName: "excel_14pi_disposal_manual",       label: "PI Disposal - Manual",              type: "list",    num: 14 },
   { tableName: "excel_15pi_disposal_eproperty",    label: "PI Disposal - E-Property",          type: "list",    num: 15 },
   { tableName: "excel_16pi_disposal_emvt",         label: "PI Disposal - E-MVT",               type: "list",    num: 16 },
-  { tableName: "excel_17juveniles_conflict_law",   label: "Juveniles in Conflict with Law",    type: "list",    num: 17 },
   { tableName: "excel_18missing_persons",          label: "Missing Persons",                   type: "list",    num: 18 },
   { tableName: "excel_19uidb",                     label: "UIDB (Unidentified Bodies)",        type: "list",    num: 19 },
   { tableName: "excel_20abandoned_persons",        label: "Abandoned Persons",                 type: "list",    num: 20 },
   { tableName: "excel_21traced_persons",           label: "Traced Persons",                    type: "list",    num: 21 },
   { tableName: "excel_22women_missing",            label: "Women Missing",                     type: "summary", num: 22 },
   { tableName: "excel_23children_missing",         label: "Children Missing",                  type: "summary", num: 23 },
-  { tableName: "excel_24preventive_action",        label: "Preventive Action",                 type: "list",    num: 24 },
   { tableName: "excel_25inquest_registered",       label: "Inquest Registered",                type: "list",    num: 25 },
   { tableName: "excel_26inquest_acpsdm_disposal",  label: "Inquest ACP/SDM Disposal",          type: "list",    num: 26 },
-  { tableName: "excel_27important_cases",          label: "Important Cases",                   type: "list",    num: 27 },
   { tableName: "excel_28fir_goswara_summary",      label: "FIR Goswara Summary",               type: "summary", num: 28 },
-  { tableName: "excel_29financial_fraud_arrest",   label: "Financial Fraud Arrest",            type: "list",    num: 29 },
-  { tableName: "excel_30patrolling_checking",      label: "Patrolling / Checking",             type: "summary", num: 30 },
-  { tableName: "excel_31ndps_action",              label: "NDPS Action",                       type: "summary", num: 31 },
-  { tableName: "excel_32servant_verification",     label: "Servant Verification",              type: "summary", num: 32 },
-  { tableName: "excel_33mobile_recovered_ps",      label: "Mobile Recovered - PS",             type: "list",    num: 33 },
-  { tableName: "excel_34mobile_recovered_summary", label: "Mobile Recovered Summary",          type: "summary", num: 34 },
 ];
 
 const MOCK_PS_LIST = [
@@ -155,10 +145,17 @@ export default function CompilationUI() {
   });
 
   const handleCompileTrigger = async () => {
-    // 1. Trigger DB compilation tracking
-    createCompMutation.mutate(compileDate);
+    // 1. Persist compilation first so record_ids are in the DB before the export fetch runs.
+    // mutateAsync propagates errors; catch here so a failed compilation (e.g. no
+    // DISTRICT_REVIEW records) still falls through to date-based export rather than
+    // aborting silently. The onError handler already shows the toast.
+    try {
+      await createCompMutation.mutateAsync(compileDate);
+    } catch {
+      // onError toast already shown; continue to export with date-based fallback
+    }
 
-    // 2. Perform Excel report export & download flow
+    // 2. Perform Excel report export & download using native fetch (avoids axios interceptor issues with binary blobs)
     try {
       const params = new URLSearchParams();
       params.set('date', compileDate);
@@ -169,19 +166,37 @@ export default function CompilationUI() {
         params.set('tableNames', Array.from(selectedFields).join(','));
       }
 
-      const response = await api.get(`/daily-diary/export?${params.toString()}`, {
-        responseType: 'blob'
+      const token = localStorage.getItem('access_token');
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const fetchUrl = `${BASE_URL}/daily-diary/export?${params.toString()}`;
+
+      const response = await fetch(fetchUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        credentials: 'include',
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[CompilationUI] Export error response:', errText);
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const psSuffix = selectedPS ? `_${selectedPS.code}` : '_All_Stations';
       link.setAttribute('download', `Daily_Diary_${compileDate}${psSuffix}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => {
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }, 500);
 
       toast.success('Daily Diary Excel spreadsheet downloaded successfully!');
     } catch (err) {
@@ -338,7 +353,7 @@ export default function CompilationUI() {
                 <FileText size={14} className="text-[#cca43b] shrink-0" />
                 <span className="truncate text-left">
                   {selectedFields.size === REPORTS.length 
-                    ? 'All Reports (34/34)' 
+                    ? 'All Reports (24/24)' 
                     : `${selectedFields.size} Reports Selected`}
                 </span>
               </div>

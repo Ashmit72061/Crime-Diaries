@@ -181,7 +181,10 @@ export default function DynamicForm({
       if (field.show_when) {
         const { field: targetField, value: targetValue } = field.show_when;
         const currentValue = currentValues[targetField];
-        if (String(currentValue || '').toLowerCase() !== String(targetValue || '').toLowerCase()) {
+        const isMatch = Array.isArray(targetValue)
+          ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
+          : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
+        if (!isMatch) {
           return;
         }
       }

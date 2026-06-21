@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Select, Button, Space, Table, Typography, Spin, Alert, message, Progress, Tabs } from 'antd';
+import { Card, Row, Col, Select, Button, Space, Table, Typography, Spin, Alert, message, Progress, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import api from '../../utils/api.js';
 import {
   FileSpreadsheet,
   FileText,
@@ -15,7 +15,7 @@ import {
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 
-import MultiSheetReportBuilder from './MultiSheetReportBuilder';
+import ReportBuilder from './ReportBuilder';
 
 export const ReportsPage = () => {
   const { t } = useTranslation();
@@ -32,7 +32,7 @@ export const ReportsPage = () => {
   const fetchTemplates = async () => {
     setLoadingTemplates(true);
     try {
-      const res = await axios.get('/api/v1/reports/templates');
+      const res = await api.get('/reports/templates');
       setTemplates(res.data.data.templates || []);
     } catch (err) {
       console.error('Failed to fetch templates:', err);
@@ -49,20 +49,34 @@ export const ReportsPage = () => {
   const handleExcelExport = async () => {
     setExportLoading(true);
     try {
-      const token = localStorage.getItem('pharos_token');
-      // Request file stream using fetch/axios with responseType blob
-      const res = await axios.get(`/api/v1/analytics/export?recordType=${exportType.toLowerCase()}`, {
-        responseType: 'blob'
+      const token = localStorage.getItem('access_token');
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const fetchUrl = `${BASE_URL}/analytics/export?recordType=${exportType.toLowerCase()}`;
+
+      const response = await fetch(fetchUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        credentials: 'include',
       });
-      
-      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `Pharos_${exportType}_Export.xlsx`);
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      setTimeout(() => {
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }, 500);
       message.success('Excel Sheet exported successfully');
     } catch (err) {
       console.error('Excel export failed:', err);
@@ -76,7 +90,7 @@ export const ReportsPage = () => {
     setGeneratingTemplateId(templateId);
     setGenerationProgress(10);
     try {
-      const res = await axios.post('/api/v1/reports/generate', {
+      const res = await api.post('/reports/generate', {
         template_id: templateId,
         format: 'PDF',
         filters: { recordType: 'CASES' } // standard default filter
@@ -99,7 +113,7 @@ export const ReportsPage = () => {
       setGenerationProgress(progress);
       
       try {
-        const res = await axios.get(`/api/v1/reports/status/${jobId}`);
+        const res = await api.get(`/reports/status/${jobId}`);
         const job = res.data.data.job;
         
         if (job.status === 'READY') {
@@ -108,7 +122,7 @@ export const ReportsPage = () => {
           message.success('PDF document compiled successfully');
           
           // Trigger file download
-          window.open(`/api/v1/reports/download/${jobId}`, '_blank');
+          window.open(`${api.defaults.baseURL}/reports/download/${jobId}`, '_blank');
           
           setTimeout(() => {
             setGeneratingTemplateId(null);
@@ -199,7 +213,7 @@ export const ReportsPage = () => {
         items={[
           {
             key: '1',
-            label: 'Standard District Reports',
+            label: 'Defined Templates',
             children: (
               <Row gutter={[24, 24]}>
                 {/* Spreadsheet Export Card */}
@@ -284,8 +298,8 @@ export const ReportsPage = () => {
           },
           {
             key: '2',
-            label: 'Custom Multi-Sheet Workbooks',
-            children: <MultiSheetReportBuilder />
+            label: 'Customize Report',
+            children: <ReportBuilder />
           }
         ]}
       />
