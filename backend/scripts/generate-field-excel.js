@@ -146,7 +146,6 @@ const ALL_FIELDS = [
   { id:'C_4',  field_key:'gd_date',             field_type:'DATE',     record_type:'CASE', label_en:'GD Date',                      section:'general_info',             sort_order:4  },
   { id:'C_5',  field_key:'gd_time',             field_type:'TIME',     record_type:'CASE', label_en:'GD Time',                      section:'general_info',             sort_order:5  },
   { id:'C_6',  field_key:'beat_no',             field_type:'TEXT',     record_type:'CASE', label_en:'Beat No.',                     section:'general_info',             sort_order:6  },
-  { id:'C_39', field_key:'case_reg_type',       field_type:'SELECT',   record_type:'CASE', label_en:'Case Registration Type (v2)',  section:'general_info',             sort_order:0  },
   { id:'C_7',  field_key:'occurrence_date',     field_type:'DATE',     record_type:'CASE', label_en:'Date of Occurrence',           section:'incident_details',         sort_order:7  },
   { id:'C_26', field_key:'time_of_occurrence',  field_type:'TIME',     record_type:'CASE', label_en:'Time of Occurrence',           section:'incident_details',         sort_order:26 },
   { id:'C_8',  field_key:'occurrence_place',    field_type:'TEXT',     record_type:'CASE', label_en:'Place of Occurrence',          section:'incident_details',         sort_order:8  },
@@ -154,14 +153,10 @@ const ALL_FIELDS = [
   { id:'C_10', field_key:'act_name',            field_type:'TEXT',     record_type:'CASE', label_en:'Act / Law Name',               section:'incident_details',         sort_order:10 },
   { id:'C_11', field_key:'sections',            field_type:'TEXT',     record_type:'CASE', label_en:'Sections',                     section:'incident_details',         sort_order:11 },
   { id:'C_12', field_key:'brief_facts',         field_type:'TEXTAREA', record_type:'CASE', label_en:'Brief Facts of the Case',      section:'incident_details',         sort_order:12 },
-  { id:'C_13', field_key:'complainant_name',    field_type:'TEXT',     record_type:'CASE', label_en:'Complainant Name',             section:'complainant_accused_info',  sort_order:13 },
-  { id:'C_14', field_key:'complainant_address', field_type:'TEXT',     record_type:'CASE', label_en:'Complainant Address',          section:'complainant_accused_info',  sort_order:14 },
-  { id:'C_30', field_key:'complainant_parent_name', field_type:'TEXT', record_type:'CASE', label_en:'Complainant Parent Name',     section:'complainant_accused_info',  sort_order:14 },
-  { id:'C_35', field_key:'complainant_age',     field_type:'NUMBER',   record_type:'CASE', label_en:'Complainant Age',              section:'complainant_accused_info',  sort_order:15 },
-  { id:'C_15', field_key:'accused_name',        field_type:'TEXT',     record_type:'CASE', label_en:'Accused Name',                 section:'complainant_accused_info',  sort_order:15 },
-  { id:'C_16', field_key:'accused_address',     field_type:'TEXT',     record_type:'CASE', label_en:'Accused Address',              section:'complainant_accused_info',  sort_order:16 },
-  { id:'C_31', field_key:'accused_parent_name', field_type:'TEXT',     record_type:'CASE', label_en:'Accused Parent Name',          section:'complainant_accused_info',  sort_order:16 },
-  { id:'C_32', field_key:'accused_age',         field_type:'NUMBER',   record_type:'CASE', label_en:'Accused Age',                  section:'complainant_accused_info',  sort_order:17 },
+  { id:'C_13', field_key:'complainant_name',    field_type:'TEXT',     record_type:'CASE', label_en:'Complainant Name',             section:'complainant_info',         sort_order:13 },
+  { id:'C_14', field_key:'complainant_address', field_type:'TEXT',     record_type:'CASE', label_en:'Complainant Address',          section:'complainant_info',         sort_order:14 },
+  { id:'C_30', field_key:'complainant_parent_name', field_type:'TEXT', record_type:'CASE', label_en:'Complainant Parent Name',     section:'complainant_info',         sort_order:15 },
+  { id:'C_35', field_key:'complainant_age',     field_type:'NUMBER',   record_type:'CASE', label_en:'Complainant Age',              section:'complainant_info',         sort_order:16 },
   { id:'C_17', field_key:'io_name',             field_type:'TEXT',     record_type:'CASE', label_en:'Name of IO',                   section:'investigation_officer',     sort_order:17 },
   { id:'C_18', field_key:'io_pis',              field_type:'TEXT',     record_type:'CASE', label_en:'PIS No. of IO',                section:'investigation_officer',     sort_order:18 },
   { id:'C_19', field_key:'io_mobile',           field_type:'TEXT',     record_type:'CASE', label_en:'IO Mobile No.',                section:'investigation_officer',     sort_order:19 },
@@ -174,10 +169,10 @@ const ALL_FIELDS = [
   { id:'C_36', field_key:'recovered_property_status', field_type:'SELECT', record_type:'CASE', label_en:'Property Status (Recovered)', section:'recovered_property',    sort_order:343},
   { id:'C_37', field_key:'recovered_case_status', field_type:'SELECT', record_type:'CASE', label_en:'Case Status (Recovered)',     section:'recovered_property',       sort_order:344},
   { id:'C_38', field_key:'recovered_remarks',   field_type:'TEXTAREA', record_type:'CASE', label_en:'Remarks (Recovered)',          section:'recovered_property',       sort_order:345},
-  { id:'C_24', field_key:'cctns_flag',          field_type:'BOOLEAN',  record_type:'CASE', label_en:'CCTNS Flag',                   section:'intranet_flags',           sort_order:24 },
-  { id:'C_25', field_key:'zero_fir_flag',       field_type:'BOOLEAN',  record_type:'CASE', label_en:'Zero FIR',                     section:'intranet_flags',           sort_order:25 },
 
   // ── ARREST ────────────────────────────────────────────────────────────────
+  { id:'A_AF1', field_key:'district',           field_type:'AUTO_FILL', record_type:'ARREST',  label_en:'District (Auto-filled)',       section:'system_fields',           sort_order:-3 },
+  { id:'A_AF2', field_key:'policeStation',      field_type:'AUTO_FILL', record_type:'ARREST',  label_en:'Police Station (Auto-filled)', section:'system_fields',           sort_order:-2 },
   { id:'A_0',  field_key:'uid',                field_type:'SYSTEM',   record_type:'ARREST',   label_en:'System UID (Auto-assigned)',   section:'system_fields',            sort_order:-1 },
   { id:'A_1',  field_key:'linked_fir_dd_no',   field_type:'TEXT',     record_type:'ARREST', label_en:'Linked FIR / DD No.',         section:'general_info',    sort_order:1  },
   { id:'A_2',  field_key:'act_name',            field_type:'TEXT',     record_type:'ARREST', label_en:'Act / Law Name',              section:'offence_info',    sort_order:2  },
@@ -209,6 +204,8 @@ const ALL_FIELDS = [
   { id:'A_28', field_key:'io_mobile',           field_type:'TEXT',     record_type:'ARREST', label_en:'Contact of IO',               section:'procedure_slips', sort_order:26 },
 
   // ── PCR_CALL ──────────────────────────────────────────────────────────────
+  { id:'P_AF1', field_key:'district',          field_type:'AUTO_FILL', record_type:'PCR_CALL', label_en:'District (Auto-filled)',       section:'system_fields',            sort_order:-3 },
+  { id:'P_AF2', field_key:'policeStation',     field_type:'AUTO_FILL', record_type:'PCR_CALL', label_en:'Police Station (Auto-filled)', section:'system_fields',            sort_order:-2 },
   { id:'P_0',  field_key:'uid',                field_type:'SYSTEM',   record_type:'PCR_CALL', label_en:'System UID (Auto-assigned)',   section:'system_fields',            sort_order:-1 },
   { id:'P_1',  field_key:'pcr_no',              field_type:'TEXT',     record_type:'PCR_CALL', label_en:'PCR Number',               section:'informant_contact',  sort_order:1  },
   { id:'P_2',  field_key:'gd_no',               field_type:'TEXT',     record_type:'PCR_CALL', label_en:'GD Number',                section:'informant_contact',  sort_order:2  },
@@ -224,6 +221,8 @@ const ALL_FIELDS = [
   { id:'P_12', field_key:'occurrence_place',    field_type:'TEXT',     record_type:'PCR_CALL', label_en:'Place of Occurrence',      section:'arrival_geo',        sort_order:12 },
 
   // ── MISSING ───────────────────────────────────────────────────────────────
+  { id:'MS_AF1', field_key:'district',         field_type:'AUTO_FILL', record_type:'MISSING',  label_en:'District (Auto-filled)',       section:'system_fields',            sort_order:-3 },
+  { id:'MS_AF2', field_key:'policeStation',    field_type:'AUTO_FILL', record_type:'MISSING',  label_en:'Police Station (Auto-filled)', section:'system_fields',            sort_order:-2 },
   { id:'MS_0', field_key:'uid',                field_type:'SYSTEM',   record_type:'MISSING',  label_en:'System UID (Auto-assigned)',   section:'system_fields',            sort_order:-1 },
   { id:'MS_1', field_key:'dd_no',               field_type:'TEXT',     record_type:'MISSING', label_en:'DD Number',                section:'general_info',         sort_order:1  },
   { id:'MS_2', field_key:'dd_date',             field_type:'DATE',     record_type:'MISSING', label_en:'DD Date',                  section:'general_info',         sort_order:2  },
@@ -255,6 +254,8 @@ const ALL_FIELDS = [
   { id:'MS_14',field_key:'status',              field_type:'SELECT',   record_type:'MISSING', label_en:'Current Status',           section:'contacts_assigned',    sort_order:14 },
 
   // ── UIDB ──────────────────────────────────────────────────────────────────
+  { id:'U_AF1', field_key:'district',          field_type:'AUTO_FILL', record_type:'UIDB',    label_en:'District (Auto-filled)',       section:'system_fields',            sort_order:-3 },
+  { id:'U_AF2', field_key:'policeStation',     field_type:'AUTO_FILL', record_type:'UIDB',    label_en:'Police Station (Auto-filled)', section:'system_fields',            sort_order:-2 },
   { id:'U_0',  field_key:'uid',                field_type:'SYSTEM',   record_type:'UIDB',     label_en:'System UID (Auto-assigned)',   section:'system_fields',            sort_order:-1 },
   { id:'U_0B', field_key:'uidb_gazette_no',    field_type:'TEXT',     record_type:'UIDB',     label_en:'UIDB Gazette Number (Manual)',section:'general_info',             sort_order:0  },
   { id:'U_1',  field_key:'dd_no',               field_type:'TEXT',     record_type:'UIDB', label_en:'DD Number',                  section:'general_info',     sort_order:1  },
