@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useFormSchema } from '../../hooks/useFormSchema.js';
@@ -9,6 +9,7 @@ import { useAutosave } from '../../hooks/useAutosave.js';
 import useAuthStore from '../../store/authStore.js';
 import { findNodeById } from '../../utils/hierarchyData.js';
 import { useQuery } from '@tanstack/react-query';
+import api from '../../utils/api.js';
 
 import FormSection from './FormSection.jsx';
 import FormToolbar from './FormToolbar.jsx';
@@ -52,6 +53,16 @@ function StepDot({ index, active, completed, hasError, title, onClick }) {
   );
 }
 
+const MOCK_FIR_LIST = [
+  { fir_no: '104/2026', fir_date: '2026-06-20', complainant_name: 'Ramesh Singh', police_station: 'Parliament Street', crime_head: 'House Theft', sections: 'Sec 379 IPC' },
+  { fir_no: '112/2026', fir_date: '2026-06-19', complainant_name: 'Sunita Devi', police_station: 'Chanakyapuri', crime_head: 'Murder', sections: 'Sec 302 IPC' },
+  { fir_no: '125/2026', fir_date: '2026-06-18', complainant_name: 'Amit Kumar', police_station: 'Mandir Marg', crime_head: 'Simple Hurt', sections: 'Sec 323 IPC' },
+  { fir_no: '150/2026', fir_date: '2026-06-21', complainant_name: 'Gurpreet Singh', police_station: 'Tughlak Road', crime_head: 'Cheating', sections: 'Sec 406 IPC' },
+  { fir_no: '201/2026', fir_date: '2026-06-21', complainant_name: 'Vikram Singh', police_station: 'Parliament Street', crime_head: 'Robbery', sections: 'Sec 392 IPC' },
+  { fir_no: '88/2026', fir_date: '2026-06-20', complainant_name: 'Manish Sharma', police_station: 'Chanakyapuri', crime_head: 'Delhi Excise Act', sections: 'Sec 33/38 Excise Act' },
+  { fir_no: '92/2026', fir_date: '2026-06-20', complainant_name: 'Priyanka Sen', police_station: 'Mandir Marg', crime_head: 'Snatching', sections: 'Sec 356/379 IPC' },
+];
+
 /**
  * DynamicForm
  *
@@ -78,13 +89,25 @@ export default function DynamicForm({
   const { schema, isLoading, isError, schemaError } = useFormSchema(recordType);
   const activeRecordIdRef = useRef(initialValues?.id || null);
 
+  // FIR Search State
+  const [searchDate, setSearchDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
   // Fetch existing cases to populate FIR dropdown dynamically
   const { data: casesData = [] } = useQuery({
     queryKey: ['records', 'cases-list'],
     queryFn: async () => {
       try {
         const res = await api.get('/records');
-        const cases = res.data?.data?.cases || res.data?.cases || [];
+        const payload = res.data?.data;
+        let cases = [];
+        if (payload?.cases) cases = payload.cases;
+        else if (payload?.queue) cases = payload.queue;
+        else if (Array.isArray(payload)) cases = payload;
+        else if (Array.isArray(res.data)) cases = res.data;
         return cases.filter(c => c.record_type === 'CASE');
       } catch (err) {
         console.error('Failed to load cases', err);
@@ -93,6 +116,231 @@ export default function DynamicForm({
     },
     enabled: recordType === 'ARREST' && caseType === 'against_fir',
   });
+
+  const handleFirSearch = () => {
+    if (!searchDate) {
+      setSearchError(lang === 'hi' ? 'एफआईआर दिनांक चुनना अनिवार्य है।' : 'FIR Date is required.');
+      return;
+    }
+    setSearchError('');
+    
+    // Combine frontend mock cases & backend casesData
+    const unifiedCases = [
+      ...MOCK_FIR_LIST,
+      ...(casesData || []).map(c => ({
+        fir_no: c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`,
+        fir_date: c.data?.fir_date || c.fir_date || c.record_date,
+        complainant_name: c.data?.complainant_name || c.complainant_name || 'N/A',
+        police_station: c.data?.police_station || c.police_station || 'Unknown',
+        crime_head: c.data?.local_head || c.data?.crime_head || c.local_head || c.crime_head || 'N/A',
+        sections: c.data?.sections || c.sections || 'N/A',
+        isBackend: true
+      }))
+    ];
+
+    // Filter unified list
+    const filtered = unifiedCases.filter(c => {
+      // Date exact match
+      const cDate = c.fir_date ? c.fir_date.substring(0, 10) : '';
+      const sDate = searchDate.substring(0, 10);
+      if (cDate !== sDate) return false;
+
+      // Query (complainant name or FIR no) match
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesComplainant = c.complainant_name ? c.complainant_name.toLowerCase().includes(q) : false;
+        const matchesFirNo = c.fir_no ? c.fir_no.toLowerCase().includes(q) : false;
+        if (!matchesComplainant && !matchesFirNo) return false;
+      }
+      return true;
+    });
+
+    setSearchResults(filtered);
+    setHasSearched(true);
+  };
+
+  const renderFirSearchStep = () => {
+    const title = lang === 'hi' ? 'प्राथमिकी (FIR) खोजें और लिंक करें' : 'Search & Link First Information Report (FIR)';
+    const dateLabel = lang === 'hi' ? 'प्राथमिकी दिनांक (FIR Date) *' : 'FIR Date *';
+    const queryLabel = lang === 'hi' ? 'शिकायतकर्ता का नाम / प्राथमिकी संख्या (वैकल्पिक)' : 'Complainant Name / FIR No. (Optional)';
+    const queryPlaceholder = lang === 'hi' ? 'खोजने के लिए लिखें...' : 'Type to search...';
+    const btnText = lang === 'hi' ? 'प्राथमिकी खोजें' : 'Search FIR';
+    
+    return (
+      <div className="space-y-6">
+        {/* Search Panel Card */}
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
+                {currentStep + 1}
+              </span>
+              <h2 className="text-base font-bold text-slate-800 tracking-wide font-display">
+                {title}
+              </h2>
+            </div>
+            {readOnly && (
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
+                {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
+              </span>
+            )}
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Mandatory Date Field */}
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 tracking-wide">
+                  <Calendar size={14} className="text-slate-400" />
+                  <span>{dateLabel}</span>
+                </label>
+                <input
+                  type="date"
+                  disabled={readOnly}
+                  value={searchDate}
+                  onChange={(e) => {
+                    setSearchDate(e.target.value);
+                    if (searchError) setSearchError('');
+                  }}
+                  className={`w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all ${
+                    searchError ? 'border-red-400 focus:border-red-500 bg-red-50' : ''
+                  }`}
+                />
+                {searchError && (
+                  <span className="flex items-center gap-1 text-xs text-red-500 font-medium mt-1">
+                    <AlertCircle size={12} className="flex-shrink-0" />
+                    {searchError}
+                  </span>
+                )}
+              </div>
+
+              {/* Optional Name / FIR No Field */}
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 tracking-wide">
+                  <Search size={14} className="text-slate-400" />
+                  <span>{queryLabel}</span>
+                </label>
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={queryPlaceholder}
+                  className="w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+
+            {/* Action button */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={handleFirSearch}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[var(--accent-color)] hover:bg-[var(--accent-color)]/90 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[var(--accent-glow)] active:scale-95 cursor-pointer"
+              >
+                <Search size={16} />
+                <span>{btnText}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Card */}
+        {hasSearched && (
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-300">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 tracking-wide flex items-center gap-2 font-display">
+                <Database size={16} className="text-[var(--accent-color)]" />
+                <span>
+                  {lang === 'hi' ? 'खोज परिणाम' : 'Search Results'} ({searchResults.length})
+                </span>
+              </h3>
+            </div>
+
+            {searchResults.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-slate-400 gap-2">
+                <AlertCircle size={28} className="text-slate-300" />
+                <p className="text-sm font-bold">
+                  {lang === 'hi' ? 'कोई परिणाम नहीं मिला' : 'No FIR records found'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {lang === 'hi' ? 'कृपया अलग तिथि या शिकायतकर्ता नाम आज़माएं।' : 'Try using a different date or checking the complainant details.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-400 text-[11px] font-extrabold uppercase tracking-wider">
+                      <th className="px-6 py-3.5">{lang === 'hi' ? 'प्राथमिकी संख्या' : 'FIR Number'}</th>
+                      <th className="px-6 py-3.5">{lang === 'hi' ? 'दिनांक' : 'Date'}</th>
+                      <th className="px-6 py-3.5">{lang === 'hi' ? 'शिकायतकर्ता' : 'Complainant'}</th>
+                      <th className="px-6 py-3.5">{lang === 'hi' ? 'थाना' : 'Police Station'}</th>
+                      <th className="px-6 py-3.5">{lang === 'hi' ? 'अपराध शीर्ष' : 'Crime Head'}</th>
+                      <th className="px-6 py-3.5">{lang === 'hi' ? 'धाराएं' : 'Sections'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {searchResults.map((row) => {
+                      const isSelected = values.selected_fir === row.fir_no;
+                      return (
+                        <tr
+                          key={row.fir_no}
+                          onClick={() => {
+                            if (readOnly) return;
+                            handleChange('selected_fir', row.fir_no);
+                          }}
+                          className={`group cursor-pointer hover:bg-slate-50/80 transition-all ${
+                            isSelected
+                              ? 'bg-[var(--accent-glow)] hover:bg-[var(--accent-glow)]'
+                              : ''
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                                isSelected
+                                  ? 'border-[var(--accent-color)] bg-[var(--accent-color)] text-white scale-110'
+                                  : 'border-slate-300 bg-white group-hover:border-slate-400'
+                              }`}>
+                                {isSelected && <Check size={10} className="stroke-[3]" />}
+                              </span>
+                              <span className={`text-sm font-bold ${
+                                isSelected ? 'text-[var(--accent-color)] font-extrabold' : 'text-slate-800'
+                              }`}>
+                                {row.fir_no}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                            {row.fir_date}
+                          </td>
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-700">
+                            {row.complainant_name}
+                          </td>
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-500">
+                            {row.police_station}
+                          </td>
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                            {row.crime_head}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-slate-500 font-mono">
+                            {row.sections}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+
+      </div>
+    );
+  };
 
   const firOptions = React.useMemo(() => {
     return (casesData || []).map(c => {
@@ -532,17 +780,21 @@ export default function DynamicForm({
               when navigating between steps. The submit action is wired via
               an explicit onClick on the Submit button in FormToolbar. */}
           <form onSubmit={(e) => e.preventDefault()} noValidate>
-            <FormSection
-              section={activeSection}
-              currentStep={currentStep}
-              values={values}
-              errors={errors}
-              touched={touched}
-              handleChange={handleChange}
-              readOnly={readOnly}
-              targetFields={targetFields}
-              lang={lang}
-            />
+            {recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0 ? (
+              renderFirSearchStep()
+            ) : (
+              <FormSection
+                section={activeSection}
+                currentStep={currentStep}
+                values={values}
+                errors={errors}
+                touched={touched}
+                handleChange={handleChange}
+                readOnly={readOnly}
+                targetFields={targetFields}
+                lang={lang}
+              />
+            )}
           </form>
 
           {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
