@@ -27,16 +27,22 @@ const parseJsonField = (val) => {
   return val;
 };
 
+const TYPE_CODES = {
+  CASE: 'CSE', ARREST: 'ARR', PCR_CALL: 'PCR', MISSING: 'MSP', UIDB: 'UDB'
+};
+
 const generateUID = async (recordType, psId, dateStr, trx = db) => {
   const ps = await trx('hierarchy_nodes').where({ id: psId }).first();
-  const psCode = ps?.code || 'PS';
-  const cleanDate = dateStr.replace(/[^0-9]/g, ''); // YYYYMMDD
+  const psCode = ps?.code || 'PS000';
+  const year = String(new Date(dateStr).getFullYear());
+  const typeCode = TYPE_CODES[recordType] || recordType.substring(0, 3).toUpperCase();
   const countRow = await trx('records')
     .where({ ps_id: psId, record_type: recordType })
+    .whereRaw('EXTRACT(YEAR FROM record_date::date) = ?', [parseInt(year)])
     .count('* as count')
     .first();
-  const seq = String((parseInt(countRow.count, 10) || 0) + 1).padStart(4, '0');
-  return `${recordType}-${psCode}-${cleanDate}-${seq}`;
+  const seq = String((parseInt(countRow.count, 10) || 0) + 1).padStart(6, '0');
+  return `${typeCode}/${year}/${psCode}/${seq}`;
 };
 
 const validateSelectFields = async (trx, recordType, data) => {
