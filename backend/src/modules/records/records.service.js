@@ -32,7 +32,7 @@ const TYPE_CODES = {
   CASE: 'CSE', ARREST: 'ARR', PCR_CALL: 'PCR', MISSING: 'MSP', UIDB: 'UDB'
 };
 
-const generateUID = async (recordType, psId, dateStr, trx = db) => {
+export const generateUID = async (recordType, psId, dateStr, trx = db) => {
   const ps = await trx('hierarchy_nodes').where({ id: psId }).first();
   const psCode = ps?.code || 'PS000';
   const year = String(new Date(dateStr).getFullYear());

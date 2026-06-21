@@ -125,7 +125,7 @@ async function run() {
     assert(recordId !== undefined, 'Response payload contains record UUID identifier');
     
     const createdUID = createRes.data.data.uid;
-    assert(createdUID.startsWith('CASES-PS_'), 'System correctly auto-generates sequential UID format');
+    assert(/^[A-Z]{3}\/\d{4}\/[A-Za-z0-9_]+\/\d{6}$/.test(createdUID), 'System correctly auto-generates sequential UID format');
 
     // Update Draft Record
     const updateRes = await axios.put(`${baseURL}/records/${recordId}`, {

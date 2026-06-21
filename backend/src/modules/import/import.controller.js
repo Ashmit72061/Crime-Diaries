@@ -6,6 +6,9 @@ import ExcelJS from 'exceljs';
 import { publish } from '../../events/eventBus.js';
 import { computeRowHash } from '../../utils/hash.js';
 import { logger } from '../../utils/logger.js';
+import { generateUID } from '../records/records.service.js';
+import { createLink } from '../record-links/record-links.service.js';
+
 
 // Helper to check if a field is required
 const isRequired = (field) => {
@@ -116,6 +119,298 @@ const getHint = (field) => {
   }
   return `${reqStr}${field.field_type.toLowerCase()}`;
 };
+
+const CASE_CUSTOM_MAPPINGS = {
+  'local head': 'local_head',
+  'local head (crime)': 'local_head',
+  'fir no.': 'fir_no',
+  'fir no': 'fir_no',
+  'fir number': 'fir_no',
+  'fir date': 'fir_date',
+  'under section': 'sections',
+  'sections': 'sections',
+  'date of occurance': 'occurrence_date',
+  'date of occurrence': 'occurrence_date',
+  'place of occurance': 'occurrence_place',
+  'place of occurrence': 'occurrence_place',
+  'brief fact of the case': 'brief_facts',
+  'brief facts of the case': 'brief_facts',
+  'property (stolen)': 'stolen_property',
+  'property description': 'stolen_property',
+  'property (recovered)': 'recovered_property',
+  'recovery property': 'recovered_property',
+  'name of complainant': 'complainant_name',
+  'complainant name': 'complainant_name',
+  'present address of complainant': 'complainant_address',
+  'complainant address': 'complainant_address',
+  'name of io name': 'io_name',
+  'name of io': 'io_name',
+};
+
+const ARREST_CUSTOM_MAPPINGS = {
+  'local head': 'crime_head',
+  'crime head': 'crime_head',
+  'fir no. (legacy only)': 'linked_fir_dd_no',
+  'linked fir / dd no.': 'linked_fir_dd_no',
+  'under section': 'sections',
+  'sections': 'sections',
+  'date of arrest': 'arrest_date',
+  'name of io name': 'io_name',
+  'name of io': 'io_name',
+  'property (recovered)': 'recovery',
+  'recovery': 'recovery',
+  'name of arrested person': 'arrested_name',
+  'address of arrested': 'arrested_address',
+  'name & address of accused': 'name_and_address_of_accused'
+};
+
+const buildColumnMap = (worksheet, recordType, registryFields) => {
+  const row1Values = [];
+  const row2Values = [];
+  worksheet.getRow(1).eachCell({ includeEmpty: true }, (cell) => {
+    row1Values.push(cell.value ? String(cell.value).trim() : '');
+  });
+  worksheet.getRow(2).eachCell({ includeEmpty: true }, (cell) => {
+    row2Values.push(cell.value ? String(cell.value).trim() : '');
+  });
+
+  const registryKeysSet = new Set(registryFields.map(f => f.field_key));
+
+  let hasHiddenKeys = false;
+  let matchingKeysCount = 0;
+  row1Values.forEach(val => {
+    if (registryKeysSet.has(val)) matchingKeysCount++;
+  });
+  if (matchingKeysCount >= 3) {
+    hasHiddenKeys = true;
+  }
+
+  const colMap = {};
+  let dataStartRow = 4;
+
+  if (hasHiddenKeys) {
+    row1Values.forEach((val, idx) => {
+      const colIdx = idx + 1;
+      if (val) colMap[colIdx] = val;
+    });
+  } else {
+    let headerRowIdx = 1;
+    let headerValues = row1Values;
+
+    let row1Matches = 0;
+    let row2Matches = 0;
+
+    const mappings = recordType === 'CASE' ? CASE_CUSTOM_MAPPINGS : ARREST_CUSTOM_MAPPINGS;
+
+    row1Values.forEach(val => {
+      const normVal = String(val).toLowerCase().trim();
+      if (mappings[normVal] || registryKeysSet.has(normVal)) row1Matches++;
+    });
+
+    row2Values.forEach(val => {
+      const normVal = String(val).toLowerCase().trim();
+      if (mappings[normVal] || registryKeysSet.has(normVal)) row2Matches++;
+    });
+
+    if (row2Matches > row1Matches) {
+      headerRowIdx = 2;
+      headerValues = row2Values;
+      dataStartRow = 3;
+    } else {
+      dataStartRow = 2;
+    }
+
+    headerValues.forEach((val, idx) => {
+      const colIdx = idx + 1;
+      if (!val) return;
+      const cleanVal = String(val).trim();
+      const normVal = cleanVal.toLowerCase();
+
+      if (mappings[normVal]) {
+        colMap[colIdx] = mappings[normVal];
+        return;
+      }
+
+      if (registryKeysSet.has(cleanVal)) {
+        colMap[colIdx] = cleanVal;
+        return;
+      }
+
+      const fieldByLabel = registryFields.find(f => 
+        String(f.label_en || '').toLowerCase().trim() === normVal ||
+        String(f.label_hi || '').toLowerCase().trim() === normVal
+      );
+      if (fieldByLabel) {
+        colMap[colIdx] = fieldByLabel.field_key;
+        return;
+      }
+      
+      colMap[colIdx] = normVal;
+    });
+  }
+
+  return { colMap, dataStartRow, hasHiddenKeys };
+};
+
+const parseFirAndYear = (str) => {
+  if (!str) return { firNo: '', year: null };
+  const clean = String(str).trim();
+  const match = clean.match(/(?:FIR[- ]*)?(\d+)\/(\d+)/i);
+  if (match) {
+    let seq = match[1];
+    let yr = match[2];
+    if (yr.length === 2) {
+      yr = '20' + yr;
+    }
+    return { firNo: seq, year: parseInt(yr, 10) };
+  }
+  const simpleMatch = clean.match(/^(\d+)$/);
+  if (simpleMatch) {
+    return { firNo: simpleMatch[1], year: null };
+  }
+  return { firNo: clean, year: null };
+};
+
+const runAutoLinkageForArrests = async (trx, arrestRecords, psId, userId) => {
+  const linkedDetails = [];
+  const unmatchedDetails = [];
+
+  const cases = await trx('records')
+    .where({ record_type: 'CASE', ps_id: psId })
+    .select('id', 'data');
+
+  const parsedCases = cases.map(c => {
+    let dataObj = {};
+    try {
+      dataObj = typeof c.data === 'string' ? JSON.parse(c.data) : c.data;
+    } catch(e) {}
+    const firNo = dataObj.fir_no || '';
+    const firDate = dataObj.fir_date || '';
+    const firYear = firDate ? new Date(firDate).getFullYear() : null;
+    return {
+      id: c.id,
+      data: dataObj,
+      firNo,
+      firYear
+    };
+  });
+
+  for (const arrest of arrestRecords) {
+    const arrestData = arrest.data;
+    const linkedFirDdNo = arrestData.linked_fir_dd_no;
+
+    if (!linkedFirDdNo) {
+      unmatchedDetails.push({
+        arrest_uid: arrestData.uid,
+        linked_fir_dd_no: null,
+        reason: 'No Linked FIR / DD No. provided in arrest record'
+      });
+      continue;
+    }
+
+    const parsedArrest = parseFirAndYear(linkedFirDdNo);
+
+    const candidates = parsedCases.filter(c => {
+      const parsedCaseFir = parseFirAndYear(c.firNo);
+      return parsedCaseFir.firNo === parsedArrest.firNo && parsedCaseFir.firNo !== '';
+    });
+
+    if (candidates.length === 0) {
+      unmatchedDetails.push({
+        arrest_uid: arrestData.uid,
+        linked_fir_dd_no: linkedFirDdNo,
+        reason: 'No matching CASE record found with this FIR number'
+      });
+      continue;
+    }
+
+    let yearFiltered = candidates;
+    if (parsedArrest.year) {
+      yearFiltered = candidates.filter(c => {
+        const parsedCaseFir = parseFirAndYear(c.firNo);
+        const caseYear = parsedCaseFir.year || c.firYear;
+        return caseYear === parsedArrest.year;
+      });
+    }
+
+    if (yearFiltered.length === 0) {
+      unmatchedDetails.push({
+        arrest_uid: arrestData.uid,
+        linked_fir_dd_no: linkedFirDdNo,
+        reason: `Case found but year mismatch (Expected FIR year: ${parsedArrest.year})`
+      });
+      continue;
+    }
+
+    let bestCase = null;
+    if (yearFiltered.length === 1) {
+      bestCase = yearFiltered[0];
+    } else {
+      let bestScore = -1;
+      for (const candidate of yearFiltered) {
+        let score = 0;
+        const candidateData = candidate.data;
+
+        if (candidateData.local_head && arrestData.crime_head) {
+          if (String(candidateData.local_head).trim().toLowerCase() === String(arrestData.crime_head).trim().toLowerCase()) {
+            score += 1;
+          }
+        }
+
+        if (candidateData.sections && arrestData.sections) {
+          if (String(candidateData.sections).trim().toLowerCase() === String(arrestData.sections).trim().toLowerCase()) {
+            score += 1;
+          }
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCase = candidate;
+        }
+      }
+    }
+
+    if (bestCase) {
+      try {
+        await createLink({
+          sourceRecordId: bestCase.id,
+          targetRecordId: arrest.id,
+          linkTypeCode: 'CASE_ARREST',
+          userId,
+          metadata: { notes: 'Auto-linked during bulk import' }
+        });
+
+        const caseData = bestCase.data;
+        linkedDetails.push({
+          arrest_uid: arrestData.uid,
+          case_uid: caseData.uid,
+          fir_no: caseData.fir_no
+        });
+      } catch (err) {
+        logger.error(`[AutoLinkage] Failed to create link: ${err.message}`);
+        unmatchedDetails.push({
+          arrest_uid: arrestData.uid,
+          linked_fir_dd_no: linkedFirDdNo,
+          reason: `Failed to link: ${err.message}`
+        });
+      }
+    } else {
+      unmatchedDetails.push({
+        arrest_uid: arrestData.uid,
+        linked_fir_dd_no: linkedFirDdNo,
+        reason: 'Multiple matching cases found but secondary validation failed'
+      });
+    }
+  }
+
+  return {
+    linkedCount: linkedDetails.length,
+    unmatchedCount: unmatchedDetails.length,
+    linkedDetails,
+    unmatchedDetails
+  };
+};
+
 
 // Generate transaction-safe import UIDs
 const generateImportUID = async (trx, recordType, psId, dateStr) => {
@@ -251,6 +546,15 @@ export const validateImportBatch = async (req, res) => {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
 
+  const ext = path.extname(req.file.originalname).toLowerCase();
+  if (ext !== '.xlsx') {
+    try { fs.unlinkSync(req.file.path); } catch (_) {}
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid file format. Only modern Excel spreadsheets (.xlsx) are supported. Please convert your file to .xlsx and try again.'
+    });
+  }
+
   const recordType = record_type ? record_type.toUpperCase() : null;
   const validTypes = ['ARREST', 'PCR_CALL', 'CASE'];
   if (!recordType || !validTypes.includes(recordType)) {
@@ -298,21 +602,11 @@ export const validateImportBatch = async (req, res) => {
   try {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(req.file.path);
-    const worksheet = workbook.getWorksheet(1);
+    const worksheet = workbook.worksheets[0] || workbook.getWorksheet(1);
 
     if (!worksheet) {
       try { fs.unlinkSync(req.file.path); } catch (_) {}
       return res.status(400).json({ success: false, message: 'Invalid template: first worksheet not found' });
-    }
-
-    const colMap = {};
-    worksheet.getRow(1).eachCell((cell, colIdx) => {
-      if (cell.value) colMap[colIdx] = String(cell.value).trim();
-    });
-
-    if (Object.keys(colMap).length === 0) {
-      try { fs.unlinkSync(req.file.path); } catch (_) {}
-      return res.status(400).json({ success: false, message: 'Invalid template: row 1 field metadata missing' });
     }
 
     const allFields = await db('field_registry').where('is_active', true);
@@ -332,6 +626,13 @@ export const validateImportBatch = async (req, res) => {
       registryFieldsMap[f.field_key] = f;
     }
 
+    const { colMap, dataStartRow } = buildColumnMap(worksheet, recordType, registryFields);
+
+    if (Object.keys(colMap).length === 0) {
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+      return res.status(400).json({ success: false, message: 'Invalid template or column headers could not be mapped.' });
+    }
+
     const errors = [];
     let totalRows = 0;
     let validRowsCount = 0;
@@ -339,7 +640,7 @@ export const validateImportBatch = async (req, res) => {
 
     const rowsToProcess = [];
     worksheet.eachRow((row, rowIdx) => {
-      if (rowIdx < 4) return;
+      if (rowIdx < dataStartRow) return;
       let isEmpty = true;
       row.eachCell({ includeEmpty: false }, () => {
         isEmpty = false;
@@ -360,7 +661,7 @@ export const validateImportBatch = async (req, res) => {
 
       row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
         const key = colMap[colIdx];
-        if (key && registryFieldsMap[key]) {
+        if (key && (registryFieldsMap[key] || key === 'name_and_address_of_accused')) {
           let cellVal = cell.value;
           if (cellVal && typeof cellVal === 'object' && 'result' in cellVal) {
             cellVal = cellVal.result;
@@ -373,15 +674,39 @@ export const validateImportBatch = async (req, res) => {
           }
           if (cellVal instanceof Date) {
             const field = registryFieldsMap[key];
-            if (field.field_type === 'DATE') {
-              cellVal = cellVal.toISOString().split('T')[0];
-            } else if (field.field_type === 'TIME') {
-              const hours = String(cellVal.getUTCHours()).padStart(2, '0');
-              const minutes = String(cellVal.getUTCMinutes()).padStart(2, '0');
-              cellVal = `${hours}:${minutes}`;
+            if (field) {
+              if (field.field_type === 'DATE') {
+                cellVal = cellVal.toISOString().split('T')[0];
+              } else if (field.field_type === 'TIME') {
+                const hours = String(cellVal.getUTCHours()).padStart(2, '0');
+                const minutes = String(cellVal.getUTCMinutes()).padStart(2, '0');
+                cellVal = `${hours}:${minutes}`;
+              }
             }
           }
-          rowData[key] = cellVal;
+          if (key === 'name_and_address_of_accused') {
+            const splitVal = String(cellVal || '');
+            let arrested_name = '';
+            let arrested_address = '';
+            const lines = splitVal.split('\n');
+            if (lines.length > 1) {
+              arrested_name = lines[0].trim();
+              arrested_address = lines.slice(1).join('\n').trim();
+            } else {
+              const commas = splitVal.split(',');
+              if (commas.length > 1) {
+                arrested_name = commas[0].trim();
+                arrested_address = commas.slice(1).join(',').trim();
+              } else {
+                arrested_name = splitVal.trim();
+                arrested_address = '';
+              }
+            }
+            rowData['arrested_name'] = arrested_name;
+            rowData['arrested_address'] = arrested_address;
+          } else {
+            rowData[key] = cellVal;
+          }
         }
       });
 
@@ -431,7 +756,7 @@ export const validateImportBatch = async (req, res) => {
           }
         }
 
-        if (field.field_type === 'NUMBER') {
+        if (field.field_type === 'NUMBER' && field.field_key !== 'linked_fir_dd_no') {
           if (!isValidNumber(val)) {
             errors.push({
               row: rowIdx,
@@ -578,12 +903,7 @@ export const confirmImportBatch = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(batch.file_path);
-    const worksheet = workbook.getWorksheet(1);
-
-    const colMap = {};
-    worksheet.getRow(1).eachCell((cell, colIdx) => {
-      if (cell.value) colMap[colIdx] = String(cell.value).trim();
-    });
+    const worksheet = workbook.worksheets[0] || workbook.getWorksheet(1);
 
     const allFields = await db('field_registry').where('is_active', true);
     const registryFields = allFields.filter(f => {
@@ -601,9 +921,11 @@ export const confirmImportBatch = async (req, res) => {
       registryFieldsMap[f.field_key] = f;
     }
 
+    const { colMap, dataStartRow } = buildColumnMap(worksheet, batch.record_type, registryFields);
+
     const rowsToInsert = [];
     worksheet.eachRow((row, rowIdx) => {
-      if (rowIdx < 4) return;
+      if (rowIdx < dataStartRow) return;
       if (errorRowsSet.has(rowIdx)) return;
 
       let isEmpty = true;
@@ -619,7 +941,7 @@ export const confirmImportBatch = async (req, res) => {
 
       row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
         const key = colMap[colIdx];
-        if (key && registryFieldsMap[key]) {
+        if (key && (registryFieldsMap[key] || key === 'name_and_address_of_accused')) {
           let cellVal = cell.value;
           if (cellVal && typeof cellVal === 'object' && 'result' in cellVal) {
             cellVal = cellVal.result;
@@ -632,15 +954,39 @@ export const confirmImportBatch = async (req, res) => {
           }
           if (cellVal instanceof Date) {
             const field = registryFieldsMap[key];
-            if (field.field_type === 'DATE') {
-              cellVal = cellVal.toISOString().split('T')[0];
-            } else if (field.field_type === 'TIME') {
-              const hours = String(cellVal.getUTCHours()).padStart(2, '0');
-              const minutes = String(cellVal.getUTCMinutes()).padStart(2, '0');
-              cellVal = `${hours}:${minutes}`;
+            if (field) {
+              if (field.field_type === 'DATE') {
+                cellVal = cellVal.toISOString().split('T')[0];
+              } else if (field.field_type === 'TIME') {
+                const hours = String(cellVal.getUTCHours()).padStart(2, '0');
+                const minutes = String(cellVal.getUTCMinutes()).padStart(2, '0');
+                cellVal = `${hours}:${minutes}`;
+              }
             }
           }
-          rowData[key] = cellVal;
+          if (key === 'name_and_address_of_accused') {
+            const splitVal = String(cellVal || '');
+            let arrested_name = '';
+            let arrested_address = '';
+            const lines = splitVal.split('\n');
+            if (lines.length > 1) {
+              arrested_name = lines[0].trim();
+              arrested_address = lines.slice(1).join('\n').trim();
+            } else {
+              const commas = splitVal.split(',');
+              if (commas.length > 1) {
+                arrested_name = commas[0].trim();
+                arrested_address = commas.slice(1).join(',').trim();
+              } else {
+                arrested_name = splitVal.trim();
+                arrested_address = '';
+              }
+            }
+            rowData['arrested_name'] = arrested_name;
+            rowData['arrested_address'] = arrested_address;
+          } else {
+            rowData[key] = cellVal;
+          }
         }
       });
       rowsToInsert.push(rowData);
@@ -659,89 +1005,123 @@ export const confirmImportBatch = async (req, res) => {
 
     let importedRowsCount = 0;
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
+    const newlyInsertedRecords = [];
 
-    for (let i = 0; i < rowsToInsert.length; i += 100) {
-      const chunk = rowsToInsert.slice(i, i + 100);
-      await db.transaction(async (trx) => {
-        for (const rowData of chunk) {
-          let recordDate = getRecordDate(batch.record_type, rowData) || new Date().toISOString().split('T')[0];
-          if (recordDate instanceof Date) {
-            recordDate = recordDate.toISOString().split('T')[0];
-          } else if (typeof recordDate === 'string' && recordDate.includes('T')) {
-            recordDate = recordDate.split('T')[0];
+      for (let i = 0; i < rowsToInsert.length; i += 100) {
+        const chunk = rowsToInsert.slice(i, i + 100);
+        await db.transaction(async (trx) => {
+          for (const rowData of chunk) {
+            let recordDate = getRecordDate(batch.record_type, rowData) || new Date().toISOString().split('T')[0];
+            if (recordDate instanceof Date) {
+              recordDate = recordDate.toISOString().split('T')[0];
+            } else if (typeof recordDate === 'string' && recordDate.includes('T')) {
+              recordDate = recordDate.split('T')[0];
+            }
+
+            const recordId = uuidv4();
+            const uid = await generateUID(batch.record_type, batch.ps_id, recordDate, trx);
+            const finalData = { ...rowData, uid };
+            delete finalData.name_and_address_of_accused;
+
+            const status = batch.is_legacy ? 'LEGACY_IMPORTED' : 'DRAFT';
+            const level = batch.is_legacy ? 'HQ' : 'PS';
+
+            await trx('records').insert({
+              id: recordId,
+              record_type: batch.record_type,
+              ps_id: batch.ps_id,
+              district_id: batch.district_id,
+              sub_div_id: sub_div_id,
+              data: JSON.stringify(finalData),
+              current_status: status,
+              current_level: level,
+              record_date: recordDate,
+              created_by: batch.uploaded_by,
+              updated_by: batch.uploaded_by,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+            const fieldChanges = Object.keys(finalData).map(key => ({
+              field_key: key,
+              old_value: '',
+              new_value: finalData[key] ?? ''
+            }));
+
+            const revisionId = uuidv4();
+            const revisionPayload = {
+              id: revisionId,
+              record_id: recordId,
+              revision_number: 1,
+              changed_by: batch.uploaded_by,
+              changed_at: new Date().toISOString(),
+              level: level,
+              change_type: 'CREATE',
+              field_changes: JSON.stringify(fieldChanges),
+              ip_address: ipAddress
+            };
+
+            const prev_hash = null;
+            const row_hash = computeRowHash({
+              record_id: recordId,
+              revision_number: 1,
+              changed_by: batch.uploaded_by,
+              changed_at: revisionPayload.changed_at,
+              field_changes: revisionPayload.field_changes
+            }, prev_hash);
+
+            revisionPayload.prev_hash = prev_hash;
+            revisionPayload.row_hash = row_hash;
+
+            await trx('record_revisions').insert(revisionPayload);
+
+            await trx('audit_logs').insert({
+              id: uuidv4(),
+              table_name: 'records',
+              record_id: recordId,
+              action: 'CREATE',
+              changed_by_id: batch.uploaded_by,
+              changed_by_role: req.user.role,
+              changed_at: new Date().toISOString(),
+              new_value: JSON.stringify(finalData),
+              ip_address: ipAddress
+            });
+
+            newlyInsertedRecords.push({ id: recordId, data: finalData });
+            importedRowsCount++;
           }
+        });
+      }
 
-          const recordId = uuidv4();
-          const uid = await generateImportUID(trx, batch.record_type, batch.ps_id, recordDate);
-          const finalData = { ...rowData, uid };
-          const status = batch.is_legacy ? 'LEGACY_IMPORTED' : 'DRAFT';
-          const level = batch.is_legacy ? 'HQ' : 'PS';
+      // Auto-Linkage runner after all insertions are committed
+      let autoLinkageResult = {
+        linkedCount: 0,
+        unmatchedCount: 0,
+        linkedDetails: [],
+        unmatchedDetails: []
+      };
 
-          await trx('records').insert({
-            id: recordId,
-            record_type: batch.record_type,
-            ps_id: batch.ps_id,
-            district_id: batch.district_id,
-            sub_div_id: sub_div_id,
-            data: JSON.stringify(finalData),
-            current_status: status,
-            current_level: level,
-            record_date: recordDate,
-            created_by: batch.uploaded_by,
-            updated_by: batch.uploaded_by,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-          const fieldChanges = Object.keys(finalData).map(key => ({
-            field_key: key,
-            old_value: '',
-            new_value: finalData[key] ?? ''
+      await db.transaction(async (trx) => {
+        let arrestsToLink = [];
+        if (batch.record_type === 'ARREST') {
+          arrestsToLink = newlyInsertedRecords;
+        } else if (batch.record_type === 'CASE') {
+          const unmatchedArrests = await trx('records')
+            .where({ record_type: 'ARREST', ps_id: batch.ps_id })
+            .whereNotExists(function() {
+              this.select('*').from('record_links')
+                .whereRaw('record_links.target_record_id = records.id');
+            })
+            .select('id', 'data');
+          
+          arrestsToLink = unmatchedArrests.map(a => ({
+            id: a.id,
+            data: typeof a.data === 'string' ? JSON.parse(a.data) : a.data
           }));
-
-          const revisionId = uuidv4();
-          const revisionPayload = {
-            id: revisionId,
-            record_id: recordId,
-            revision_number: 1,
-            changed_by: batch.uploaded_by,
-            changed_at: new Date().toISOString(),
-            level: level,
-            change_type: 'CREATE',
-            field_changes: JSON.stringify(fieldChanges),
-            ip_address: ipAddress
-          };
-
-          const prev_hash = null;
-          const row_hash = computeRowHash({
-            record_id: recordId,
-            revision_number: 1,
-            changed_by: batch.uploaded_by,
-            changed_at: revisionPayload.changed_at,
-            field_changes: revisionPayload.field_changes
-          }, prev_hash);
-
-          revisionPayload.prev_hash = prev_hash;
-          revisionPayload.row_hash = row_hash;
-
-          await trx('record_revisions').insert(revisionPayload);
-
-          await trx('audit_logs').insert({
-            id: uuidv4(),
-            table_name: 'records',
-            record_id: recordId,
-            action: 'CREATE',
-            changed_by_id: batch.uploaded_by,
-            changed_by_role: req.user.role,
-            changed_at: new Date().toISOString(),
-            new_value: JSON.stringify(finalData),
-            ip_address: ipAddress
-          });
-
-          importedRowsCount++;
         }
+
+        autoLinkageResult = await runAutoLinkageForArrests(trx, arrestsToLink, batch.ps_id, batch.uploaded_by);
       });
-    }
 
     // Clean up temp file
     try {
@@ -767,13 +1147,38 @@ export const confirmImportBatch = async (req, res) => {
       record_type: batch.record_type
     });
 
+    const failedRows = await db('import_batch_errors')
+      .where({ batch_id: batchId })
+      .orderBy('row_number', 'asc');
+    
+    const failedDetails = failedRows.map(e => ({
+      row: e.row_number,
+      field_key: e.field_key,
+      code: e.error_code,
+      message: e.error_message
+    }));
+
+    const report = {
+      total_processed: batch.total_rows,
+      imported_count: importedRowsCount,
+      linked_count: autoLinkageResult.linkedCount,
+      unmatched_arrests_count: autoLinkageResult.unmatchedCount,
+      failed_count: batch.invalid_rows,
+      linked_details: autoLinkageResult.linkedDetails,
+      unmatched_arrest_details: autoLinkageResult.unmatchedDetails,
+      failed_details: failedDetails
+    };
+
     return res.status(200).json({
       success: true,
       data: {
         batch_id: batchId,
         imported_rows: importedRowsCount,
         skipped_rows: batch.invalid_rows,
-        status: 'COMPLETED'
+        status: 'COMPLETED',
+        linked_count: autoLinkageResult.linkedCount,
+        unmatched_arrests_count: autoLinkageResult.unmatchedCount,
+        report
       }
     });
   } catch (error) {
