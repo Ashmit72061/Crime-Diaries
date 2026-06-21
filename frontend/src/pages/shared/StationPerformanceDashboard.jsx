@@ -247,10 +247,7 @@ export default function StationPerformanceDashboard() {
     };
   }, [scopedStations, records, filters, isHq, userDistrictNode, nodes, psStats]);
 
-  const handleRowClick = (stationId) => {
-    const basePath = isHq ? "/hq/stations" : "/district/stations";
-    navigate(`${basePath}/${stationId}`);
-  };
+  const handleRowClick = () => {}
   const getThemeClass = () => {
     const role = user?.role;
     switch (role) {
