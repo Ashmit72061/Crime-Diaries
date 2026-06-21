@@ -10,6 +10,7 @@ import { logger } from './utils/logger.js';
 import * as eventBus from './events/eventBus.js';
 import * as auditHandler from './events/handlers/auditHandler.js';
 import * as notifyHandler from './events/handlers/notifyHandler.js';
+import * as linkAuditHandler from './events/handlers/linkAuditHandler.js';
 import { initScheduler } from './modules/reports/scheduler.js';
 import { ipAllowlistMiddleware, csrfDoubleSubmitMiddleware } from './middleware/security.middleware.js';
 
@@ -32,6 +33,7 @@ import filtersRouter from './modules/filters/filters.router.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
 import dailyDiaryRouter from './modules/daily-diary/daily-diary.router.js';
 import warehouseRouter from './modules/warehouse/warehouse.router.js';
+import recordLinksRouter from './modules/record-links/record-links.router.js';
 
 
 
@@ -130,6 +132,9 @@ app.use('/api/daily-diary', dailyDiaryRouter);
 app.use('/api/v1/warehouse', warehouseRouter);
 app.use('/api/warehouse', warehouseRouter);
 
+app.use('/api/v1/record-links', recordLinksRouter);
+app.use('/api/record-links',    recordLinksRouter);
+
 
 
 // Health check
@@ -161,6 +166,7 @@ const startServer = async () => {
   // Start background handlers
   await auditHandler.init();
   await notifyHandler.init();
+  await linkAuditHandler.init();
   await initScheduler();
 
   app.listen(env.PORT, () => {

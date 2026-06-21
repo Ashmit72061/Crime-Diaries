@@ -55,8 +55,9 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     // ── Reviewer / SHO Desk ───────────────────────────────────────────────────
     if (role === 'SHO') {
       items.push(
-        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
-        { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" }
+        { id: "analytics",     label: t('nav.analytics',    'Analytics Console'), icon: BarChart3,    to: "/analytics" },
+        { id: "queue",         label: t('nav.queue',        'Approval Desk'),     icon: ClipboardList, to: "/queue" },
+        { id: "person-search", label: t('nav.personSearch', 'Person Search'),     icon: Search,       to: "/person-search" }
       );
     }
 
@@ -69,6 +70,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "compile", label: t('nav.compile', 'Compile Records'), icon: FileSpreadsheet, to: "/compile" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
         { id: "reports",        label: t('nav.reports',       'Excel Export Manager'),    icon: FileSpreadsheet, to: "/reports" },
+        { id: "person-search",  label: t('nav.personSearch',  'Person Search'),            icon: Search,          to: "/person-search" },
         { id: "custom-fields",  label: t('nav.customFields',  'District Custom Fields'),   icon: Layers,          to: "/district/custom-fields" },
         { id: "bulk-import",    label: t('nav.bulkImport',    'Bulk Import'),             icon: Upload,          to: "/admin/legacy" }
       );
@@ -80,8 +82,9 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "hq", label: t('nav.hq', 'Command Center'), icon: Building, to: "/hq" },
         { id: "station-wise", label: t('nav.stationWise', 'Station Wise View'), icon: Building, to: "/hq/stations" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
-        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" },
-        { id: "bulk-import", label: t('nav.bulkImport', 'Bulk Import'), icon: Upload, to: "/admin/legacy" }
+        { id: "reports",       label: t('nav.reports',      'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" },
+        { id: "person-search", label: t('nav.personSearch', 'Person Search'),         icon: Search,          to: "/person-search" },
+        { id: "bulk-import",   label: t('nav.bulkImport',   'Bulk Import'),           icon: Upload,          to: "/admin/legacy" }
       );
     }
 

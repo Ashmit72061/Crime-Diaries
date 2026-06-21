@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Save, FileCheck, ShieldAlert, User, MapPin, CheckSquare, Phone, Upload, AlertTriangle, Shield, ShieldOff } from "lucide-react";
+import { Save, FileCheck, ShieldAlert, User, MapPin, CheckSquare, Phone, Upload, AlertTriangle, Shield, ShieldOff, Link2, Search, X } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
 import useAuthStore from "../store/authStore.js";
 import api from "../utils/api.js";
@@ -40,6 +40,14 @@ export default function ArrestManagement() {
   });
 
   const [errors, setErrors] = useState({});
+
+  // Case-linkage state
+  const [arrestType, setArrestType] = useState('');       // 'fir_linked' | 'standalone'
+  const [caseSearchQuery, setCaseSearchQuery] = useState('');
+  const [caseSearchResults, setCaseSearchResults] = useState([]);
+  const [caseSearchLoading, setCaseSearchLoading] = useState(false);
+  const [selectedCase, setSelectedCase] = useState(null);
+  const caseSearchTimeout = useRef(null);
 
   useEffect(() => {
     if (user?.role === "PS") {
@@ -127,11 +135,47 @@ export default function ArrestManagement() {
     setFormData(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
+  const handleCaseSearch = (query) => {
+    setCaseSearchQuery(query);
+    clearTimeout(caseSearchTimeout.current);
+    if (!query || query.length < 2) { setCaseSearchResults([]); return; }
+    caseSearchTimeout.current = setTimeout(async () => {
+      setCaseSearchLoading(true);
+      try {
+        const res = await api.get('/v1/records', { params: { type: 'CASE', search: query } });
+        const cases = res.data?.data?.cases || [];
+        setCaseSearchResults(cases.slice(0, 10));
+      } catch {
+        setCaseSearchResults([]);
+      } finally {
+        setCaseSearchLoading(false);
+      }
+    }, 350);
+  };
+
+  const handleSelectCase = (caseRecord) => {
+    setSelectedCase(caseRecord);
+    setCaseSearchResults([]);
+    setCaseSearchQuery('');
+    const firNo = caseRecord.data?.fir_no || caseRecord.data?.firNumber || '';
+    setFormData(prev => ({ ...prev, firDdNumber: firNo }));
+    if (errors.selectedCase) setErrors(prev => ({ ...prev, selectedCase: null }));
+  };
+
+  const handleClearCase = () => {
+    setSelectedCase(null);
+    setCaseSearchQuery('');
+    setCaseSearchResults([]);
+    setFormData(prev => ({ ...prev, firDdNumber: '' }));
+  };
+
   const validate = () => {
     const tempErrors = {};
+    if (!arrestType) tempErrors.arrestType = "Please select whether this is a case-linked arrest or standalone Kalandra";
+    if (arrestType === 'fir_linked' && !selectedCase) tempErrors.selectedCase = "Please search and select the linked FIR Case";
     if (!formData.district) tempErrors.district = "District is required";
     if (!formData.policeStation) tempErrors.policeStation = "Police Station is required";
-    if (!formData.firDdNumber) tempErrors.firDdNumber = "FIR/DD Number is required";
+    if (arrestType === 'standalone' && !formData.firDdNumber) tempErrors.firDdNumber = "DD Number is required for Kalandra";
     if (!formData.fullName) tempErrors.fullName = "Full Name is required";
     if (!formData.age) tempErrors.age = "Age is required";
     if (!formData.dateOfArrest) tempErrors.dateOfArrest = "Date of Arrest is required";
@@ -161,11 +205,27 @@ export default function ArrestManagement() {
     try {
       const res = await api.post('/v1/records', {
         record_type: 'ARREST',
-        record_date: formData.firDate || new Date().toISOString().split('T')[0],
-        data: formData
+        record_date: formData.dateOfArrest || formData.firDate || new Date().toISOString().split('T')[0],
+        data: { ...formData, arrest_type: arrestType }
       });
+      const arrestRecordId = res.data.data?.id;
       const uid = res.data.data?.uid;
-      const savedData = { ...formData, uid: uid || formData.uid };
+
+      // Phase 2: create the case → arrest link if FIR-linked
+      if (arrestType === 'fir_linked' && selectedCase?.id && arrestRecordId) {
+        try {
+          await api.post('/v1/record-links', {
+            sourceRecordId: selectedCase.id,
+            targetRecordId: arrestRecordId,
+            linkTypeCode: 'CASE_ARREST',
+            metadata: { notes: 'Linked during arrest entry', migrated: false }
+          });
+        } catch (linkErr) {
+          toast.error('Arrest saved but case link failed. Please re-link from the case record.');
+        }
+      }
+
+      const savedData = { ...formData, uid: uid || formData.uid, arrest_type: arrestType };
       onSubmitReport("Arrest record docket", savedData, "arrest");
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to save record.');
@@ -262,6 +322,89 @@ export default function ArrestManagement() {
         {/* STEP 1: FIR & SPOT DETAILS */}
         {activeStep === 1 && (
           <div className="transition-standard">
+            {/* CASE LINKAGE CARD */}
+            <div className="card">
+              <div className="card-title">
+                <Link2 size={18} aria-hidden="true" />
+                <span>Case Linkage</span>
+              </div>
+              <div className="form-grid">
+                <div className="col-span-full">
+                  <label className="form-label required">Is this arrest linked to a registered FIR Case?</label>
+                  <div className="flex gap-6 mt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio" name="arrestType" value="fir_linked"
+                        checked={arrestType === 'fir_linked'}
+                        onChange={() => { setArrestType('fir_linked'); if (errors.arrestType) setErrors(p => ({ ...p, arrestType: null })); }}
+                      />
+                      <span className="text-sm font-medium">Linked to FIR / Case</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio" name="arrestType" value="standalone"
+                        checked={arrestType === 'standalone'}
+                        onChange={() => { setArrestType('standalone'); setSelectedCase(null); setCaseSearchResults([]); if (errors.arrestType) setErrors(p => ({ ...p, arrestType: null })); }}
+                      />
+                      <span className="text-sm font-medium">Standalone Kalandra (no case)</span>
+                    </label>
+                  </div>
+                  {errors.arrestType && <span className="text-red-500 text-xs mt-1 block">{errors.arrestType}</span>}
+                </div>
+
+                {arrestType === 'fir_linked' && (
+                  <div className="col-span-full">
+                    {selectedCase ? (
+                      <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex justify-between items-start gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-green-400">
+                            FIR: {selectedCase.data?.fir_no || selectedCase.data?.firNumber || 'N/A'} &mdash; {selectedCase.data?.uid}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">{selectedCase.data?.local_head || selectedCase.data?.localHead || ''}</p>
+                          <p className="text-xs text-slate-500">{selectedCase.ps_name}</p>
+                        </div>
+                        <button type="button" className="text-xs text-red-400 flex items-center gap-1 shrink-0" onClick={handleClearCase}>
+                          <X size={12} /> Change
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <label className="form-label required">Search for Case (by FIR no., UID, or place)</label>
+                        <div className="relative">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            className={`form-control pl-8 ${errors.selectedCase ? 'border-red-500' : ''}`}
+                            placeholder="Type FIR number, UID, or place of occurrence…"
+                            value={caseSearchQuery}
+                            onChange={e => handleCaseSearch(e.target.value)}
+                            autoComplete="off"
+                          />
+                        </div>
+                        {errors.selectedCase && <span className="text-red-500 text-xs mt-1 block">{errors.selectedCase}</span>}
+                        {caseSearchLoading && <p className="text-xs text-slate-400 mt-1">Searching…</p>}
+                        {caseSearchResults.length > 0 && (
+                          <div className="mt-1 border border-slate-700 rounded-lg overflow-hidden">
+                            {caseSearchResults.map(c => (
+                              <button
+                                key={c.id} type="button"
+                                className="w-full text-left p-3 hover:bg-slate-700/60 border-b border-slate-700 last:border-0"
+                                onClick={() => handleSelectCase(c)}
+                              >
+                                <span className="text-sm font-semibold">{c.data?.fir_no || c.data?.uid}</span>
+                                <span className="ml-2 text-xs text-slate-400">{c.data?.local_head || c.data?.localHead}</span>
+                                <span className="ml-2 text-xs text-slate-500">{c.ps_name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* SECTION 1: FIR INFORMATION */}
             <div className="card">
               <div className="card-title">
