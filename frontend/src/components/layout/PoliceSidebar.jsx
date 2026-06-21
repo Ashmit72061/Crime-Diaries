@@ -22,6 +22,7 @@ import {
   FileSignature,
   Archive,
   Layers,
+  Upload,
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
@@ -47,6 +48,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "new-pcr",      label: t('recordTypes.PCR_CALL','PCR / Kalandra Call'),      icon: PhoneCall,     to: "/records/new/PCR_CALL" },
         { id: "new-missing",  label: t('recordTypes.MISSING', 'Missing Persons Register'), icon: Search,        to: "/records/new/MISSING" },
         { id: "new-uidb",     label: t('recordTypes.UIDB',    'UIDB Unidentified Bodies'), icon: Fingerprint,   to: "/records/new/UIDB" },
+        { id: "bulk-import",  label: t('nav.bulkImport',      'Bulk Import'),              icon: Upload,        to: "/admin/legacy" },
       );
     }
 
@@ -67,7 +69,8 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "compile", label: t('nav.compile', 'Compile Records'), icon: FileSpreadsheet, to: "/compile" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
         { id: "reports",        label: t('nav.reports',       'Excel Export Manager'),    icon: FileSpreadsheet, to: "/reports" },
-        { id: "custom-fields",  label: t('nav.customFields',  'District Custom Fields'),   icon: Layers,          to: "/district/custom-fields" }
+        { id: "custom-fields",  label: t('nav.customFields',  'District Custom Fields'),   icon: Layers,          to: "/district/custom-fields" },
+        { id: "bulk-import",    label: t('nav.bulkImport',    'Bulk Import'),             icon: Upload,          to: "/admin/legacy" }
       );
     }
 
@@ -78,7 +81,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "station-wise", label: t('nav.stationWise', 'Station Wise View'), icon: Building, to: "/hq/stations" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
         { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" },
-        { id: "legacy", label: t('nav.legacy', 'Legacy Data'), icon: Archive, to: "/admin/legacy" }
+        { id: "bulk-import", label: t('nav.bulkImport', 'Bulk Import'), icon: Upload, to: "/admin/legacy" }
       );
     }
 
@@ -90,7 +93,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "admin-fields",          label: t('nav.adminFields',        'Field Registry'),    icon: Settings,      to: "/admin/fields" },
         { id: "admin-audit",           label: t('nav.adminAudit',         'Audit Ledger'),      icon: ShieldAlert,   to: "/admin/audit" },
         { id: "admin-level-contracts", label: t('nav.levelContracts',     'Level Contracts'),   icon: FileSignature, to: "/admin/level-contracts" },
-        { id: "admin-legacy",          label: t('nav.legacyData',         'Legacy Data'),       icon: Archive,       to: "/admin/legacy" }
+        { id: "bulk-import",          label: t('nav.bulkImport',         'Bulk Import'),       icon: Upload,        to: "/admin/legacy" }
       );
     }
 

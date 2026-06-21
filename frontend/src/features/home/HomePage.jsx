@@ -54,15 +54,15 @@ export default function HomePage() {
       <div className="ticker-banner">
         <div className="ticker-text-wrapper">
           <span className="ticker-text">
-            <span className="inline-flex items-center">
+            <span className="inline-flex items-center gap-3">
               <span className="moto-badge">PRISM Motto</span>
               <span className="font-serif italic font-medium">Create · Compare · Monitor &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The record of every crime in Delhi</span>
             </span>
-            <span className="inline-flex items-center">
+            <span className="inline-flex items-center gap-3">
               <span className="moto-badge">PRISM Motto</span>
               <span className="font-serif italic font-medium">Create · Compare · Monitor &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The record of every crime in Delhi</span>
             </span>
-            <span className="inline-flex items-center">
+            <span className="inline-flex items-center gap-3">
               <span className="moto-badge">PRISM Motto</span>
               <span className="font-serif italic font-medium">Create · Compare · Monitor &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The record of every crime in Delhi</span>
             </span>
