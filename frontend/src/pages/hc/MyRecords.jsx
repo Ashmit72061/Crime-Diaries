@@ -27,6 +27,7 @@ const itemVariants = {
 
 export default function MyRecords() {
   const { t, i18n } = useTranslation();
+  const currentLng = i18n.language || 'en';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -122,8 +123,8 @@ export default function MyRecords() {
     /* ── Full-page background matching Dashboard's deep navy gradient ── */
     <div className="min-h-screen theme-hc-page page-bg">
       <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden shadow-xl">
-        <span className="user-greeting-badge text-xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
-          Hi, {user?.username || 'User'}
+        <span className="user-greeting-badge text-4xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+          Hi, {currentLng === 'hi' ? (user?.name_hi || user?.name_en || user?.username) : (user?.name_en || user?.username || 'User')}
         </span>
         <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-white/5 rounded-full blur-2xl pointer-events-none" />

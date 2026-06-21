@@ -3,6 +3,8 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Bell, User, LogOut, Settings, Award, Shield, CheckCheck, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
+import { useTranslation } from "react-i18next";
+import LanguageToggle from "../ui/LanguageToggle.jsx";
 
 export default function PoliceNavbar({
   notifications = [],
@@ -21,6 +23,8 @@ export default function PoliceNavbar({
   const navigate = useNavigate();
   const { logoutMutation } = useAuth();
   const { user, jurisdiction } = useAuthStore();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language || 'en';
 
   // Live localized clock as per i18n instructions
   useEffect(() => {
@@ -54,27 +58,27 @@ export default function PoliceNavbar({
   // Compute breadcrumbs dynamically from current pathname
   const getBreadcrumbs = () => {
     const path = location.pathname;
-    const crumbs = [{ label: "Command Center", to: "/dashboard" }];
+    const crumbs = [{ label: t('nav.hq') || "Command Center", to: "/dashboard" }];
     if (path === "/dashboard" || path === "/dashboard/") {
-      crumbs.push({ label: "Dashboard", to: "/dashboard" });
+      crumbs.push({ label: t('nav.dashboard') || "Dashboard", to: "/dashboard" });
     } else if (path.includes("/case-management")) {
-      crumbs.push({ label: "Case Management", to: "/dashboard/case-management" });
+      crumbs.push({ label: t('recordTypes.CASE') || "Case Management", to: "/dashboard/case-management" });
     } else if (path.includes("/arrest-management")) {
-      crumbs.push({ label: "Arrest Management", to: "/dashboard/arrest-management" });
+      crumbs.push({ label: t('recordTypes.ARREST') || "Arrest Management", to: "/dashboard/arrest-management" });
     } else if (path.includes("/pcr-calls")) {
-      crumbs.push({ label: "PCR Calls", to: "/dashboard/pcr-calls" });
+      crumbs.push({ label: t('recordTypes.PCR_CALL') || "PCR Calls", to: "/dashboard/pcr-calls" });
     } else if (path.includes("/uidb-management")) {
-      crumbs.push({ label: "UIDB Management", to: "/dashboard/uidb-management" });
+      crumbs.push({ label: t('recordTypes.UIDB') || "UIDB Management", to: "/dashboard/uidb-management" });
     } else if (path.includes("/missing-persons")) {
-      crumbs.push({ label: "Missing Persons", to: "/dashboard/missing-persons" });
+      crumbs.push({ label: t('recordTypes.MISSING') || "Missing Persons", to: "/dashboard/missing-persons" });
     } else if (path.includes("/records")) {
-      crumbs.push({ label: "Records", to: "/records" });
+      crumbs.push({ label: t('nav.records') || "Records", to: "/records" });
     } else if (path.includes("/queue")) {
-      crumbs.push({ label: "Approval Queue", to: "/queue" });
+      crumbs.push({ label: t('nav.queue') || "Approval Queue", to: "/queue" });
     } else if (path.includes("/district")) {
-      crumbs.push({ label: "District", to: "/district" });
+      crumbs.push({ label: t('nav.district') || "District", to: "/district" });
     } else if (path.includes("/hq")) {
-      crumbs.push({ label: "Headquarters", to: "/hq" });
+      crumbs.push({ label: t('nav.hq') || "Headquarters", to: "/hq" });
     }
     return crumbs;
   };
@@ -138,18 +142,29 @@ export default function PoliceNavbar({
             {(() => {
               if (!user) return "";
               const roleUpper = user.role.toUpperCase();
-              if (roleUpper === 'SYSTEM_ADMIN') return "SYSTEM ADMIN VIEW";
-              if (roleUpper === 'HQ_ANALYST' || roleUpper === 'HQ_ADMIN') return "HEADQUARTERS VIEW | DELHI POLICE HQ";
+              if (roleUpper === 'SYSTEM_ADMIN') return t('views.SYSTEM_ADMIN');
+              if (roleUpper === 'HQ_ANALYST' || roleUpper === 'HQ_ADMIN') return t('views.HQ');
+              
+              const isHi = lang === 'hi';
               if (roleUpper === 'HC' || roleUpper === 'SHO') {
-                return `PS VIEW | ${jurisdiction?.station?.name_en?.toUpperCase() || 'POLICE STATION'}`;
+                const name = isHi 
+                  ? (jurisdiction?.station?.name_hi || jurisdiction?.station?.name_en) 
+                  : (jurisdiction?.station?.name_en?.toUpperCase() || 'POLICE STATION');
+                return `${t('views.PS')} | ${name}`;
               }
               if (roleUpper === 'ACP') {
-                return `SUB-DIVISION VIEW | ${jurisdiction?.sub_division?.name_en?.toUpperCase() || 'SUB-DIVISION'}`;
+                const name = isHi 
+                  ? (jurisdiction?.sub_division?.name_hi || jurisdiction?.sub_division?.name_en) 
+                  : (jurisdiction?.sub_division?.name_en?.toUpperCase() || 'SUB-DIVISION');
+                return `${t('views.SUB_DIVISION')} | ${name}`;
               }
               if (roleUpper === 'DISTRICT_OFFICER') {
-                return `DISTRICT VIEW | ${jurisdiction?.district?.name_en?.toUpperCase() || 'DISTRICT'}`;
+                const name = isHi 
+                  ? (jurisdiction?.district?.name_hi || jurisdiction?.district?.name_en) 
+                  : (jurisdiction?.district?.name_en?.toUpperCase() || 'DISTRICT');
+                return `${t('views.DISTRICT')} | ${name}`;
               }
-              return "VIEW | UNKNOWN JURISDICTION";
+              return t('views.UNKNOWN');
             })()}
           </span>
         </div>
@@ -178,6 +193,9 @@ export default function PoliceNavbar({
         <div className="time-display tabular-numbers" aria-live="off" translate="no">
           {currentTime}
         </div>
+
+        {/* Global Language Toggle */}
+        <LanguageToggle variant="pill" />
 
         {/* Notifications Dropdown */}
         <div className="nav-dropdown-wrapper" ref={notifPanelRef}>
@@ -324,14 +342,37 @@ export default function PoliceNavbar({
               <User size={16} />
             </div>
             <div className="officer-details text-left font-sans flex flex-col justify-center leading-tight">
-              <span className="officer-name block text-sm font-semibold truncate max-w-[150px] whitespace-nowrap">{user?.username || "HC Ramesh Kumar"}</span>
-              <span className="officer-rank block text-[11px] text-slate-400 font-medium truncate max-w-[150px] whitespace-nowrap">{user?.rank || "Station Operator"}</span>
+              <span className="officer-name block text-sm font-semibold truncate max-w-[150px] whitespace-nowrap">
+                {lang === 'hi'
+                  ? (user?.name_hi || user?.name_en || user?.username || "हैंड कांस्टेबल रमेश कुमार")
+                  : (user?.name_en || user?.username || "HC Ramesh Kumar")}
+              </span>
+              <span className="officer-rank block text-[11px] text-slate-400 font-medium truncate max-w-[150px] whitespace-nowrap">
+                {user?.role ? t(`roles.${user.role}`) : (user?.rank || "Station Operator")}
+              </span>
               <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5 truncate max-w-[150px] whitespace-nowrap">
-                {user?.role === 'SYSTEM_ADMIN' ? 'Central Administration' :
-                 user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' ? 'Delhi Police HQ' :
-                 user?.role === 'DISTRICT_OFFICER' ? jurisdiction?.district?.name_en :
-                 user?.role === 'ACP' ? jurisdiction?.sub_division?.name_en :
-                 jurisdiction?.station?.name_en}
+                {(() => {
+                  const isHi = lang === 'hi';
+                  if (user?.role === 'SYSTEM_ADMIN') {
+                    return isHi ? "केंद्रीय प्रशासन" : "Central Administration";
+                  }
+                  if (user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN') {
+                    return isHi ? "दिल्ली पुलिस मुख्यालय" : "Delhi Police HQ";
+                  }
+                  if (user?.role === 'DISTRICT_OFFICER') {
+                    return isHi
+                      ? (jurisdiction?.district?.name_hi || jurisdiction?.district?.name_en)
+                      : jurisdiction?.district?.name_en;
+                  }
+                  if (user?.role === 'ACP') {
+                    return isHi
+                      ? (jurisdiction?.sub_division?.name_hi || jurisdiction?.sub_division?.name_en)
+                      : jurisdiction?.sub_division?.name_en;
+                  }
+                  return isHi
+                    ? (jurisdiction?.station?.name_hi || jurisdiction?.station?.name_en)
+                    : jurisdiction?.station?.name_en;
+                })()}
               </span>
             </div>
           </button>
@@ -342,20 +383,20 @@ export default function PoliceNavbar({
                 <Award size={24} className="badge-icon text-amber-500" aria-hidden="true" />
                 <div>
                   <h4 translate="no">{user?.pis || "PIS-28160942"}</h4>
-                  <p>{user?.rank || "Station Operator"}</p>
+                  <p>{user?.role ? t(`roles.${user.role}`) : (user?.rank || "Station Operator")}</p>
                 </div>
               </div>
               <ul className="profile-menu-list">
                 <li role="menuitem">
                   <button type="button" onClick={() => alert("Settings panel simulation…")}>
                     <Settings size={16} aria-hidden="true" />
-                    <span>System Settings</span>
+                    <span>{t('common.settings')}</span>
                   </button>
                 </li>
                 <li role="menuitem">
                   <button type="button" className="btn-danger-link" onClick={handleLogout}>
                     <LogOut size={16} aria-hidden="true" />
-                    <span>Sign Out Session</span>
+                    <span>{t('common.signOut')}</span>
                   </button>
                 </li>
               </ul>

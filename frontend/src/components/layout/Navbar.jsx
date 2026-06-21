@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES, APP_NAME } from '../../utils/constants.js';
 import { Button } from '../ui/Button.jsx';
 import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
+import LanguageToggle from '../ui/LanguageToggle.jsx';
 
 const navLinks = [
   { label: 'About PRISM', to: '#about' },
@@ -50,6 +51,7 @@ export const Navbar = () => {
 
           {/* Auth Actions */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageToggle variant="pill" />
             <Button variant="primary" size="sm" as={Link} to={ROUTES.LOGIN}>
               Access Command Console
             </Button>
@@ -85,7 +87,8 @@ export const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            <LanguageToggle variant="pill" className="w-full justify-center" />
             <Button variant="primary" size="sm" fullWidth as={Link} to={ROUTES.LOGIN}>
               Access Command Console
             </Button>

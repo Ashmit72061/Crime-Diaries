@@ -3608,7 +3608,7 @@ textarea.form-control {
 
 .theme-acp-page {
   --bg-page-main: #f0f9ff !important; /* Soft light skyblue/teal page background (inherited from shared page) */
-  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%) !important; /* Skyblue to Teal gradient */
+  --hero-gradient: linear-gradient(135deg, #bbf7f0 0%, #2dd4bf 100%) !important; /* Richer Teal gradient */
   --accent-color: #0284c7 !important; /* Premium Skyblue/Teal accent */
   --accent-color-hover: #0369a1 !important;
   --accent-glow: rgba(2, 132, 199, 0.08) !important;
@@ -3661,7 +3661,7 @@ textarea.form-control {
 
 .theme-shared-page {
   --bg-page-main: #f0f9ff !important; /* Soft light skyblue/teal page background */
-  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%) !important; /* Skyblue to Teal gradient */
+  --hero-gradient: linear-gradient(135deg, #bbf7f0 0%, #2dd4bf 100%) !important; /* Richer Teal gradient */
   --accent-color: #0284c7 !important; /* Premium Skyblue/Teal accent */
   --accent-color-hover: #0369a1 !important;
   --accent-glow: rgba(2, 132, 199, 0.08) !important;
@@ -3821,6 +3821,8 @@ textarea.form-control {
   color: #ffffff !important;
 }
 
+.theme-shared-page .hero-banner-gradient .user-greeting-badge,
+.theme-acp-page .hero-banner-gradient .user-greeting-badge,
 .theme-shared-page .user-greeting-badge,
 .theme-acp-page .user-greeting-badge {
   color: #0f172a !important;
@@ -3838,5 +3840,114 @@ input[type=number]::-webkit-inner-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+/* ── Language Toggle Button Styles ──────────────────────────────────────── */
+.lang-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+}
+
+.lang-toggle-pill:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background-color: var(--primary-glow);
+  transform: translateY(-1px);
+}
+
+.lang-toggle-label {
+  letter-spacing: 0.05em;
+}
+
+.lang-toggle-active-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--primary-accent);
+  color: var(--text-inverse);
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 50%;
+}
+
+.lang-toggle-badge {
+  position: fixed;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+}
+
+.lang-toggle-badge:hover {
+  background-color: #ffffff;
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.lang-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+}
+
+.lang-toggle-icon:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background-color: var(--primary-glow);
+  transform: scale(1.05);
+}
+
+.lang-toggle-indicator {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.25rem;
+  min-width: 1rem;
+  height: 1rem;
+  background-color: var(--primary-accent);
+  color: var(--text-inverse);
+  font-size: 0.55rem;
+  font-weight: 800;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--bg-card);
 }
 

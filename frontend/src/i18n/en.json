@@ -46,6 +46,23 @@
     "UIDB": "UIDB Unidentified Bodies",
     "MISSING": "Missing Persons Register"
   },
+  "roles": {
+    "HC": "Head Constable",
+    "SHO": "Station House Officer",
+    "ACP": "Assistant Commissioner of Police",
+    "DISTRICT_OFFICER": "Deputy Commissioner of Police",
+    "HQ_ANALYST": "HQ Analyst",
+    "HQ_ADMIN": "HQ Admin",
+    "SYSTEM_ADMIN": "System Administrator"
+  },
+  "views": {
+    "SYSTEM_ADMIN": "SYSTEM ADMIN VIEW",
+    "HQ": "HEADQUARTERS VIEW | DELHI POLICE HQ",
+    "PS": "PS VIEW",
+    "SUB_DIVISION": "SUB-DIVISION VIEW",
+    "DISTRICT": "DISTRICT VIEW",
+    "UNKNOWN": "VIEW | UNKNOWN JURISDICTION"
+  },
   "common": {
     "loading": "Loading secure terminal...",
     "error": "Form schema not found",
@@ -53,6 +70,8 @@
     "success": "Success",
     "selected": "selected",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "settings": "System Settings",
+    "signOut": "Sign Out Session"
   }
 }
