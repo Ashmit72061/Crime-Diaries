@@ -238,6 +238,30 @@ export default function HierarchyManager() {
     return p ? (p.name_en || p.id) : '—';
   };
 
+  // Counts per node type for the summary strips (prevent undefined counts)
+  const counts = React.useMemo(() => {
+    const map = { RANGE: 0, DISTRICT: 0, SUB_DIVISION: 0, PS: 0 };
+    nodes.forEach((n) => {
+      if (n?.node_type && Object.prototype.hasOwnProperty.call(map, n.node_type)) map[n.node_type]++;
+    });
+    return map;
+  }, [nodes]);
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  const handleSave = (data) => {
+    if (data?.id) {
+      updateMutation.mutate({ id: data.id, ...data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleDelete = (node) => {
+    if (!window.confirm(`Delete node "${node.name_en || node.id}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(node.id);
+  };
+
   return (
     <div className="space-y-6 theme-admin-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
