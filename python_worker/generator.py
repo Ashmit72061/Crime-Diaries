@@ -107,7 +107,7 @@ def query_records(definition, user_filters, engine):
         if db_type == 'sqlite':
             selects.append(f"json_extract(records.data, '$.{k}') as [{k}]")
         else:
-            selects.append(f"records.data->>'{k}' as {k}")
+            selects.append(f"cast(records.data as jsonb)->>'{k}' as {k}")
             
     # Include record date and ps name in raw queries
     select_expr = ", ".join(selects) if selects else "records.id"
@@ -142,7 +142,7 @@ def query_records(definition, user_filters, engine):
                 sql += f" AND json_extract(records.data, '$.{k}') = :{k}_val"
                 params[f"{k}_val"] = v
             else:
-                sql += f" AND records.data @> :{k}_val::jsonb"
+                sql += f" AND cast(records.data as jsonb) @> :{k}_val::jsonb"
                 params[f"{k}_val"] = json.dumps({k: v})
                 
     # Apply dynamic user filters
@@ -161,7 +161,7 @@ def query_records(definition, user_filters, engine):
                 sql += f" AND json_extract(records.data, '$.{k}') = :{k}_user_val"
                 params[f"{k}_user_val"] = v
             else:
-                sql += f" AND records.data @> :{k}_user_val::jsonb"
+                sql += f" AND CAST(records.data AS jsonb) @> CAST(:{k}_user_val AS jsonb)"
                 params[f"{k}_user_val"] = json.dumps({k: v})
                 
     if db_client == 'sqlite3':
@@ -463,8 +463,8 @@ def generate_report(job_id):
     template = None
     if template_id:
         template = load_template(template_id, engine)
-        if not template:
-            print(f"[Worker] Predefined template row {template_id} not found in DB. Falling back to predefined structures.")
+        if not template or not template.get('template_definition') or 'filter_spec' not in template['template_definition']:
+            print(f"[Worker] Predefined template row {template_id} not found or incomplete in DB. Falling back to predefined structures.")
             template = {
                 'id': template_id,
                 'name_en': template_id.replace('-', ' ').title(),
@@ -499,13 +499,46 @@ def generate_report(job_id):
         df.to_csv(file_path, index=False)
         
     elif format_type in ['EXCEL', 'XLSX']:
-        if template and template.get('template_type') == 'COMPOSITE':
-            wb = generate_composite(definition, filters, engine)
-        elif not template:
-            wb = generate_custom_workbook(definition, filters, engine)
+        if template_id == 'daily-status':
+            import subprocess
+            date_str = filters.get('from') or filters.get('dateFrom') or datetime.now().strftime('%Y-%m-%d')
+            template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Master/Daily_Diary_ProperHeaders.xlsx'))
+            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Master/files/export_daily_report.py'))
+            
+            db_host = os.environ.get('PGHOST', 'localhost')
+            db_port = os.environ.get('PGPORT', '5435')
+            db_name = os.environ.get('PGDATABASE', 'pharos_db')
+            db_user = os.environ.get('PGUSER', 'postgres')
+            db_password = os.environ.get('PGPASSWORD', 'postgres')
+            
+            if engine and hasattr(engine, 'url') and engine.url:
+                db_host = engine.url.host or db_host
+                db_port = str(engine.url.port) if engine.url.port else db_port
+                db_name = engine.url.database or db_name
+                db_user = engine.url.username or db_user
+                db_password = engine.url.password or db_password
+                
+            cmd = [
+                'python', script_path,
+                '--date', date_str,
+                '--template', template_path,
+                '--out', file_path,
+                '--host', db_host,
+                '--port', db_port,
+                '--dbname', db_name,
+                '--user', db_user,
+                '--password', db_password
+            ]
+            print(f"[Worker] Invoking custom daily report script: {' '.join(cmd)}")
+            subprocess.run(cmd, check=True)
         else:
-            wb = generate_single_sheet_workbook(definition, filters, engine)
-        wb.save(file_path)
+            if template and template.get('template_type') == 'COMPOSITE':
+                wb = generate_composite(definition, filters, engine)
+            elif not template:
+                wb = generate_custom_workbook(definition, filters, engine)
+            else:
+                wb = generate_single_sheet_workbook(definition, filters, engine)
+            wb.save(file_path)
         
     elif format_type == 'PDF':
         df = query_records(definition, filters, engine)

@@ -45,7 +45,17 @@ async function run() {
 
   try {
     // 1. Authenticate
-    const hcRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'HC001', password: 'test123' });
+    let hcRes;
+    try {
+      hcRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'HC001', password: 'Test@1234' });
+    } catch (e) {
+      if (e.response && e.response.status === 401) {
+        console.log('[Test] Password Test@1234 failed, trying test123...');
+        hcRes = await axios.post(`${baseURL}/auth/login`, { badge_no: 'HC001', password: 'test123' });
+      } else {
+        throw e;
+      }
+    }
     assert(hcRes.status === 200, 'HC login succeeds');
     const token = hcRes.data.data.accessToken;
 
