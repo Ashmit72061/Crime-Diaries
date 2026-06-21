@@ -87,7 +87,7 @@ export default function DistrictDashboard() {
  
       {/* ══════════════ HERO HEADER ══════════════ */}
       <div className="relative overflow-hidden hero-banner-gradient px-8 py-8">
-        <span className="user-greeting-badge text-sm font-semibold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 shadow-sm">
+        <span className="user-greeting-badge text-2xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
           Hi, {user?.username || 'User'}
         </span>
         <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
@@ -107,12 +107,6 @@ export default function DistrictDashboard() {
               <Shield size={12} className="text-amber-400" />
               DELHI POLICE · DISTRICT DCP CONSOLE
             </span>
-            <div className="flex items-center gap-3 mt-4">
-              <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1.5 backdrop-blur-sm">
-                <Radio size={11} className="animate-pulse text-emerald-400" />
-                <span className="text-xs font-semibold tracking-wide text-emerald-300">LIVE DATA</span>
-              </div>
-            </div>
           </div>
  
           {/* Heading + CTA */}
