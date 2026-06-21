@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Archive, Upload, Eye, CheckCircle2, XCircle,
-  AlertTriangle, Loader2, Clock, RefreshCw, ChevronDown,
+  AlertTriangle, Loader2, Clock, RefreshCw, ChevronDown, FileSpreadsheet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore.js';
@@ -26,7 +27,7 @@ function StatusBadge({ status }) {
 }
 
 // ── Import Batch Table ────────────────────────────────────────────────────────
-function BatchTable({ batches, isLoading, onViewBatch }) {
+function BatchTable({ batches = [], isLoading, onViewBatch }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-14 text-[var(--text-main-theme)] opacity-80 font-semibold font-sans">
@@ -93,81 +94,6 @@ function BatchTable({ batches, isLoading, onViewBatch }) {
   );
 }
 
-// ── Amendments Table ──────────────────────────────────────────────────────────
-function AmendmentsTable({ amendments, isLoading, onApprove, onReject }) {
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-14 text-[var(--text-main-theme)] opacity-80 font-semibold font-sans">
-        <Loader2 size={20} className="animate-spin mr-2 text-[var(--accent-color)]" /> Loading amendments…
-      </div>
-    );
-  }
-  if (!amendments.length) {
-    return (
-      <div className="text-center py-16 text-[var(--text-main-theme)] opacity-60 font-semibold font-sans">
-        <Clock size={40} className="mx-auto mb-3 opacity-30 text-[var(--accent-color)]" />
-        <p className="text-sm font-bold text-[var(--text-main-theme)]">No pending amendments.</p>
-        <p className="text-xs mt-1 text-[var(--text-main-theme)] opacity-70">All amendment requests are up to date.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse text-xs font-sans">
-        <thead>
-          <tr className="bg-[var(--bg-page-main)]/80 text-[var(--text-main-theme)] uppercase font-semibold border-b border-[var(--border-card-theme)]/70 tracking-wider">
-            <th className="p-3 pl-6 text-[var(--text-main-theme)] font-bold">Amendment ID</th>
-            <th className="p-3 text-[var(--text-main-theme)] font-bold">Record Ref</th>
-            <th className="p-3 text-[var(--text-main-theme)] font-bold">Reason</th>
-            <th className="p-3 text-[var(--text-main-theme)] font-bold">Requested By</th>
-            <th className="p-3 text-[var(--text-main-theme)] font-bold">Status</th>
-            <th className="p-3 pr-6 text-right text-[var(--text-main-theme)] font-bold">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[var(--border-card-theme)]/30 text-[var(--text-main-theme)]">
-          {amendments.map((am) => (
-            <tr
-              key={am.id}
-              className="hover:bg-[var(--bg-page-main)]/40 transition-colors duration-150"
-            >
-              <td className="p-3 pl-6 font-mono text-[var(--text-main-theme)] opacity-65 text-[10px]">{am.id?.slice(0, 12)}…</td>
-              <td className="p-3 font-mono text-amber-500 font-bold">{am.record_id?.slice(0, 10) || '—'}…</td>
-              <td className="p-3 max-w-[200px] truncate text-[var(--text-main-theme)] opacity-85 font-semibold" title={am.reason}>{am.reason || '—'}</td>
-              <td className="p-3 text-[var(--text-main-theme)] opacity-70 font-semibold">{am.requested_by || '—'}</td>
-              <td className="p-3"><StatusBadge status={am.status} /></td>
-              <td className="p-3 pr-6 text-right font-semibold">
-                {am.status === 'PENDING' ? (
-                  <div className="flex items-center gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => onApprove(am.id)}
-                      className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer font-bold border border-emerald-500/30 shadow-sm active:scale-95"
-                      title="Approve"
-                    >
-                      <CheckCircle2 size={12} /> Approve
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onReject(am.id)}
-                      className="inline-flex items-center gap-1 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1.5 rounded-lg transition-all duration-150 cursor-pointer font-bold border border-rose-500/30 shadow-sm active:scale-95"
-                      title="Reject"
-                    >
-                      <XCircle size={12} /> Reject
-                    </button>
-                  </div>
-                ) : (
-                  <span className="text-[var(--text-main-theme)] opacity-30">—</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 // ── File Import Panel ─────────────────────────────────────────────────────────
 function ImportPanel({ onImported }) {
   const [recordType, setRecordType] = useState('CASE');
@@ -197,7 +123,7 @@ function ImportPanel({ onImported }) {
         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-page-main)]/80 border border-[var(--border-card-theme)]/85">
           <Upload size={15} className="text-[var(--accent-color)]" />
         </span>
-        Import Legacy Data (Excel / CSV)
+        Bulk Import Records (Excel / CSV)
       </h3>
 
       <div className="grid grid-cols-2 gap-4 text-[var(--text-main-theme)] font-semibold">
@@ -242,11 +168,315 @@ function ImportPanel({ onImported }) {
   );
 }
 
+// ── Bulk Importer Panel (Validate / Confirm) ───────────────────────────────────
+function BulkImporterPanel({ onImported, isHC, user, refetchBatches, setActiveTab }) {
+  const { t, i18n } = useTranslation();
+  const currentLng = i18n.language || 'en';
+  
+  const [step, setStep] = useState(1); // 1 | 2
+  const [recordType, setRecordType] = useState('CASE');
+  const [psId, setPsId] = useState(isHC ? (user?.ps_id || user?.station_id || '') : '');
+  const [isLegacy, setIsLegacy] = useState(false);
+  const [file, setFile] = useState(null);
+  const [validationResult, setValidationResult] = useState(null);
+  
+  // Fetch active stations dynamically
+  const { data: stations = [] } = useQuery({
+    queryKey: ['hierarchy', 'stations'],
+    queryFn: async () => {
+      const res = await api.get('/hierarchy/nodes?type=PS');
+      return res.data?.data || [];
+    },
+    enabled: !isHC
+  });
+
+  const downloadTemplate = async () => {
+    try {
+      const res = await api.get(`/import/template/${recordType}`, {
+        params: { lang: currentLng },
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data], { type: res.headers['content-type'] });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `${recordType}_Import_Template.xlsx`;
+      link.click();
+      toast.success(t('import.templateDownloaded', 'Template downloaded successfully'));
+    } catch (err) {
+      toast.error(t('import.templateDownloadFailed', 'Failed to download template'));
+    }
+  };
+
+  const validateMutation = useMutation({
+    mutationFn: async () => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('record_type', recordType);
+      formData.append('is_legacy', isHC ? 'false' : String(isLegacy));
+      if (!isHC && psId) {
+        formData.append('ps_id', psId);
+      } else if (isHC) {
+        formData.append('ps_id', user?.ps_id || user?.station_id || '');
+      }
+      const res = await api.post('/import/validate', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data?.data;
+    },
+    onSuccess: (data) => {
+      toast.success(t('import.validationSuccess', 'Validation completed'));
+      setValidationResult(data);
+      setStep(2);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || t('import.validationFailed', 'Validation failed'));
+    }
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/import/confirm/${validationResult?.batch_id}`);
+      return res.data?.data;
+    },
+    onSuccess: (data) => {
+      toast.success(t('import.importSuccess', `Successfully imported ${data?.imported_rows} rows!`));
+      resetWizard();
+      if (!isHC) {
+        onImported?.();
+      }
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || t('import.confirmFailed', 'Import confirmation failed'));
+    }
+  });
+
+  const resetWizard = () => {
+    setStep(1);
+    setFile(null);
+    setValidationResult(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Dynamic Steps Ribbon */}
+      <div className="flex items-center justify-center gap-4 mb-4">
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${step === 1 ? 'bg-[var(--accent-color)] text-white border-transparent shadow-md' : 'bg-[var(--bg-page-main)] border-[var(--border-card-theme)] text-[var(--text-main-theme)]/70'}`}>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold">1</span>
+          <span className="text-xs font-bold">{t('import.stepUpload', 'Upload & Validate')}</span>
+        </div>
+        <div className="h-px w-12 bg-[var(--border-card-theme)]"></div>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${step === 2 ? 'bg-[var(--accent-color)] text-white border-transparent shadow-md' : 'bg-[var(--bg-page-main)] border-[var(--border-card-theme)] text-[var(--text-main-theme)]/70'}`}>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold">2</span>
+          <span className="text-xs font-bold">{t('import.stepConfirm', 'Review & Confirm')}</span>
+        </div>
+      </div>
+
+      {step === 1 ? (
+        <div className="border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-2xl p-6 space-y-6 text-xs shadow-sm">
+          <h3 className="font-bold text-[var(--text-main-theme)] flex items-center gap-2 text-sm font-display">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-page-main)]/80 border border-[var(--border-card-theme)]/85">
+              <Upload size={15} className="text-[var(--accent-color)]" />
+            </span>
+            {t('import.bulkImportTitle', 'Bulk Spreadsheet Importer')}
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[var(--text-main-theme)] font-semibold">
+            {/* Record Type */}
+            <div className="space-y-1.5">
+              <label className="text-[var(--text-main-theme)] opacity-80 font-bold">{t('import.recordType', 'Record Type')}</label>
+              <select
+                value={recordType}
+                onChange={(e) => setRecordType(e.target.value)}
+                className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl px-3 py-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer shadow-sm font-bold"
+              >
+                {['CASE', 'ARREST', 'PCR_CALL'].map((rt) => (
+                  <option key={rt} value={rt} className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">{rt}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Template Download */}
+            <div className="space-y-1.5 flex flex-col justify-end">
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="flex items-center justify-center gap-1.5 bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] hover:border-[var(--accent-color)] text-[var(--accent-color)] hover:bg-[var(--bg-page-main)] font-bold px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer h-[34px]"
+              >
+                <FileSpreadsheet size={14} />
+                {t('import.downloadTemplate', 'Download Excel Template')}
+              </button>
+            </div>
+
+            {/* Destination Station selection (if not HC) */}
+            {!isHC && (
+              <div className="space-y-1.5">
+                <label className="text-[var(--text-main-theme)] opacity-80 font-bold">{t('import.destinationStation', 'Destination Police Station')}</label>
+                <select
+                  value={psId}
+                  onChange={(e) => setPsId(e.target.value)}
+                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl px-3 py-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer shadow-sm font-bold"
+                >
+                  <option value="">{t('import.selectStation', 'Select Destination Station...')}</option>
+                  {stations.map(st => (
+                    <option key={st.id} value={st.id} className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">
+                      {currentLng === 'hi' ? st.name_hi : st.name_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Is Legacy checkbox (if not HC) */}
+            {!isHC && (
+              <div className="space-y-1.5 flex items-center pl-2 pt-6">
+                <label className="flex items-center gap-2 cursor-pointer font-bold select-none text-[var(--text-main-theme)] opacity-80">
+                  <input
+                    type="checkbox"
+                    checked={isLegacy}
+                    onChange={(e) => setIsLegacy(e.target.checked)}
+                    className="h-4 w-4 accent-[var(--accent-color)] cursor-pointer"
+                  />
+                  <span>{t('import.markAsLegacy', 'Process as Legacy Data')}</span>
+                </label>
+              </div>
+            )}
+
+            {/* File selection */}
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-[var(--text-main-theme)] opacity-80 font-bold">{t('import.selectFile', 'Select File (Excel .xlsx)')}</label>
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl px-3 py-2 text-[var(--text-main-theme)] opacity-80 cursor-pointer text-[11px] shadow-sm file:mr-2 file:rounded-lg file:border-0 file:bg-[var(--bg-page-main)]/80 file:text-[var(--accent-color)] file:font-bold file:px-2 file:py-0.5"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-[var(--text-main-theme)] opacity-60 font-semibold">
+              {t('import.validateHint', 'File will be validated for correct fields, constraints, and data types.')}
+            </p>
+            <button
+              type="button"
+              disabled={!file || validateMutation.isPending || (!isHC && !psId)}
+              onClick={() => validateMutation.mutate()}
+              className="flex items-center gap-1.5 bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm active:scale-95"
+            >
+              {validateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+              {t('import.validateButton', 'Validate Spreadsheet')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-2xl p-6 space-y-6 text-xs shadow-sm">
+          <h3 className="font-bold text-[var(--text-main-theme)] flex items-center gap-2 text-sm font-display">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-page-main)]/80 border border-[var(--border-card-theme)]/85">
+              <CheckCircle2 size={15} className="text-emerald-500" />
+            </span>
+            {t('import.validationResult', 'Validation Summary')}
+          </h3>
+
+          {/* Validation Metrics Grid */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 rounded-2xl p-4 text-center">
+              <div className="text-[var(--text-main-theme)] opacity-60 text-[10px] font-bold uppercase tracking-wider mb-1">
+                {t('import.totalRows', 'Total Rows')}
+              </div>
+              <div className="text-[var(--text-main-theme)] font-bold text-lg tabular-numbers">
+                {validationResult?.total_rows ?? 0}
+              </div>
+            </div>
+            <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-2xl p-4 text-center">
+              <div className="text-emerald-600 dark:text-emerald-400 opacity-80 text-[10px] font-bold uppercase tracking-wider mb-1">
+                {t('import.validRows', 'Valid Rows')}
+              </div>
+              <div className="text-emerald-600 dark:text-emerald-400 font-bold text-lg tabular-numbers">
+                {validationResult?.valid_rows ?? 0}
+              </div>
+            </div>
+            <div className="border border-rose-500/20 bg-rose-500/5 rounded-2xl p-4 text-center">
+              <div className="text-rose-600 dark:text-rose-400 opacity-80 text-[10px] font-bold uppercase tracking-wider mb-1">
+                {t('import.invalidRows', 'Invalid Rows')}
+              </div>
+              <div className="text-rose-600 dark:text-rose-400 font-bold text-lg tabular-numbers">
+                {validationResult?.invalid_rows ?? 0}
+              </div>
+            </div>
+          </div>
+
+          {/* Error Details List */}
+          {validationResult?.errors?.length > 0 ? (
+            <div className="border border-rose-500/30 bg-rose-500/5 rounded-2xl p-5 space-y-3">
+              <p className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-2 text-xs">
+                <AlertTriangle size={14} />
+                {t('import.validationErrorsFound', `Validation Errors Found (${validationResult.errors.length})`)}
+              </p>
+              <p className="text-[var(--text-main-theme)]/70 font-semibold text-[10px]">
+                {t('import.errorSkipHint', 'These rows contain errors. When you confirm import, only valid rows will be imported and the rows listed below will be skipped.')}
+              </p>
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-2">
+                {validationResult.errors.map((err, i) => (
+                  <div key={i} className="font-mono text-[10px] bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-lg flex justify-between items-start gap-4">
+                    <div>
+                      <span className="font-bold mr-2">Row {err.row}:</span>
+                      <span>{err.message}</span>
+                    </div>
+                    {err.field_key && (
+                      <span className="bg-rose-500/20 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
+                        {err.field_key}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-5 flex items-center gap-3">
+              <CheckCircle2 className="text-emerald-500 shrink-0" size={18} />
+              <div>
+                <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                  {t('import.allRowsValid', 'All rows are valid!')}
+                </p>
+                <p className="text-[var(--text-main-theme)]/60 text-[10px] mt-0.5 font-semibold">
+                  {t('import.readyToConfirm', 'Your spreadsheet has passed validation and is ready to be committed to the registry database.')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-between border-t border-[var(--border-card-theme)]/40 pt-4">
+            <button
+              type="button"
+              onClick={resetWizard}
+              className="flex items-center gap-1.5 text-[var(--text-main-theme)] hover:bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] bg-transparent px-4 py-2 rounded-xl transition-all cursor-pointer font-bold shadow-sm"
+            >
+              {t('common.cancel', 'Cancel & Reset')}
+            </button>
+
+            <button
+              type="button"
+              disabled={confirmMutation.isPending || (validationResult?.valid_rows === 0)}
+              onClick={() => confirmMutation.mutate()}
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm active:scale-95"
+            >
+              {confirmMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+              {t('import.confirmImportButton', 'Confirm and Import Valid Rows')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function LegacyDataPage() {
   const { user } = useAuthStore();
+  const isHC = user?.role === 'HC';
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('batches'); // 'batches' | 'amendments' | 'import'
+  const [activeTab, setActiveTab] = useState(isHC ? 'bulk_import' : 'batches');
   const [selectedBatch, setSelectedBatch] = useState(null);
 
   const getThemeClass = () => {
@@ -281,6 +511,7 @@ export default function LegacyDataPage() {
       const raw = res.data?.data;
       return Array.isArray(raw) ? raw : [];
     },
+    enabled: !isHC,
   });
 
   // ── Fetch Batch Detail ────────────────────────────────────────────────────
@@ -292,36 +523,13 @@ export default function LegacyDataPage() {
     },
     enabled: !!selectedBatch?.id,
   });
-
-  // ── Fetch Amendments ──────────────────────────────────────────────────────
-  const { data: amendments = [], isLoading: amendLoading, refetch: refetchAmends } = useQuery({
-    queryKey: ['legacy', 'amendments'],
-    queryFn: async () => {
-      const res = await api.get('/legacy/amendments');
-      const raw = res.data?.data;
-      return Array.isArray(raw) ? raw : [];
-    },
-    enabled: activeTab === 'amendments',
-  });
-
-  // ── Amendment Mutations ───────────────────────────────────────────────────
-  const approveMutation = useMutation({
-    mutationFn: (id) => api.post(`/legacy/amendments/${id}/approve`),
-    onSuccess: () => { toast.success('Amendment approved'); refetchAmends(); },
-    onError: (err) => toast.error(err.response?.data?.message || 'Approve failed'),
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: (id) => api.post(`/legacy/amendments/${id}/reject`),
-    onSuccess: () => { toast.success('Amendment rejected'); refetchAmends(); },
-    onError: (err) => toast.error(err.response?.data?.message || 'Reject failed'),
-  });
-
-  const TABS = [
-    { id: 'batches',    label: 'Import Batches' },
-    { id: 'amendments', label: 'Amendments Queue' },
-    { id: 'import',     label: 'New Import' },
-  ];
+  const TABS = isHC
+    ? [ { id: 'bulk_import', label: 'Bulk Importer' } ]
+    : [
+        { id: 'batches',    label: 'Import Batches' },
+        { id: 'import',     label: 'New Import' },
+        { id: 'bulk_import', label: 'Bulk Importer' },
+      ];
 
   return (
     <div className={`min-h-screen ${getThemeClass()} page-bg space-y-6 p-6 font-sans text-[var(--text-main-theme)]`}>
@@ -335,18 +543,18 @@ export default function LegacyDataPage() {
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-[10px] font-semibold text-white/80 uppercase tracking-wider">
-              <Archive size={11} /> Legacy Records
+              <Upload size={11} /> Bulk Import
             </span>
             <h1 className="mt-3 text-2xl font-bold text-white flex items-center gap-3 font-display">
-              Legacy Data Manager
+              Bulk Import Manager
             </h1>
             <p className="text-white/60 text-xs mt-1.5 max-w-lg font-semibold">
-              Import historical police records from legacy Excel/CSV registers, review batch statuses, and process data correction amendments.
+              Upload case registers, arrest files, or PCR logs in bulk and monitor batch statuses.
             </p>
           </div>
           <button
             type="button"
-            onClick={() => { refetchBatches(); refetchAmends(); }}
+            onClick={() => refetchBatches()}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer hover:shadow-md shrink-0 active:scale-95"
           >
             <RefreshCw size={13} />
@@ -368,11 +576,6 @@ export default function LegacyDataPage() {
             }`}
           >
             {tab.label}
-            {tab.id === 'amendments' && amendments.filter((a) => a.status === 'PENDING').length > 0 && (
-              <span className="ml-1.5 bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                {amendments.filter((a) => a.status === 'PENDING').length}
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -444,18 +647,20 @@ export default function LegacyDataPage() {
           </div>
         )}
 
-        {activeTab === 'amendments' && (
-          <AmendmentsTable
-            amendments={amendments}
-            isLoading={amendLoading}
-            onApprove={(id) => approveMutation.mutate(id)}
-            onReject={(id) => rejectMutation.mutate(id)}
-          />
-        )}
 
         {activeTab === 'import' && (
           <div className="p-6">
             <ImportPanel onImported={() => { refetchBatches(); setActiveTab('batches'); }} />
+          </div>
+        )}
+
+        {activeTab === 'bulk_import' && (
+          <div className="p-6">
+            <BulkImporterPanel
+              isHC={isHC}
+              user={user}
+              onImported={() => { refetchBatches(); setActiveTab('batches'); }}
+            />
           </div>
         )}
       </div>

@@ -147,7 +147,7 @@ export default function Queue() {
 
       {/* Hero Header — mirrors Dashboard's gradient banner */}
       <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden">
-        <span className="user-greeting-badge text-base font-semibold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+        <span className="user-greeting-badge text-2xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
           Hi, {user?.username || 'User'}
         </span>
         <div className="pointer-events-none absolute -top-8 -right-8 h-48 w-48 rounded-full border border-white/5" />

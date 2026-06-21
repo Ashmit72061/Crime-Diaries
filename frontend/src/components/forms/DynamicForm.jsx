@@ -8,6 +8,7 @@ import { useFormSchema } from '../../hooks/useFormSchema.js';
 import { useAutosave } from '../../hooks/useAutosave.js';
 import useAuthStore from '../../store/authStore.js';
 import { findNodeById } from '../../utils/hierarchyData.js';
+import { useQuery } from '@tanstack/react-query';
 
 import FormSection from './FormSection.jsx';
 import FormToolbar from './FormToolbar.jsx';
@@ -66,6 +67,8 @@ export default function DynamicForm({
   onSubmit,
   readOnly = false,
   targetFields = [],
+  caseType = null,
+  onBack = null,
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language || 'en';
@@ -74,6 +77,69 @@ export default function DynamicForm({
   const { user } = useAuthStore();
   const { schema, isLoading, isError, schemaError } = useFormSchema(recordType);
   const activeRecordIdRef = useRef(initialValues?.id || null);
+
+  // Fetch existing cases to populate FIR dropdown dynamically
+  const { data: casesData = [] } = useQuery({
+    queryKey: ['records', 'cases-list'],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/records');
+        const cases = res.data?.data?.cases || res.data?.cases || [];
+        return cases.filter(c => c.record_type === 'CASE');
+      } catch (err) {
+        console.error('Failed to load cases', err);
+        return [];
+      }
+    },
+    enabled: recordType === 'ARREST' && caseType === 'against_fir',
+  });
+
+  const firOptions = React.useMemo(() => {
+    return (casesData || []).map(c => {
+      const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+      const ps = c.data?.police_station || 'Unknown';
+      const date = c.data?.fir_date || 'N/A';
+      return {
+        value: firNo,
+        label_en: `${firNo} (PS: ${ps}, Date: ${date})`,
+        label_hi: `${firNo} (थाना: ${ps}, दिनांक: ${date})`
+      };
+    });
+  }, [casesData]);
+
+  const mockOptions = React.useMemo(() => [
+    { value: 'FIR No. 104/2026', label_en: 'FIR No. 104/2026 (PS: Parliament Street, Sec 379 IPC)', label_hi: 'एफआईआर संख्या 104/2026 (थाना: पार्लियामेंट स्ट्रीट, धारा 379 आईपीसी)' },
+    { value: 'FIR No. 112/2026', label_en: 'FIR No. 112/2026 (PS: Chanakyapuri, Sec 302 IPC)', label_hi: 'एफआईआर संख्या 112/2026 (थाना: चाणक्यपुरी, धारा 302 आईपीसी)' },
+    { value: 'FIR No. 125/2026', label_en: 'FIR No. 125/2026 (PS: Mandir Marg, Sec 323 IPC)', label_hi: 'एफआईआर संख्या 125/2026 (थाना: मंदिर मार्ग, धारा 323 आईपीसी)' },
+    { value: 'FIR No. 150/2026', label_en: 'FIR No. 150/2026 (PS: Tughlak Road, Sec 406 IPC)', label_hi: 'एफआईआर संख्या 150/2026 (थाना: तुगलक रोड, धारा 406 आईपीसी)' },
+  ], []);
+
+  const finalFirOptions = firOptions.length > 0 ? firOptions : mockOptions;
+
+  const finalSchema = React.useMemo(() => {
+    if (!schema || schema.length === 0) return [];
+    if (recordType === 'ARREST' && caseType === 'against_fir') {
+      const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
+      if (!hasVirtualStep) {
+        const virtualSelectFirStep = {
+          title_en: 'Select FIR',
+          title_hi: 'प्राथमिकी (FIR) चुनें',
+          fields: [
+            {
+              field_key: 'selected_fir',
+              field_type: 'SELECT',
+              label_en: 'Select FIR Number',
+              label_hi: 'प्राथमिकी (FIR) संख्या चुनें',
+              validation_rules: JSON.stringify({ required: true }),
+              options: finalFirOptions
+            }
+          ]
+        };
+        return [virtualSelectFirStep, ...schema];
+      }
+    }
+    return schema;
+  }, [schema, recordType, caseType, finalFirOptions]);
 
   const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
     recordType,
@@ -172,7 +238,7 @@ export default function DynamicForm({
 
   /* ── Validate a single section (step) ─────────────────────────────────── */
   const validateSection = useCallback((stepIdx, currentValues = values) => {
-    const section = schema[stepIdx];
+    const section = finalSchema[stepIdx];
     if (!section) return {};
 
     const errs = {};
@@ -200,17 +266,17 @@ export default function DynamicForm({
       }
     });
     return errs;
-  }, [schema, values, lang]);
+  }, [finalSchema, values, lang]);
 
   /* ── Validate ALL sections ─────────────────────────────────────────────── */
   const validateAll = useCallback((currentValues = values) => {
     const allErrs = {};
-    schema.forEach((section) => {
-      const errs = validateSection(schema.indexOf(section), currentValues);
+    finalSchema.forEach((section) => {
+      const errs = validateSection(finalSchema.indexOf(section), currentValues);
       Object.assign(allErrs, errs);
     });
     return allErrs;
-  }, [schema, values, validateSection]);
+  }, [finalSchema, values, validateSection]);
 
   /* ── Handle field change ──────────────────────────────────────────────── */
   const handleChange = useCallback((key, val) => {
@@ -242,7 +308,7 @@ export default function DynamicForm({
     if (Object.keys(stepErrs).length > 0) {
       setErrors((prev) => ({ ...prev, ...stepErrs }));
       // Mark all fields in this step as touched
-      const section = schema[currentStep];
+      const section = finalSchema[currentStep];
       const newTouched = {};
       section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
       setTouched((prev) => ({ ...prev, ...newTouched }));
@@ -253,8 +319,19 @@ export default function DynamicForm({
       return;
     }
 
+    // Auto-populate linked_fir_dd_no when moving from Step 1 (Select FIR) to Step 2 (General Information)
+    if (recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0) {
+      const selectedFir = values.selected_fir;
+      if (selectedFir) {
+        setValues(prev => ({
+          ...prev,
+          linked_fir_dd_no: selectedFir
+        }));
+      }
+    }
+
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
-    setCurrentStep((s) => Math.min(s + 1, schema.length - 1));
+    setCurrentStep((s) => Math.min(s + 1, finalSchema.length - 1));
     // Scroll to top of form
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
@@ -281,6 +358,18 @@ export default function DynamicForm({
         canJump = false;
         break;
       }
+
+      // Auto-populate linked_fir_dd_no if we validate step 0 (Select FIR)
+      if (recordType === 'ARREST' && caseType === 'against_fir' && i === 0) {
+        const selectedFir = values.selected_fir;
+        if (selectedFir) {
+          setValues(prev => ({
+            ...prev,
+            linked_fir_dd_no: selectedFir
+          }));
+        }
+      }
+
       setCompletedSteps((prev) => new Set([...prev, i]));
     }
     if (canJump) setCurrentStep(targetIdx);
@@ -295,11 +384,11 @@ export default function DynamicForm({
     if (Object.keys(allErrs).length > 0) {
       setErrors(allErrs);
       const allTouched = {};
-      schema.forEach((sec) => sec.fields.forEach((f) => { allTouched[f.field_key] = true; }));
+      finalSchema.forEach((sec) => sec.fields.forEach((f) => { allTouched[f.field_key] = true; }));
       setTouched(allTouched);
 
       let firstErrStep = 0;
-      schema.forEach((sec, idx) => {
+      finalSchema.forEach((sec, idx) => {
         const hasErr = sec.fields.some((f) => allErrs[f.field_key]);
         if (hasErr && idx < firstErrStep + 1) firstErrStep = idx;
       });
@@ -344,7 +433,7 @@ export default function DynamicForm({
     );
   }
 
-  if (isError || schema.length === 0) {
+  if (isError || finalSchema.length === 0) {
     const status = schemaError?.response?.status;
     const hint = status === 401
       ? 'Session expired — please log out and log back in with your badge credentials.'
@@ -363,11 +452,11 @@ export default function DynamicForm({
     );
   }
 
-  const activeSection = schema[currentStep];
-  const isLastStep    = currentStep === schema.length - 1;
+  const activeSection = finalSchema[currentStep];
+  const isLastStep    = currentStep === finalSchema.length - 1;
 
   const stepHasError = (idx) => {
-    const sec = schema[idx];
+    const sec = finalSchema[idx];
     return sec?.fields?.some((f) => errors[f.field_key] && touched[f.field_key]);
   };
 
@@ -375,7 +464,7 @@ export default function DynamicForm({
     <div className="space-y-6" ref={formRef}>
 
       {/* ── Step Navigator ── */}
-      {schema.length > 1 && (
+      {finalSchema.length > 1 && (
         <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             {/* Active Step Indicator */}
@@ -398,7 +487,7 @@ export default function DynamicForm({
             {/* Right: step counter + autosave */}
             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end sm:pl-5 sm:border-l border-slate-100">
               <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                {lang === 'hi' ? `चरण ${currentStep + 1} / ${schema.length}` : `Step ${currentStep + 1} / ${schema.length}`}
+                {lang === 'hi' ? `चरण ${currentStep + 1} / ${finalSchema.length}` : `Step ${currentStep + 1} / ${finalSchema.length}`}
               </span>
               <FormAutosave status={saveStatus} lang={lang} />
             </div>
@@ -407,7 +496,7 @@ export default function DynamicForm({
       )}
 
       {/* ── Single-step save indicator (when no step nav) ─────────────── */}
-      {schema.length === 1 && (
+      {finalSchema.length === 1 && (
         <div className="flex justify-end">
           <FormAutosave status={saveStatus} lang={lang} />
         </div>
@@ -459,9 +548,9 @@ export default function DynamicForm({
           {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
           <FormToolbar
             currentStep={currentStep}
-            totalSteps={schema.length}
+            totalSteps={finalSchema.length}
             readOnly={readOnly}
-            onBack={() => navigate('/records')}
+            onBack={onBack || (() => navigate('/records'))}
             onPrevious={handleBack}
             onSaveDraft={!readOnly ? handleManualSave : null}
             onNext={handleNext}
