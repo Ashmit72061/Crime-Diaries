@@ -25,7 +25,12 @@ function StatusBadge({ status }) {
 }
 
 // ── Import Batch Table ────────────────────────────────────────────────────────
-function BatchTable({ batches, isLoading, onViewBatch }) {
+function BatchTable({
+  batches,
+  isLoading,
+  onViewBatch,
+  onImportClick
+}) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-14 text-[#718096]">
@@ -39,6 +44,13 @@ function BatchTable({ batches, isLoading, onViewBatch }) {
         <Archive size={40} className="mx-auto mb-3 opacity-20 text-[#003087]" />
         <p className="text-sm font-medium">No import batches found.</p>
         <p className="text-xs mt-1 text-[#CBD5E0]">Upload a file in the New Import tab to get started.</p>
+        <button
+          type="button"
+          onClick={onImportClick}
+          className="mt-4 px-4 py-2 rounded-lg bg-[#003087] text-white text-sm hover:bg-[#0046C0]"
+>
+  Import CSV
+</button>
       </div>
     );
   }
@@ -359,7 +371,14 @@ export default function LegacyDataPage() {
             batches={batches}
             isLoading={batchLoading}
             onViewBatch={(b) => setSelectedBatch(b)}
-          />
+            onImportClick={() => {
+              setActiveTab('import');
+
+              setTimeout(() => {
+                document.querySelector('input[type="file"]')?.click();
+              }, 100);
+            }}
+/>
         )}
 
         {activeTab === 'batches' && selectedBatch && (

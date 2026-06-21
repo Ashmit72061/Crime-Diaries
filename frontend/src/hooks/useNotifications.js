@@ -36,6 +36,11 @@ export function useNotifications() {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const getToken = () => localStorage.getItem('access_token');
+  const getCsrfToken = () =>
+  document.cookie
+    .split('; ')
+    .find((c) => c.startsWith('csrfToken='))
+    ?.split('=')[1];
 
   const fetchNotifications = useCallback(async () => {
     const token = getToken();
@@ -141,7 +146,10 @@ export function useNotifications() {
     try {
       const res = await fetch(`${REST_URL}/${id}/read`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+            'x-csrf-token': getCsrfToken(),
+},
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -159,7 +167,10 @@ export function useNotifications() {
     try {
       const res = await fetch(`${REST_URL}/read-all`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-csrf-token': getCsrfToken(),
+},
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

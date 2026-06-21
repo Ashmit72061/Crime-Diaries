@@ -29,31 +29,31 @@ const seedMockData = async () => {
     }
 
     // 2. Users
-    const passwordHash = await bcrypt.hash('test1234', 10);
+    const passwordHash = await bcrypt.hash('Test@1234', 10);
     const mockUsers = [];
 
     // HC User
     const hcId = uuidv4();
     mockUsers.push({
-      id: hcId, badge_no: 'HC001', name_en: 'Ramesh Singh', role: 'HC', ps_id: psIds[0], password_hash: passwordHash
+      id: hcId, username: 'hc_ps1', badge_no: 'HC001', name_en: 'Ramesh Singh', name_hi: 'रमेश सिंह', role: 'HC', station_id: psIds[0], password_hash: passwordHash
     });
 
     // SHO User
     const shoId = uuidv4();
     mockUsers.push({
-      id: shoId, badge_no: 'SHO001', name_en: 'Suresh Kumar', role: 'SHO', ps_id: psIds[0], password_hash: passwordHash
+      id: shoId, username: 'sho_ps1', badge_no: 'SHO001', name_en: 'Suresh Kumar', name_hi: 'सुरेश कुमार', role: 'SHO', station_id: psIds[0], password_hash: passwordHash
     });
 
     // District Officer
     const districtOfficerId = uuidv4();
     mockUsers.push({
-      id: districtOfficerId, badge_no: 'DCP001', name_en: 'Arun Verma', role: 'DISTRICT_OFFICER', district_id: districtId, password_hash: passwordHash
+      id: districtOfficerId, username: 'dcp_central', badge_no: 'DCP001', name_en: 'Arun Verma', name_hi: 'अरुण वर्मा', role: 'DISTRICT_OFFICER', district_id: districtId, password_hash: passwordHash
     });
     
     // HQ Analyst
     const hqAnalystId = uuidv4();
     mockUsers.push({
-      id: hqAnalystId, badge_no: 'HQ001', name_en: 'Amit Sharma', role: 'HQ_ANALYST', password_hash: passwordHash
+      id: hqAnalystId, username: 'hq_analyst', badge_no: 'HQ001', name_en: 'Amit Sharma', name_hi: 'अमित शर्मा', role: 'HQ_ANALYST', password_hash: passwordHash
     });
 
     await db('users').insert(mockUsers);
