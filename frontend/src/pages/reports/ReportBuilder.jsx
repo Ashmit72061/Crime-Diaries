@@ -189,20 +189,20 @@ export default function ReportBuilder() {
       <div className="space-y-6">
         {/* Top: Input Parameter Card */}
         <div className="bg-[var(--bg-card-theme)] border border-[var(--border-card-theme)] rounded-2xl p-6 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] border-b border-[var(--border-card-theme)] pb-2 flex items-center gap-1.5">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-main-theme)] border-b border-[var(--border-card-theme)] pb-2 flex items-center gap-1.5">
             <Calendar size={14} className="text-[var(--accent-color)]" />
             <span>Export Parameters</span>
           </h3>
 
-          <form onSubmit={handleGenerate} className="space-y-4 text-xs">
+          <form onSubmit={handleGenerate} className="space-y-5 text-sm">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               {/* Report Proforma Selection */}
-              <div className="col-span-1 md:col-span-4 space-y-1.5">
+              <div className="col-span-1 md:col-span-5 space-y-1.5">
                 <label className="text-[var(--text-main-theme)]/80 font-bold">Report Proforma Template:</label>
                 <select
                   value={template}
                   onChange={(e) => setTemplate(e.target.value)}
-                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2.5 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold shadow-sm"
+                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2.5 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold shadow-sm text-sm"
                 >
                   <option value="Cases Daily Diary Summary">Cases Daily Diary Summary (Cases Master)</option>
                   <option value="Arrest Master Registers">Arrest Master Registers (Arrests logs)</option>
@@ -212,37 +212,60 @@ export default function ReportBuilder() {
               </div>
 
               {/* From Date */}
-              <div className="col-span-1 md:col-span-2 space-y-1.5">
+              <div className="col-span-1 md:col-span-3 space-y-1.5">
                 <label className="text-[var(--text-main-theme)]/80 font-bold">From Date:</label>
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm"
+                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm text-sm"
                 />
               </div>
 
               {/* To Date */}
-              <div className="col-span-1 md:col-span-2 space-y-1.5">
+              <div className="col-span-1 md:col-span-3 space-y-1.5">
                 <label className="text-[var(--text-main-theme)]/80 font-bold">To Date:</label>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm"
+                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm text-sm"
                 />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-8 pt-4">
+              {/* Actions button */}
+              <div>
+                <button
+                  type="submit"
+                  disabled={generating}
+                  className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm flex items-center gap-1.5 active:scale-95 text-sm"
+                >
+                  {generating ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      <span>Compiling Registry...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={14} />
+                      <span>Generate Excel Report</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Format selection */}
-              <div className="col-span-1 md:col-span-4 space-y-1.5">
-                <label className="text-[var(--text-main-theme)]/80 font-bold block mb-2">File Spreadsheet Format:</label>
-                <div className="flex gap-4 py-1">
+              <div className="space-y-1 text-sm">
+                <label className="text-[var(--text-main-theme)]/80 font-bold block">File Spreadsheet Format:</label>
+                <div className="flex gap-6 py-1">
                   <label className="flex items-center gap-1.5 cursor-pointer text-[var(--text-main-theme)]/80 font-semibold">
                     <input
                       type="radio"
                       checked={format === 'xlsx'}
                       onChange={() => setFormat('xlsx')}
-                      className="accent-[var(--accent-color)]"
+                      className="accent-[var(--accent-color)] w-4 h-4"
                     />
                     <span>Excel (.xlsx)</span>
                   </label>
@@ -251,33 +274,12 @@ export default function ReportBuilder() {
                       type="radio"
                       checked={format === 'csv'}
                       onChange={() => setFormat('csv')}
-                      className="accent-[var(--accent-color)]"
+                      className="accent-[var(--accent-color)] w-4 h-4"
                     />
                     <span>CSV File (.csv)</span>
                   </label>
                 </div>
               </div>
-            </div>
-
-            {/* Actions button */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                disabled={generating}
-                className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm flex items-center gap-1.5 active:scale-95"
-              >
-                {generating ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    <span>Compiling Registry...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText size={14} />
-                    <span>Generate Excel Report</span>
-                  </>
-                )}
-              </button>
 
               {/* Direct download banner */}
               {reportResult && (
@@ -306,7 +308,7 @@ export default function ReportBuilder() {
           </h3>
 
           <div className="overflow-x-auto border border-[var(--border-card-theme)]/70 rounded-xl bg-[var(--bg-card-theme)]">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-[var(--bg-page-main)]/50 text-[var(--text-main-theme)]/80 uppercase font-semibold border-b border-[var(--border-card-theme)]/70">
                   <th className="p-3 pl-6 font-bold text-[var(--text-main-theme)]">Export ID</th>
@@ -321,12 +323,12 @@ export default function ReportBuilder() {
                   <tr key={idx} className="hover:bg-[var(--bg-page-main)]/30 transition-colors duration-150">
                     <td className="p-3 pl-6 font-mono font-bold text-[var(--text-main-theme)] opacity-60">{item.id}</td>
                     <td className="p-3 font-semibold text-[var(--text-main-theme)]">{item.template}</td>
-                    <td className="p-3 text-[11px] text-[var(--text-main-theme)]/70 font-mono">{item.period}</td>
+                    <td className="p-3 text-[13px] text-[var(--text-main-theme)]/70 font-mono">{item.period}</td>
                     <td className="p-3 uppercase font-bold text-[var(--accent-color)]">{item.format}</td>
                     <td className="p-3 pr-6 text-right">
                       <button
                         onClick={() => handleDownloadFile(item)}
-                        className="bg-[var(--bg-page-main)] hover:bg-[var(--bg-page-main)]/85 text-[var(--accent-color)] font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors inline-flex items-center gap-1 cursor-pointer border border-[var(--border-card-theme)]/60 shadow-sm active:scale-95"
+                        className="bg-[var(--bg-page-main)] hover:bg-[var(--bg-page-main)]/85 text-[var(--accent-color)] font-bold px-3 py-1.5 rounded-lg text-xs transition-colors inline-flex items-center gap-1 cursor-pointer border border-[var(--border-card-theme)]/60 shadow-sm active:scale-95"
                       >
                         <Download size={10} />
                         <span>Download</span>

@@ -155,9 +155,6 @@ export default function Queue() {
 
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/20">
-              <ClipboardList size={13} /> APPROVAL DESK
-            </span>
             <h1 className="mt-4 text-3xl font-bold text-white flex items-center gap-3 font-display">
               {t('nav.queue', 'Approval Desk')}
             </h1>
