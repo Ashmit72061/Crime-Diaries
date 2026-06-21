@@ -8,6 +8,7 @@ import DynamicForm from '../../components/forms/DynamicForm.jsx';
 import { formSchemas } from '../../utils/api.js';
 import useAuthStore from '../../store/authStore.js';
 import api from '../../utils/api.js';
+import LinkedRecordsPanel from '../../components/common/LinkedRecordsPanel.jsx';
 
 export default function RecordDetail() {
   const { t } = useTranslation();
@@ -37,6 +38,20 @@ export default function RecordDetail() {
   const record = recordPayload?.record;
   const transitions = recordPayload?.transitions || [];
   const revisions = recordPayload?.revisions || [];
+  const linkedRecords = recordPayload?.linkedRecords || [];
+
+  const unlinkMutation = useMutation({
+    mutationFn: async (linkId) => {
+      await api.delete(`/v1/record-links/${linkId}`);
+    },
+    onSuccess: () => {
+      toast.success('Link removed');
+      queryClient.invalidateQueries({ queryKey: ['records', id] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to remove link');
+    }
+  });
 
   // Approve mutation
   const approveMutation = useMutation({
@@ -308,6 +323,14 @@ export default function RecordDetail() {
               )}
             </div>
           </div>
+
+          {/* Linked Records Panel */}
+          <LinkedRecordsPanel
+            linkedRecords={linkedRecords}
+            userRole={user?.role}
+            onUnlink={(linkId) => unlinkMutation.mutate(linkId)}
+            onNavigate={(recordId) => navigate(`/records/${recordId}`)}
+          />
 
           {/* Diffs & Revisions logs */}
           <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-xl p-5 space-y-4 shadow-sm">

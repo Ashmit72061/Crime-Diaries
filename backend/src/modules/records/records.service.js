@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../../config/db.js';
 import * as eventBus from '../../events/eventBus.js';
 import { computeRowHash, getPreviousHash } from '../../utils/hash.js';
+import { getLinksForRecord } from '../record-links/record-links.service.js';
 
 // Helpers
 const calculateDiff = (oldData, newData) => {
@@ -143,6 +144,30 @@ export const listRecords = async (recordType, filters, jurisdictionQuery) => {
     }
   }
 
+  // Filter by linked case UUID (e.g. show only arrests linked to a specific case)
+  if (filters.linked_case_id) {
+    query = query.whereExists(function () {
+      this.select('*').from('record_links')
+        .whereRaw('record_links.target_record_id = records.id')
+        .where('record_links.source_record_id', filters.linked_case_id);
+    });
+  }
+
+  // Filter by FIR number of the linked case
+  if (filters.linked_fir_no) {
+    const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+    query = query.whereExists(function () {
+      const sub = this.select('*').from('record_links')
+        .whereRaw('record_links.target_record_id = records.id')
+        .join('records as case_rec', 'case_rec.id', 'record_links.source_record_id');
+      if (isPostgres) {
+        sub.whereRaw("case_rec.data->>'fir_no' = ?", [filters.linked_fir_no]);
+      } else {
+        sub.whereRaw("json_extract(case_rec.data, '$.fir_no') = ?", [filters.linked_fir_no]);
+      }
+    });
+  }
+
   const rawRecords = await query.orderBy('records.created_at', 'desc');
 
   return rawRecords.map(r => ({
@@ -191,11 +216,20 @@ export const getRecordDetails = async (id) => {
     .join('custom_field_definitions as d', 'custom_field_values.field_definition_id', 'd.id')
     .where('custom_field_values.record_id', id);
 
+  let linkedRecords = [];
+  try {
+    linkedRecords = await getLinksForRecord(id);
+  } catch (_e) {
+    // Graceful degradation — table may not exist yet in rolling deploy
+    linkedRecords = [];
+  }
+
   return {
     record,
     revisions,
     transitions,
-    customFields: customValues
+    customFields: customValues,
+    linkedRecords
   };
 };
 

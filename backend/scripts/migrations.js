@@ -168,6 +168,56 @@ const runMigrations = async () => {
     await db.raw(`ALTER TABLE field_registry ALTER COLUMN created_by  TYPE TEXT USING created_by::TEXT;`);
     logger.info('field_registry: scope + section_label columns verified');
 
+    // 11. link_type_registry — config-driven record relationship types
+    await db.raw(`
+      CREATE TABLE IF NOT EXISTS link_type_registry (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        code VARCHAR(50) UNIQUE NOT NULL,
+        source_record_type VARCHAR(20) NOT NULL,
+        target_record_type VARCHAR(20) NOT NULL,
+        label_en VARCHAR(120) NOT NULL,
+        label_hi VARCHAR(120) NOT NULL,
+        cardinality VARCHAR(20) NOT NULL DEFAULT 'ONE_TO_MANY',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    logger.info('Table link_type_registry created or verified');
+
+    // Seed initial link types — idempotent via ON CONFLICT DO NOTHING
+    await db.raw(`
+      INSERT INTO link_type_registry (code, source_record_type, target_record_type, label_en, label_hi, is_active)
+      VALUES
+        ('CASE_ARREST',  'CASE', 'ARREST',   'Case → Arrest',          'मामला → गिरफ्तारी',       true),
+        ('CASE_MISSING', 'CASE', 'MISSING',  'Case → Missing Person',  'मामला → लापता व्यक्ति',   false),
+        ('CASE_PCR',     'CASE', 'PCR_CALL', 'Case → PCR Call',        'मामला → पीसीआर कॉल',      false),
+        ('CASE_UIDB',    'CASE', 'UIDB',     'Case → UIDB Record',     'मामला → यूआईडीबी रिकॉर्ड', false)
+      ON CONFLICT (code) DO NOTHING;
+    `);
+    logger.info('link_type_registry: seeded initial link types');
+
+    // 12. record_links — generic junction table linking any two records
+    // Note: source_record_id, target_record_id, created_by use VARCHAR(36) to match
+    // the existing schema where records.id, users.id are VARCHAR(36) not UUID.
+    // link_type_id is UUID to match link_type_registry.id which we own.
+    await db.raw(`
+      CREATE TABLE IF NOT EXISTS record_links (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        link_type_id UUID NOT NULL REFERENCES link_type_registry(id) ON DELETE RESTRICT,
+        source_record_id VARCHAR(36) NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+        target_record_id VARCHAR(36) NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+        metadata TEXT DEFAULT '{}',
+        created_by VARCHAR(36) NOT NULL REFERENCES users(id),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        CONSTRAINT record_links_unique UNIQUE (source_record_id, target_record_id, link_type_id),
+        CONSTRAINT record_links_no_self_link CHECK (source_record_id != target_record_id)
+      );
+    `);
+    await db.raw(`CREATE INDEX IF NOT EXISTS idx_record_links_source      ON record_links (source_record_id);`);
+    await db.raw(`CREATE INDEX IF NOT EXISTS idx_record_links_target      ON record_links (target_record_id);`);
+    await db.raw(`CREATE INDEX IF NOT EXISTS idx_record_links_type_source ON record_links (link_type_id, source_record_id);`);
+    logger.info('Table record_links created or verified');
+
     logger.info('All migrations ran successfully.');
   } catch (err) {
     logger.error(`Migration failed: ${err.message}`);
