@@ -56,12 +56,12 @@
     "SYSTEM_ADMIN": "System Administrator"
   },
   "views": {
-    "SYSTEM_ADMIN": "SYSTEM ADMIN VIEW",
-    "HQ": "HEADQUARTERS VIEW | DELHI POLICE HQ",
+    "SYSTEM_ADMIN": "SYSTEM ADMIN",
+    "HQ": "HQ VIEW",
     "PS": "PS VIEW",
-    "SUB_DIVISION": "SUB-DIVISION VIEW",
-    "DISTRICT": "DISTRICT VIEW",
-    "UNKNOWN": "VIEW | UNKNOWN JURISDICTION"
+    "SUB_DIVISION": "SUB-DIV",
+    "DISTRICT": "DISTRICT",
+    "UNKNOWN": "UNKNOWN"
   },
   "common": {
     "loading": "Loading secure terminal...",

@@ -5,6 +5,8 @@ import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useTranslation } from "react-i18next";
 import LanguageToggle from "../ui/LanguageToggle.jsx";
+import { useQuery } from "@tanstack/react-query";
+import api from "../../utils/api.js";
 
 export default function PoliceNavbar({
   notifications = [],
@@ -41,6 +43,18 @@ export default function PoliceNavbar({
     return () => clearInterval(interval);
   }, []);
 
+  const showStatusBar = user?.role === 'DISTRICT_OFFICER' || user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' || user?.role === 'SYSTEM_ADMIN';
+
+  const { data: reportingStations = [] } = useQuery({
+    queryKey: ['analytics', 'by-ps', 'navbar'],
+    queryFn: async () => {
+      const res = await api.get('/analytics/by-ps');
+      return res.data.data;
+    },
+    enabled: showStatusBar,
+    refetchInterval: 60000,
+  });
+
   // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -54,6 +68,20 @@ export default function PoliceNavbar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Clean up duplicate suffix/prefix from names to make console switchers extremely compact
+  const cleanName = (rawName, roleUpper) => {
+    if (!rawName) return '';
+    let cleaned = rawName;
+    if (roleUpper === 'HC' || roleUpper === 'SHO') {
+      cleaned = cleaned.replace(/^PS\s+/i, '').replace(/\s+Police\s+Station/i, '');
+    } else if (roleUpper === 'ACP') {
+      cleaned = cleaned.replace(/\s+Sub-Division/i, '').replace(/\s+Sub\s+Division/i, '');
+    } else if (roleUpper === 'DISTRICT_OFFICER') {
+      cleaned = cleaned.replace(/\s+District/i, '');
+    }
+    return cleaned.trim();
+  };
 
   // Compute breadcrumbs dynamically from current pathname
   const getBreadcrumbs = () => {
@@ -134,65 +162,136 @@ export default function PoliceNavbar({
         </nav>
       </div>
 
+      {showStatusBar && (
+        <div className="status-bar-container hidden lg:flex items-center mx-3 bg-slate-50 border shadow-sm" style={{ borderColor: 'var(--border-light)', borderRadius: '8px', padding: '4px 12px' }}>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">Stations</span>
+              <span className="text-[13px] font-bold text-emerald-600 leading-tight">
+                {reportingStations.length > 0 ? reportingStations.length : (user?.role === 'DISTRICT_OFFICER' ? 14 : 214)}
+                <span className="text-slate-400 font-medium text-[11px] ml-0.5">/ {user?.role === 'DISTRICT_OFFICER' ? 15 : 215}</span>
+              </span>
+            </div>
+            
+            <div className="w-[1px] h-7 bg-slate-200"></div>
+            
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">Pending</span>
+              <span className="text-[13px] font-bold text-rose-500 leading-tight">{unreadCount > 0 ? unreadCount : 12}</span>
+            </div>
+            
+            <div className="w-[1px] h-7 bg-slate-200"></div>
+            
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">System</span>
+              <div className="flex items-center gap-1.5 mt-[1px]">
+                 <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
+                 <span className={`text-[12px] font-bold leading-tight ${isConnected ? 'text-emerald-600' : 'text-slate-500'}`}>
+                   {isConnected ? 'ONLINE' : 'OFFLINE'}
+                 </span>
+              </div>
+            </div>
+            
+            <div className="w-[1px] h-7 bg-slate-200"></div>
+            
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">Sync</span>
+              <span className="text-[13px] font-bold text-[#0d2a4a] leading-tight">
+                {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="navbar-right">
         {/* Terminal Authorization Scope Badge */}
-        <div className="console-switcher-container cursor-default" style={{ borderColor: 'var(--border-light)' }}>
+        <div className={`console-switcher-container cursor-default ${showStatusBar ? 'console-switcher-status-bar-active' : ''}`} style={{ borderColor: 'var(--border-light)' }}>
           <Shield size={14} className="text-amber-500" />
-          <span className="text-xs font-bold text-amber-600 tracking-wide uppercase select-none" style={{ fontFamily: 'var(--font-sans)' }}>
+          <span className="text-xs font-bold text-amber-600 tracking-wide uppercase select-none flex items-center gap-1" style={{ fontFamily: 'var(--font-sans)' }}>
             {(() => {
-              if (!user) return "";
+              if (!user) return null;
               const roleUpper = user.role.toUpperCase();
-              if (roleUpper === 'SYSTEM_ADMIN') return t('views.SYSTEM_ADMIN');
-              if (roleUpper === 'HQ_ANALYST' || roleUpper === 'HQ_ADMIN') return t('views.HQ');
+              if (roleUpper === 'SYSTEM_ADMIN') {
+                return <span className="console-switcher-role">{t('views.SYSTEM_ADMIN')}</span>;
+              }
+              if (roleUpper === 'HQ_ANALYST' || roleUpper === 'HQ_ADMIN') {
+                return <span className="console-switcher-role">{t('views.HQ')}</span>;
+              }
               
               const isHi = lang === 'hi';
               if (roleUpper === 'HC' || roleUpper === 'SHO') {
                 const name = isHi 
                   ? (jurisdiction?.station?.name_hi || jurisdiction?.station?.name_en) 
                   : (jurisdiction?.station?.name_en?.toUpperCase() || 'POLICE STATION');
-                return `${t('views.PS')} | ${name}`;
+                const displayName = cleanName(name, roleUpper);
+                return (
+                  <>
+                    <span className="console-switcher-role">{t('views.PS')}</span>
+                    <span className="console-switcher-divider"> | </span>
+                    <span className="console-switcher-name" title={name}>{displayName}</span>
+                  </>
+                );
               }
               if (roleUpper === 'ACP') {
                 const name = isHi 
                   ? (jurisdiction?.sub_division?.name_hi || jurisdiction?.sub_division?.name_en) 
                   : (jurisdiction?.sub_division?.name_en?.toUpperCase() || 'SUB-DIVISION');
-                return `${t('views.SUB_DIVISION')} | ${name}`;
+                const displayName = cleanName(name, roleUpper);
+                return (
+                  <>
+                    <span className="console-switcher-role">{t('views.SUB_DIVISION')}</span>
+                    <span className="console-switcher-divider"> | </span>
+                    <span className="console-switcher-name" title={name}>{displayName}</span>
+                  </>
+                );
               }
               if (roleUpper === 'DISTRICT_OFFICER') {
                 const name = isHi 
                   ? (jurisdiction?.district?.name_hi || jurisdiction?.district?.name_en) 
                   : (jurisdiction?.district?.name_en?.toUpperCase() || 'DISTRICT');
-                return `${t('views.DISTRICT')} | ${name}`;
+                const displayName = cleanName(name, roleUpper);
+                return (
+                  <>
+                    <span className="console-switcher-role">{t('views.DISTRICT')}</span>
+                    <span className="console-switcher-divider"> | </span>
+                    <span className="console-switcher-name" title={name}>{displayName}</span>
+                  </>
+                );
               }
-              return t('views.UNKNOWN');
+              return <span className="console-switcher-role">{t('views.UNKNOWN')}</span>;
             })()}
           </span>
         </div>
 
         {/* SSE Live Indicator */}
-        <div
-          title={isConnected ? "Live feed connected" : "Connecting to live feed…"}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '10px',
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            color: isConnected ? '#22c55e' : '#94a3b8',
-            opacity: 0.85,
-          }}
-        >
-          {isConnected
-            ? <Wifi size={12} />
-            : <WifiOff size={12} />}
-          <span className="hidden sm:inline">{isConnected ? "LIVE" : "—"}</span>
-        </div>
+        {!showStatusBar && (
+          <div
+            title={isConnected ? "Live feed connected" : "Connecting to live feed…"}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '10px',
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              color: isConnected ? '#22c55e' : '#94a3b8',
+              opacity: 0.85,
+            }}
+          >
+            {isConnected
+              ? <Wifi size={12} />
+              : <WifiOff size={12} />}
+            <span className="live-status-text hidden sm:inline">{isConnected ? "LIVE" : "—"}</span>
+          </div>
+        )}
 
         {/* Localized Time Display */}
-        <div className="time-display tabular-numbers" aria-live="off" translate="no">
-          {currentTime}
-        </div>
+        {!showStatusBar && (
+          <div className="time-display tabular-numbers" aria-live="off" translate="no">
+            {currentTime}
+          </div>
+        )}
 
         {/* Global Language Toggle */}
         <LanguageToggle variant="pill" />

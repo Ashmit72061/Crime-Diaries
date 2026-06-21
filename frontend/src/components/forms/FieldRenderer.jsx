@@ -59,7 +59,7 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
   }
 
   if (type === 'BOOLEAN' || type === 'CHECKBOX') {
-    const chkLabel = lang === 'hi' ? 'हाँ / सत्य' : 'Yes / True';
+    const chkLabel = lang === 'hi' ? 'हाँ' : 'Yes';
     return <CheckboxField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} label={chkLabel} />;
   }
 
