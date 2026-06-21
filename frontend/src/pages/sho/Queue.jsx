@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ClipboardList, Filter, Eye, ArrowRight, ShieldCheck } from 'lucide-react';
+import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore.js';
 import api from '../../utils/api.js';
 
@@ -11,6 +12,97 @@ export default function Queue() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('ALL');
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSelectedIds([]);
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to approve and escalate all ${selectedIds.length} selected records?`)) return;
+
+    setBulkLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          try {
+            await api.post(`/records/${id}/approve`);
+            successCount++;
+          } catch (err) {
+            console.error(`Failed to approve record ${id}:`, err);
+            failCount++;
+          }
+        })
+      );
+
+      if (successCount > 0) {
+        toast.success(`Successfully approved ${successCount} records!`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to approve ${failCount} records.`);
+      }
+
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['workflow', 'queue'] });
+    } catch (err) {
+      toast.error("An error occurred during bulk approval.");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDecline = async () => {
+    if (selectedIds.length === 0) return;
+    
+    const comment = window.prompt("Enter mandatory feedback/comment for returning the selected records for correction:");
+    if (comment === null) return;
+    if (!comment.trim()) {
+      toast.error("Feedback comment is mandatory to return records.");
+      return;
+    }
+
+    setBulkLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          try {
+            await api.post(`/records/${id}/send-back`, {
+              comment: comment.trim(),
+              target_fields: []
+            });
+            successCount++;
+          } catch (err) {
+            console.error(`Failed to return record ${id}:`, err);
+            failCount++;
+          }
+        })
+      );
+
+      if (successCount > 0) {
+        toast.success(`Successfully returned ${successCount} records for correction!`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to return ${failCount} records.`);
+      }
+
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['workflow', 'queue'] });
+    } catch (err) {
+      toast.error("An error occurred during bulk return.");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   // Fetch pending review records queue
   const { data: queue = [], isLoading } = useQuery({
@@ -26,86 +118,169 @@ export default function Queue() {
   // Filter queue records based on type
   const filteredQueue = activeTab === 'ALL' ? queue : queue.filter(r => r.record_type === activeTab);
 
+  const getThemeClass = () => {
+    const role = user?.role;
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc-page';
+      case 'SHO':
+        return 'theme-sho-page';
+      case 'ACP':
+        return 'theme-acp-page';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district-page';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq-page';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin-page';
+      default:
+        return 'theme-shared-page';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F0F4F9] text-[#1A202C]">
+    <div className={`min-h-screen ${getThemeClass()} page-bg text-[var(--text-main-theme)] font-sans`}>
 
       {/* Hero Header — mirrors Dashboard's gradient banner */}
-      <div className="bg-gradient-to-br from-[#0A1628] via-[#003087] to-[#0046C0] px-8 py-10 relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full border border-white/5" />
+      <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden">
+        <span className="user-greeting-badge text-2xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+          Hi, {user?.username || 'User'}
+        </span>
         <div className="pointer-events-none absolute -top-8 -right-8 h-48 w-48 rounded-full border border-white/5" />
 
-        <div className="relative z-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/20">
-            <ClipboardList size={13} /> APPROVAL DESK
-          </span>
-          <h1 className="mt-4 text-3xl font-bold text-white flex items-center gap-3">
-            {t('nav.queue', 'Approval Desk')}
-          </h1>
-          <p className="mt-2 text-sm text-white/60 max-w-xl">
-            Review pending records submitted from your jurisdiction and approve or return them for correction.
-          </p>
+        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/20">
+              <ClipboardList size={13} /> APPROVAL DESK
+            </span>
+            <h1 className="mt-4 text-3xl font-bold text-white flex items-center gap-3 font-display">
+              {t('nav.queue', 'Approval Desk')}
+            </h1>
+            <p className="mt-2 text-sm text-white/60 max-w-xl font-semibold">
+              Review pending records submitted from your jurisdiction and approve or return them for correction.
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-6 pb-10">
 
         {/* Record Category Tabs */}
-        <div className="mt-6 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm px-2 py-2 flex flex-wrap gap-1">
-          {['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 text-sm font-semibold tracking-wide rounded-xl transition-all duration-200 cursor-pointer ${
-                activeTab === tab
-                  ? 'bg-gradient-to-r from-[#003087] to-[#0046C0] text-white shadow-md shadow-blue-500/20'
-                  : 'text-[#4A5568] hover:bg-[#EFF6FF] hover:text-[#003087]'
-              }`}
-            >
-              {t(`recordTypes.${tab}`, tab)}
-            </button>
-          ))}
+        <div className="mt-6 theme-card bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-2xl border border-[var(--border-card-theme)] shadow-sm px-2 py-2 flex flex-wrap gap-1">
+          {['ALL', 'CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'].map((tab) => {
+            const count = countFor(tab);
+            return (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`px-5 py-2.5 text-sm font-semibold tracking-wide rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-2 border-none ${
+                  activeTab === tab
+                    ? 'bg-[var(--accent-color)] text-white shadow-md shadow-[var(--accent-glow)]'
+                    : 'text-[var(--text-main-theme)] opacity-80 hover:bg-[var(--bg-page-main)]/80 hover:text-[var(--accent-color)] bg-transparent'
+                }`}
+              >
+                {t(`recordTypes.${tab}`, tab)}
+                {count > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab ? 'bg-white/25 text-white' : 'bg-[var(--bg-page-main)] text-[var(--text-main-theme)] border border-[var(--border-card-theme)]'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500 text-xs font-bold text-white">
+                {selectedIds.length}
+              </span>
+              <span className="text-sm font-bold text-amber-900">
+                {bulkLoading ? 'Processing bulk actions…' : `${selectedIds.length} records selected for bulk action`}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleBulkDecline}
+                disabled={bulkLoading}
+                className="bg-red-55/10 hover:bg-red-500 text-red-650 hover:text-white border border-red-200 hover:border-red-500 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              >
+                Bulk Decline
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkApprove}
+                disabled={bulkLoading}
+                className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shadow-sm hover:shadow-md disabled:opacity-50"
+              >
+                Bulk Approve
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Queue Listing */}
         <div className="mt-5">
           {isLoading ? (
-            <div className="rounded-3xl bg-white border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center p-20 text-[#718096] gap-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-[3px] border-[#003087]" />
-              <p className="text-sm font-semibold text-[#4A5568]">
+            <div className="theme-card rounded-3xl bg-[var(--bg-page-main)]/60 backdrop-blur-md border border-[var(--border-card-theme)] shadow-sm flex flex-col items-center justify-center p-20 text-[var(--text-main-theme)] gap-4">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-[3px] border-[var(--accent-color)]" />
+              <p className="text-sm font-semibold text-[var(--text-main-theme)]">
                 {t('common.loading', 'Syncing digital registry logs...')}
               </p>
             </div>
 
           ) : filteredQueue.length === 0 ? (
-            <div className="rounded-3xl bg-white border border-[#E2E8F0] shadow-sm p-16 text-center">
+            <div className="theme-card rounded-3xl bg-[var(--bg-page-main)]/60 backdrop-blur-md border border-[var(--border-card-theme)] shadow-sm p-16 text-center">
               <div className="flex items-center justify-center mb-5">
-                <div className="h-20 w-20 rounded-2xl bg-[#ECFDF5] flex items-center justify-center">
-                  <ShieldCheck size={40} className="text-[#059669]" />
+                <div className="h-20 w-20 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <ShieldCheck size={40} className="text-emerald-600" />
                 </div>
               </div>
-              <p className="text-lg font-bold text-[#1A202C] mb-1">Queue Clean &amp; Approved</p>
-              <p className="text-sm text-[#718096] max-w-sm mx-auto">
+              <p className="text-lg font-bold text-[var(--text-main-theme)] mb-1">Queue Clean &amp; Approved</p>
+              <p className="text-sm text-[var(--text-main-theme)] opacity-70 max-w-sm mx-auto font-semibold">
                 There are no pending diary records in your station queue requiring action.
               </p>
             </div>
 
           ) : (
-            <div className="rounded-3xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="theme-card rounded-3xl bg-[var(--bg-page-main)]/60 backdrop-blur-md border border-[var(--border-card-theme)] shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                      <th className="p-4 pl-6 text-xs font-semibold uppercase tracking-wider text-[#718096]">
+                    <tr className="border-b border-[var(--border-card-theme)]/70 bg-[var(--bg-page-main)]/80">
+                      <th className="p-4 pl-6 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold w-12">
+                        <input
+                          type="checkbox"
+                          checked={filteredQueue.length > 0 && selectedIds.length === filteredQueue.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(filteredQueue.map(r => r.id));
+                            } else {
+                              setSelectedIds([]);
+                            }
+                          }}
+                          className="rounded border-[var(--border-card-theme)] accent-[var(--accent-color)] cursor-pointer w-4 h-4"
+                        />
+                      </th>
+                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">
                         {t('common.referenceId', 'Ref ID / Number')}
                       </th>
-                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[#718096]">Station Location</th>
-                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[#718096]">Record Date</th>
-                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[#718096]">Gist</th>
-                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[#718096]">Current Status</th>
-                      <th className="p-4 pr-6 text-xs font-semibold uppercase tracking-wider text-[#718096] text-right">Review Action</th>
+                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Station Location</th>
+                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Record Date</th>
+                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Gist</th>
+                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Current Status</th>
+                      <th className="p-4 pr-6 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold text-right">Review Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#F1F5F9] text-[#1A202C]">
+                  <tbody className="divide-y divide-[var(--border-card-theme)]/40 text-[var(--text-main-theme)]">
                     {filteredQueue.map((rec) => {
                       const refId =
                         rec.data.fir_no ||
@@ -127,23 +302,35 @@ export default function Queue() {
                       return (
                         <tr
                           key={rec.id}
-                          className="group hover:bg-[#EFF6FF] transition-all duration-150"
+                          className="group hover:bg-[var(--bg-page-main)]/40 transition-all duration-150"
                         >
-                          <td className="p-4 pl-6 font-mono font-bold text-[#0A1628]">{refId}</td>
-                          <td className="p-4 text-[#4A5568]">Parliament Street</td>
-                          <td className="p-4 font-mono text-[#4A5568]">{rec.data.record_date || 'N/A'}</td>
-                          <td className="p-4 max-w-[280px] truncate text-[#4A5568]" title={gist}>
+                          <td className="p-4 pl-6 w-12">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(rec.id)}
+                              onChange={() => {
+                                setSelectedIds(prev =>
+                                  prev.includes(rec.id) ? prev.filter(id => id !== rec.id) : [...prev, rec.id]
+                                );
+                              }}
+                              className="rounded border-[var(--border-card-theme)] accent-[var(--accent-color)] cursor-pointer w-4 h-4"
+                            />
+                          </td>
+                          <td className="p-4 font-mono font-bold text-[var(--text-main-theme)]">{refId}</td>
+                          <td className="p-4 text-[var(--text-main-theme)] opacity-85 font-semibold">Parliament Street</td>
+                          <td className="p-4 font-mono text-[var(--text-main-theme)] opacity-60">{rec.data.record_date || 'N/A'}</td>
+                          <td className="p-4 max-w-[280px] truncate text-[var(--text-main-theme)] opacity-85 font-semibold" title={gist}>
                             {gist}
                           </td>
                           <td className="p-4">
-                            <span className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-full bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]">
+                            <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                               {t(`status.${rec.current_status}`, rec.current_status)}
                             </span>
                           </td>
                           <td className="p-4 pr-6 text-right whitespace-nowrap">
                             <button
                               onClick={() => navigate(`/records/${rec.id}`)}
-                              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#003087] to-[#0046C0] hover:from-[#0A1628] hover:to-[#003087] text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5"
+                              className="inline-flex items-center gap-2 bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer border-none shadow-sm hover:shadow-md active:scale-95"
                             >
                               <span>Review</span>
                               <ArrowRight size={14} />

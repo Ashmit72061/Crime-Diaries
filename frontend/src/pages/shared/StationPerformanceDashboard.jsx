@@ -339,7 +339,7 @@ export default function StationPerformanceDashboard() {
     <div className={`min-h-screen ${getThemeClass()} page-bg text-[var(--text-main-theme)] font-sans`}>
 
       {/* ══════════════ HERO GRADIENT HEADER ══════════════ */}
-      <div className="relative hero-banner-gradient px-8 py-8 overflow-hidden">
+      <div className="relative hero-banner-gradient px-8 pt-8 pb-16 overflow-hidden">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-12 left-1/4 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
@@ -428,17 +428,17 @@ export default function StationPerformanceDashboard() {
       </div>
 
       {/* ══════════════ PAGE BODY ══════════════ */}
-      <div className="mx-auto max-w-screen-xl px-6 pb-12">
+      <div className="mx-auto max-w-screen-xl px-6 pb-12 relative z-10 -mt-10 space-y-6">
 
         {/* ── KPI Summary Cards ── */}
-        <div className="mt-8">
+        {/* <div className="mt-8">
           <div className="mb-4 flex items-center gap-3">
             <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
             <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--text-main-theme)] opacity-70">Performance Overview</h2>
             <div className="flex-1 h-px bg-[var(--border-card-theme)]/70" />
           </div>
           <StationSummaryCards summary={calculatedData.summary} isHq={isHq} />
-        </div>
+        </div> */}
 
         {/* ── Filters Panel ── */}
         <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-2xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">

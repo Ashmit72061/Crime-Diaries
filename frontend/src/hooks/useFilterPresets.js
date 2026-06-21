@@ -29,7 +29,41 @@ export function useFilterPresets() {
 
   const saveMutation = useMutation({
     mutationFn: async ({ name, filters }) => {
-      const res = await api.post('/filters/presets', { name, filters });
+      const conditions = [];
+      if (filters.type && filters.type !== 'ALL') {
+        conditions.push({ field: '_record_type', operator: 'eq', value: filters.type });
+      }
+      if (filters.status && filters.status !== 'ALL') {
+        conditions.push({ field: '_status', operator: 'eq', value: filters.status });
+      }
+      if (filters.dateFrom) {
+        conditions.push({ field: '_record_date', operator: 'gte', value: filters.dateFrom });
+      }
+      if (filters.dateTo) {
+        conditions.push({ field: '_record_date', operator: 'lte', value: filters.dateTo });
+      }
+      if (filters.search && filters.search.trim()) {
+        conditions.push({ field: '_search', operator: 'contains', value: filters.search.trim() });
+      }
+
+      // Add other properties if any
+      Object.keys(filters).forEach(key => {
+        if (!['type', 'status', 'dateFrom', 'dateTo', 'search'].includes(key) && filters[key]) {
+          conditions.push({ field: key, operator: 'eq', value: filters[key] });
+        }
+      });
+
+      const payload = {
+        name_en: name,
+        name_hi: name,
+        filter_spec: {
+          logic: 'AND',
+          conditions
+        },
+        applicable_record_types: filters.type && filters.type !== 'ALL' ? [filters.type] : ['CASE', 'ARREST', 'PCR_CALL']
+      };
+
+      const res = await api.post('/filters/presets', payload);
       return res.data?.data;
     },
     onSuccess: () => {

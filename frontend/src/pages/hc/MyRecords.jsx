@@ -122,7 +122,7 @@ export default function MyRecords() {
     /* ── Full-page background matching Dashboard's deep navy gradient ── */
     <div className="min-h-screen theme-hc-page page-bg">
       <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden shadow-xl">
-        <span className="user-greeting-badge text-base font-semibold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+        <span className="user-greeting-badge text-xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
           Hi, {user?.username || 'User'}
         </span>
         <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
@@ -130,10 +130,10 @@ export default function MyRecords() {
   
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/20 mb-4">
+            {/* <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 border border-white/20 mb-4">
               <FileText size={13} />
               RECORDS DESK
-            </span>
+            </span> */}
             <h1 className="text-3xl font-bold text-white flex items-center gap-3 m-0">
               <div className="bg-white/10 border border-white/20 rounded-xl p-2 shadow-inner">
                 <FileText className="text-white" size={22} />
