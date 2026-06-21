@@ -53,8 +53,8 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     // ── Reviewer / SHO Desk ───────────────────────────────────────────────────
     if (role === 'SHO') {
       items.push(
-        { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" },
-        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" }
+        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
+        { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" }
       );
     }
 
@@ -115,9 +115,32 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     }
   };
 
+  const getRoleThemeClass = () => {
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc';
+      case 'SHO':
+        return 'theme-sho';
+      case 'ACP':
+        return 'theme-acp';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin';
+      default:
+        return 'theme-hq';
+    }
+  };
+
   return (
     <aside 
-      className={`sidebar-nav ${isCollapsed ? "collapsed" : "expanded"}`}
+      className={`sidebar-nav ${isCollapsed ? "collapsed" : "expanded"} ${getRoleThemeClass()}`}
       aria-label="Primary Navigation"
     >
       <div className="sidebar-header">

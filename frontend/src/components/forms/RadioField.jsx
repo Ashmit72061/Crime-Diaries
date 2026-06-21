@@ -23,9 +23,9 @@ export default function RadioField({ id, disabled, value, onChange, options = []
                 className="sr-only"
               />
               <div className={`w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                checked ? 'border-[#0f52ba]' : 'border-slate-300 bg-white'
+                checked ? 'border-[var(--accent-color)]' : 'border-slate-300 bg-white'
               }`}>
-                {checked && <div className="w-2 h-2 rounded-full bg-[#0f52ba]" />}
+                {checked && <div className="w-2 h-2 rounded-full bg-[var(--accent-color)]" />}
               </div>
             </div>
             <span className="text-sm text-slate-700 font-medium">{getLabel(opt)}</span>

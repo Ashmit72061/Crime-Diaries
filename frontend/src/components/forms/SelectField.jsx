@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-const base = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[#0f52ba] transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed appearance-none cursor-pointer";
+const base = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed appearance-none cursor-pointer";
 const err  = "border-red-400 focus:border-red-500 bg-red-50";
 
 export default function SelectField({ id, disabled, value, onChange, status, placeholder, options = [], lang = 'en' }) {
@@ -103,7 +103,7 @@ export default function SelectField({ id, disabled, value, onChange, status, pla
         <input
           type="text"
           autoFocus
-          className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-[#0f52ba] transition-colors"
+          className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-[var(--accent-color)] transition-colors"
           placeholder={lang === 'hi' ? 'खोजें...' : 'Search...'}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -121,7 +121,7 @@ export default function SelectField({ id, disabled, value, onChange, status, pla
               key={opt.value}
               className={`px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
                 String(value) === String(opt.value)
-                  ? 'bg-[#0f52ba]/10 text-[#0f52ba] font-medium'
+                  ? 'bg-[var(--accent-glow)] text-[var(--accent-color)] font-medium'
                   : 'text-slate-700 hover:bg-slate-50'
               }`}
               onMouseDown={(e) => {

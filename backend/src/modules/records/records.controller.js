@@ -60,7 +60,8 @@ export const create = async (req, res) => {
     );
     return res.status(201).json({ success: true, data: record });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    const status = error.status || 500;
+    return res.status(status).json({ success: false, message: error.message });
   }
 };
 
@@ -80,7 +81,7 @@ export const update = async (req, res) => {
     const record = await recordsService.updateRecord(id, req.user, data, ipAddress);
     return res.status(200).json({ success: true, data: record });
   } catch (error) {
-    const status = error.message.includes('Access denied') ? 403 : 500;
+    const status = error.message.includes('Access denied') ? 403 : (error.status || 500);
     return res.status(status).json({ success: false, message: error.message });
   }
 };

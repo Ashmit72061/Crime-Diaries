@@ -133,46 +133,46 @@ export default function Users() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 theme-admin-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-zinc-100 flex items-center gap-2">
-            <UsersIcon className="text-[#cca43b]" />
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 font-display">
+            <UsersIcon className="text-[var(--accent-color)]" />
             <span>Users Register Console</span>
           </h1>
-          <p className="text-zinc-400 text-xs mt-1">
+          <p className="text-slate-500 text-xs mt-1 font-semibold">
             Manage officer accounts, roles, and jurisdiction permissions across the PHAROS platform.
           </p>
         </div>
-
+ 
         <button
           onClick={() => setModalOpen(true)}
-          className="bg-[#cca43b] hover:bg-amber-600 text-zinc-950 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+          className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md border-none active:scale-95"
         >
           <Plus size={14} />
           <span>Register New Officer</span>
         </button>
       </div>
-
+ 
       {/* ── Users Table ────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-12 text-zinc-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#cca43b] mb-4" />
+        <div className="flex flex-col items-center justify-center p-12 text-slate-500">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-color)] mb-4" />
           <p className="text-sm">Syncing security profiles register...</p>
         </div>
       ) : users.length === 0 ? (
-        <div className="border border-dashed border-zinc-800 rounded-xl p-16 text-center text-zinc-500">
-          <UsersIcon size={48} className="mx-auto text-zinc-700 mb-3" />
+        <div className="border border-dashed border-slate-200 bg-white rounded-xl p-16 text-center text-slate-500 shadow-sm">
+          <UsersIcon size={48} className="mx-auto text-slate-350 mb-3" />
           <p className="text-sm font-semibold">No users registered yet</p>
-          <p className="text-xs text-zinc-600 mt-1">Click "Register New Officer" to add the first user.</p>
+          <p className="text-xs text-slate-450 mt-1">Click "Register New Officer" to add the first user.</p>
         </div>
       ) : (
-        <div className="border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md rounded-xl overflow-hidden shadow-lg">
+        <div className="border border-slate-200 bg-white rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-zinc-950/60 text-zinc-400 uppercase font-semibold border-b border-zinc-800 tracking-wider">
+                <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 tracking-wider">
                   <th className="p-3.5 pl-5">Badge / PIS</th>
                   <th className="p-3.5">Officer Name</th>
                   <th className="p-3.5">Role</th>
@@ -181,31 +181,31 @@ export default function Users() {
                   <th className="p-3.5 pr-5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+              <tbody className="divide-y divide-slate-100 text-slate-600">
                 {users.map((item) => {
                   const isActive = item.is_active ?? item.active ?? true;
                   const roleKey = item.role || 'HC';
                   return (
-                    <tr key={item.id} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="p-3.5 pl-5 font-mono font-bold text-zinc-200">
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-3.5 pl-5 font-mono font-bold text-slate-800">
                         {item.badge_no || item.badgeNo || '—'}
                       </td>
-                      <td className="p-3.5 font-semibold text-zinc-100">
+                      <td className="p-3.5 font-semibold text-slate-750">
                         {item.name_en || item.username || '—'}
                       </td>
                       <td className="p-3.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${ROLE_COLORS[roleKey] || 'text-zinc-400 bg-zinc-800 border-zinc-700'}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${ROLE_COLORS[roleKey] || 'text-slate-500 bg-slate-50 border-slate-200'}`}>
                           {roleKey}
                         </span>
                       </td>
-                      <td className="p-3.5 text-zinc-400 text-[11px]">
+                      <td className="p-3.5 text-slate-500 text-[11px]">
                         {item.ps_name || item.station_id || item.district_name || item.district_id || 'HQ / Platform'}
                       </td>
                       <td className="p-3.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                           isActive
-                            ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
-                            : 'bg-red-950/40 text-red-400 border-red-800/40'
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-250'
+                            : 'bg-red-50 text-red-600 border-red-200'
                         }`}>
                           {isActive ? 'ACTIVE' : 'DEACTIVATED'}
                         </span>
@@ -217,25 +217,25 @@ export default function Users() {
                           disabled={toggleStatusMutation.isPending}
                           className={`p-1.5 rounded transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold border ${
                             isActive
-                              ? 'bg-red-950/40 hover:bg-red-950 text-red-400 border-red-900/60'
-                              : 'bg-emerald-950/40 hover:bg-emerald-950 text-emerald-400 border-emerald-900/60'
+                              ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200'
                           }`}
                           title={isActive ? 'Deactivate' : 'Reactivate'}
                         >
                           {isActive ? <UserX size={12} /> : <UserCheck size={12} />}
                           <span>{isActive ? 'Deactivate' : 'Activate'}</span>
                         </button>
-
+ 
                         {/* Reset Password */}
                         <button
                           onClick={() => openResetModal(item)}
-                          className="p-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 border border-zinc-700 transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold"
+                          className="p-1.5 rounded bg-slate-105 hover:bg-slate-200 text-slate-600 hover:text-slate-800 border border-slate-200 transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold"
                           title="Reset Password"
                         >
                           <KeyRound size={12} />
                           <span>Reset PW</span>
                         </button>
-
+ 
                         {/* Delete */}
                         <button
                           onClick={() => {
@@ -244,7 +244,7 @@ export default function Users() {
                             }
                           }}
                           disabled={deleteUserMutation.isPending}
-                          className="p-1.5 rounded bg-zinc-800 hover:bg-red-950 text-zinc-500 hover:text-red-400 border border-zinc-700 hover:border-red-800 transition-all cursor-pointer inline-flex items-center"
+                          className="p-1.5 rounded bg-slate-105 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 transition-all cursor-pointer inline-flex items-center"
                           title="Remove User"
                         >
                           <Trash2 size={12} />

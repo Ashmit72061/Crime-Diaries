@@ -32,7 +32,7 @@ function StepDot({ index, active, completed, hasError, title, onClick }) {
       <span className={`
         flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs font-bold transition-all duration-300
         ${active
-          ? 'bg-[#0f52ba] border-[#0f52ba] text-white shadow-md shadow-[#0f52ba]/30 scale-110'
+          ? 'bg-[var(--accent-color)] border-[var(--accent-color)] text-white shadow-md shadow-[var(--accent-glow)] scale-110'
           : hasError
             ? 'bg-red-50 border-red-500 text-red-600'
             : completed
@@ -43,7 +43,7 @@ function StepDot({ index, active, completed, hasError, title, onClick }) {
         {completed && !active ? <CheckCircle2 size={14} /> : index + 1}
       </span>
       <span className={`text-[11px] font-semibold max-w-[90px] text-center leading-tight hidden sm:block transition-colors ${
-        active ? 'text-[#0f52ba]' : hasError ? 'text-red-600' : 'text-slate-400'
+        active ? 'text-[var(--accent-color)]' : hasError ? 'text-red-600' : 'text-slate-400'
       }`}>
         {title}
       </span>
@@ -218,6 +218,9 @@ export default function DynamicForm({
 
     setValues((prev) => {
       const next = { ...prev, [key]: val };
+      if (next.time_of_occurrence !== undefined) {
+        next.occurrence_time = next.time_of_occurrence;
+      }
 
       // Clear error on change
       if (errors[key]) {
@@ -314,12 +317,20 @@ export default function DynamicForm({
       return;
     }
 
-    onSubmit?.(values, activeRecordIdRef.current);
+    const finalValues = { ...values };
+    if (finalValues.time_of_occurrence !== undefined) {
+      finalValues.occurrence_time = finalValues.time_of_occurrence;
+    }
+    onSubmit?.(finalValues, activeRecordIdRef.current);
   };
 
   /* ── Manual save draft (button click) ────────────────────────────────────*/
   const handleManualSave = () => {
-    saveImmediately(values, activeRecordIdRef.current);
+    const finalValues = { ...values };
+    if (finalValues.time_of_occurrence !== undefined) {
+      finalValues.occurrence_time = finalValues.time_of_occurrence;
+    }
+    saveImmediately(finalValues, activeRecordIdRef.current);
     toast.success(lang === 'hi' ? 'ड्राफ्ट सहेज लिया गया है।' : 'Draft saved successfully.');
   };
 
@@ -327,7 +338,7 @@ export default function DynamicForm({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-16 text-slate-500 gap-3">
-        <Loader2 size={32} className="animate-spin text-[#0f52ba]" />
+        <Loader2 size={32} className="animate-spin text-[var(--accent-color)]" />
         <p className="text-sm font-semibold">{t('common.loading', 'Loading form schema...')}</p>
       </div>
     );
@@ -363,38 +374,31 @@ export default function DynamicForm({
   return (
     <div className="space-y-6" ref={formRef}>
 
-      {/* ── Step Navigator ─────────────────────────────────────────────── */}
+      {/* ── Step Navigator ── */}
       {schema.length > 1 && (
-        <div className="bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            {/* Step dots row */}
-            <div className="flex items-center gap-1 overflow-x-auto flex-1">
-              {schema.map((sec, idx) => {
-                const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
-                return (
-                  <React.Fragment key={sec.section || idx}>
-                    <StepDot
-                      index={idx}
-                      active={idx === currentStep}
-                      completed={completedSteps.has(idx)}
-                      hasError={stepHasError(idx)}
-                      title={title}
-                      onClick={() => handleStepClick(idx)}
-                    />
-                    {idx < schema.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-1 rounded-full transition-colors ${
-                        completedSteps.has(idx) ? 'bg-emerald-400' : 'bg-slate-200'
-                      }`} />
-                    )}
-                  </React.Fragment>
-                );
-              })}
+        <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            {/* Active Step Indicator */}
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-color)] text-white text-xs font-bold shadow-md shadow-[var(--accent-glow)] scale-110 flex-shrink-0">
+                {currentStep + 1}
+              </span>
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">
+                  {lang === 'hi' ? 'सक्रिय चरण' : 'Active Step'}
+                </span>
+                <span className="text-sm font-extrabold text-slate-800 font-display">
+                  {lang === 'hi'
+                    ? (activeSection.title_hi || activeSection.title_en)
+                    : activeSection.title_en}
+                </span>
+              </div>
             </div>
 
             {/* Right: step counter + autosave */}
-            <div className="flex items-center gap-3 flex-shrink-0 pl-4 border-l border-slate-100">
-              <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">
-                {lang === 'hi' ? `चरण ${currentStep + 1}/${schema.length}` : `${currentStep + 1} / ${schema.length}`}
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end sm:pl-5 sm:border-l border-slate-100">
+              <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                {lang === 'hi' ? `चरण ${currentStep + 1} / ${schema.length}` : `Step ${currentStep + 1} / ${schema.length}`}
               </span>
               <FormAutosave status={saveStatus} lang={lang} />
             </div>
@@ -434,18 +438,23 @@ export default function DynamicForm({
 
       {/* ── Active Section Form ─────────────────────────────────────────── */}
       {activeSection && (
-        <form onSubmit={handleFormSubmit} noValidate className="space-y-6">
-          <FormSection
-            section={activeSection}
-            currentStep={currentStep}
-            values={values}
-            errors={errors}
-            touched={touched}
-            handleChange={handleChange}
-            readOnly={readOnly}
-            targetFields={targetFields}
-            lang={lang}
-          />
+        <div className="space-y-6">
+          {/* Wrap ONLY the fields in a form so Enter key doesn't auto-submit
+              when navigating between steps. The submit action is wired via
+              an explicit onClick on the Submit button in FormToolbar. */}
+          <form onSubmit={(e) => e.preventDefault()} noValidate>
+            <FormSection
+              section={activeSection}
+              currentStep={currentStep}
+              values={values}
+              errors={errors}
+              touched={touched}
+              handleChange={handleChange}
+              readOnly={readOnly}
+              targetFields={targetFields}
+              lang={lang}
+            />
+          </form>
 
           {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
           <FormToolbar
@@ -456,10 +465,11 @@ export default function DynamicForm({
             onPrevious={handleBack}
             onSaveDraft={!readOnly ? handleManualSave : null}
             onNext={handleNext}
+            onSubmit={handleFormSubmit}
             isLastStep={isLastStep}
             lang={lang}
           />
-        </form>
+        </div>
       )}
     </div>
   );

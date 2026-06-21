@@ -3,8 +3,6 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Bell, User, LogOut, Settings, Award, Shield, CheckCheck, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import useAuthStore from "../../store/authStore.js";
 import { useAuth } from "../../hooks/useAuth.js";
-import { useQuery } from "@tanstack/react-query";
-import api from "../../utils/api.js";
 
 export default function PoliceNavbar({
   notifications = [],
@@ -38,18 +36,6 @@ export default function PoliceNavbar({
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  const showStatusBar = user?.role === 'DISTRICT_OFFICER' || user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' || user?.role === 'SYSTEM_ADMIN';
-
-  const { data: reportingStations = [] } = useQuery({
-    queryKey: ['analytics', 'by-ps', 'navbar'],
-    queryFn: async () => {
-      const res = await api.get('/analytics/by-ps');
-      return res.data.data;
-    },
-    enabled: showStatusBar,
-    refetchInterval: 60000,
-  });
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -144,48 +130,6 @@ export default function PoliceNavbar({
         </nav>
       </div>
 
-      {showStatusBar && (
-        <div className="hidden lg:flex items-center mx-3 bg-slate-50 border shadow-sm" style={{ borderColor: 'var(--border-light)', borderRadius: '8px', padding: '4px 12px' }}>
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">Stations</span>
-              <span className="text-[13px] font-bold text-emerald-600 leading-tight">
-                {reportingStations.length > 0 ? reportingStations.length : (user?.role === 'DISTRICT_OFFICER' ? 14 : 214)}
-                <span className="text-slate-400 font-medium text-[11px] ml-0.5">/ {user?.role === 'DISTRICT_OFFICER' ? 15 : 215}</span>
-              </span>
-            </div>
-            
-            <div className="w-[1px] h-7 bg-slate-200"></div>
-            
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">Pending</span>
-              <span className="text-[13px] font-bold text-rose-500 leading-tight">{unreadCount > 0 ? unreadCount : 12}</span>
-            </div>
-            
-            <div className="w-[1px] h-7 bg-slate-200"></div>
-            
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">System</span>
-              <div className="flex items-center gap-1.5 mt-[1px]">
-                 <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
-                 <span className={`text-[12px] font-bold leading-tight ${isConnected ? 'text-emerald-600' : 'text-slate-500'}`}>
-                   {isConnected ? 'ONLINE' : 'OFFLINE'}
-                 </span>
-              </div>
-            </div>
-            
-            <div className="w-[1px] h-7 bg-slate-200"></div>
-            
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-display">Sync</span>
-              <span className="text-[13px] font-bold text-[#0d2a4a] leading-tight">
-                {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="navbar-right">
         {/* Terminal Authorization Scope Badge */}
         <div className="console-switcher-container cursor-default" style={{ borderColor: 'var(--border-light)' }}>
@@ -210,34 +154,30 @@ export default function PoliceNavbar({
           </span>
         </div>
 
-        {/* SSE Live Indicator - Hidden if status bar is present to reduce clutter */}
-        {!showStatusBar && (
-          <div
-            title={isConnected ? "Live feed connected" : "Connecting to live feed…"}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '10px',
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              color: isConnected ? '#22c55e' : '#94a3b8',
-              opacity: 0.85,
-            }}
-          >
-            {isConnected
-              ? <Wifi size={12} />
-              : <WifiOff size={12} />}
-            <span className="hidden sm:inline">{isConnected ? "LIVE" : "—"}</span>
-          </div>
-        )}
+        {/* SSE Live Indicator */}
+        <div
+          title={isConnected ? "Live feed connected" : "Connecting to live feed…"}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '10px',
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            color: isConnected ? '#22c55e' : '#94a3b8',
+            opacity: 0.85,
+          }}
+        >
+          {isConnected
+            ? <Wifi size={12} />
+            : <WifiOff size={12} />}
+          <span className="hidden sm:inline">{isConnected ? "LIVE" : "—"}</span>
+        </div>
 
-        {/* Localized Time Display - Hidden if status bar is present to reduce clutter */}
-        {!showStatusBar && (
-          <div className="time-display tabular-numbers" aria-live="off" translate="no">
-            {currentTime}
-          </div>
-        )}
+        {/* Localized Time Display */}
+        <div className="time-display tabular-numbers" aria-live="off" translate="no">
+          {currentTime}
+        </div>
 
         {/* Notifications Dropdown */}
         <div className="nav-dropdown-wrapper" ref={notifPanelRef}>
@@ -384,9 +324,9 @@ export default function PoliceNavbar({
               <User size={16} />
             </div>
             <div className="officer-details text-left font-sans flex flex-col justify-center leading-tight">
-              <span className="officer-name block text-sm font-semibold">{user?.username || "HC Ramesh Kumar"}</span>
-              <span className="officer-rank block text-[11px] text-slate-400 font-medium">{user?.rank || "Station Operator"}</span>
-              <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5">
+              <span className="officer-name block text-sm font-semibold truncate max-w-[150px] whitespace-nowrap">{user?.username || "HC Ramesh Kumar"}</span>
+              <span className="officer-rank block text-[11px] text-slate-400 font-medium truncate max-w-[150px] whitespace-nowrap">{user?.rank || "Station Operator"}</span>
+              <span className="officer-jurisdiction block text-[10px] text-amber-500 font-bold uppercase tracking-wider mt-0.5 truncate max-w-[150px] whitespace-nowrap">
                 {user?.role === 'SYSTEM_ADMIN' ? 'Central Administration' :
                  user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' ? 'Delhi Police HQ' :
                  user?.role === 'DISTRICT_OFFICER' ? jurisdiction?.district?.name_en :

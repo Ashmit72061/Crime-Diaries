@@ -39,6 +39,51 @@ const generateUID = async (recordType, psId, dateStr, trx = db) => {
   return `${recordType}-${psCode}-${cleanDate}-${seq}`;
 };
 
+const validateSelectFields = async (trx, recordType, data) => {
+  const allFields = await trx('field_registry').where('is_active', true);
+  const selectFields = allFields.filter(f => {
+    if (f.field_type !== 'SELECT') return false;
+    try {
+      const types = typeof f.applicable_record_types === 'string'
+        ? JSON.parse(f.applicable_record_types)
+        : f.applicable_record_types;
+      return Array.isArray(types) && types.map(t => t.toUpperCase()).includes(recordType.toUpperCase());
+    } catch (e) {
+      return false;
+    }
+  });
+
+  for (const f of selectFields) {
+    const val = data[f.field_key];
+    if (val !== undefined && val !== null && val !== '') {
+      let options = [];
+      try {
+        options = typeof f.options === 'string' ? JSON.parse(f.options) : f.options;
+      } catch (e) {
+        options = [];
+      }
+      if (Array.isArray(options) && options.length > 0) {
+        const allowedValues = options.map(o => (o && typeof o === 'object') ? o.value : o);
+        if (Array.isArray(val)) {
+          for (const item of val) {
+            if (!allowedValues.includes(item)) {
+              const err = new Error(`Invalid value '${item}' for field '${f.field_key}'. Allowed values: ${allowedValues.join(', ')}`);
+              err.status = 422;
+              throw err;
+            }
+          }
+        } else {
+          if (!allowedValues.includes(val)) {
+            const err = new Error(`Invalid value '${val}' for field '${f.field_key}'. Allowed values: ${allowedValues.join(', ')}`);
+            err.status = 422;
+            throw err;
+          }
+        }
+      }
+    }
+  }
+};
+
 // Services
 export const listRecords = async (recordType, filters, jurisdictionQuery) => {
   let query = db('records').select(
@@ -150,6 +195,7 @@ export const getRecordDetails = async (id) => {
 
 export const createRecord = async (user, recordType, recordDate, data, ipAddress) => {
   const dbRecord = await db.transaction(async (trx) => {
+    await validateSelectFields(trx, recordType, data);
     const id = uuidv4();
     const uid = await generateUID(recordType, user.ps_id, recordDate, trx);
 
@@ -242,6 +288,8 @@ export const updateRecord = async (id, user, data, ipAddress) => {
 
     const oldData = parseJsonField(record.data);
     const hydratedData = { ...oldData, ...data };
+
+    await validateSelectFields(trx, record.record_type, hydratedData);
 
     const diff = calculateDiff(oldData, hydratedData);
     if (diff.length === 0) return record; // No modifications made

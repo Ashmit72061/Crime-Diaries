@@ -14,7 +14,7 @@ router.use('/builder', reportBuilderRouter);
 router.get('/templates', authMiddleware, reportsController.getTemplates);
 router.post('/generate', authMiddleware, reportsController.generateReport);
 router.get('/status/:id', authMiddleware, reportsController.getJobStatus);
-router.get('/download/:id', reportsController.downloadReport); 
+router.get('/download/:id', reportsController.downloadReport);
 router.get('/history', authMiddleware, reportsController.getReportsHistory);
 
 // Scheduled reports CRUD (HQ/Admin only)

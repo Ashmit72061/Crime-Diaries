@@ -2,20 +2,21 @@ import cron from 'node-cron';
 import db from '../../config/db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { generateReportInternal } from './reports.controller.js';
+import { logger } from '../../utils/logger.js';
 
 const activeCronJobs = new Map();
 
 export const initScheduler = async () => {
-  console.log('[Scheduler] Initializing Scheduled Reports Cron Service...');
+  logger.info('[Scheduler] Initializing Scheduled Reports Cron Service...');
   try {
     const schedules = await db('scheduled_reports').where({ is_active: true });
-    console.log(`[Scheduler] Found ${schedules.length} active scheduled reports.`);
+    logger.info(`[Scheduler] Found ${schedules.length} active scheduled reports.`);
     
     for (const schedule of schedules) {
       await startScheduledJob(schedule);
     }
   } catch (error) {
-    console.error('[Scheduler] Failed to initialize scheduled reports:', error.message);
+    logger.error('[Scheduler] Failed to initialize scheduled reports:', error.message);
   }
 
   // Refresh analytics materialized view nightly at 02:00 AM (PostgreSQL only)
@@ -24,13 +25,48 @@ export const initScheduler = async () => {
     cron.schedule('0 2 * * *', async () => {
       try {
         await db.raw('REFRESH MATERIALIZED VIEW CONCURRENTLY mv_record_stats');
-        console.log('[Scheduler] mv_record_stats refreshed successfully.');
+        logger.info('[Scheduler] mv_record_stats refreshed successfully.');
       } catch (err) {
-        console.error('[Scheduler] mv_record_stats refresh failed:', err.message);
+        logger.error('[Scheduler] mv_record_stats refresh failed:', err.message);
       }
     });
-    console.log('[Scheduler] Analytics materialized view refresh scheduled (nightly 02:00).');
+    logger.info('[Scheduler] Analytics materialized view refresh scheduled (nightly 02:00).');
   }
+
+  // Hourly cron to clean up expired bulk import temp files
+  cron.schedule('0 * * * *', async () => {
+    logger.info('[Scheduler] Running expired import temp files cleanup cron...');
+    const path = await import('path');
+    const fs = await import('fs');
+    try {
+      const cutoff = new Date();
+      cutoff.setHours(cutoff.getHours() - 24);
+
+      const expiredBatches = await db('import_batches')
+        .where('created_at', '<', cutoff.toISOString())
+        .whereNotIn('status', ['COMPLETED', 'EXPIRED']);
+
+      if (expiredBatches.length > 0) {
+        logger.info(`[Scheduler] Purging ${expiredBatches.length} expired import batches.`);
+        for (const batch of expiredBatches) {
+          if (batch.file_path && fs.existsSync(batch.file_path)) {
+            try {
+              fs.unlinkSync(batch.file_path);
+              logger.info(`[Scheduler] Deleted expired temp file: ${batch.file_path}`);
+            } catch (fileErr) {
+              logger.error(`[Scheduler] Error unlinking temp file ${batch.file_path}:`, fileErr.message);
+            }
+          }
+          await db('import_batches')
+            .where({ id: batch.id })
+            .update({ status: 'EXPIRED' });
+        }
+      }
+    } catch (err) {
+      logger.error('[Scheduler] Import temp files cleanup cron failed:', err.message);
+    }
+  });
+  logger.info('[Scheduler] Import temp files cleanup scheduled (hourly).');
 };
 
 
@@ -44,7 +80,7 @@ export const startScheduledJob = async (schedule) => {
 
   try {
     const job = cron.schedule(cron_expr, async () => {
-      console.log(`[Scheduler] Triggered scheduled report execution for ID: ${id}, Template: ${template_id}`);
+      logger.info(`[Scheduler] Triggered scheduled report execution for ID: ${id}, Template: ${template_id}`);
       const jobId = uuidv4();
       const reportsDir = process.env.REPORTS_DIR || './generated-reports';
       const fileName = `${jobId}.${format.toLowerCase()}`;
@@ -78,9 +114,9 @@ export const startScheduledJob = async (schedule) => {
           last_run_status: 'SUCCESS'
         });
 
-        console.log(`[Scheduler] Scheduled report completed successfully. Job ID: ${jobId}`);
+        logger.info(`[Scheduler] Scheduled report completed successfully. Job ID: ${jobId}`);
       } catch (err) {
-        console.error(`[Scheduler] Scheduled report execution failed:`, err.message);
+        logger.error(`[Scheduler] Scheduled report execution failed:`, err.message);
         
         await db('scheduled_reports').where({ id }).update({
           last_run_at: new Date().toISOString(),
@@ -95,9 +131,9 @@ export const startScheduledJob = async (schedule) => {
     });
 
     activeCronJobs.set(id, job);
-    console.log(`[Scheduler] Scheduled job ${id} started with expression: "${cron_expr}"`);
+    logger.info(`[Scheduler] Scheduled job ${id} started with expression: "${cron_expr}"`);
   } catch (err) {
-    console.error(`[Scheduler] Failed to start scheduled job ${id}:`, err.message);
+    logger.error(`[Scheduler] Failed to start scheduled job ${id}:`, err.message);
   }
 };
 
@@ -106,7 +142,7 @@ export const stopScheduledJob = (id) => {
     const job = activeCronJobs.get(id);
     job.stop();
     activeCronJobs.delete(id);
-    console.log(`[Scheduler] Stopped scheduled job ID: ${id}`);
+    logger.info(`[Scheduler] Stopped scheduled job ID: ${id}`);
   }
 };
 
