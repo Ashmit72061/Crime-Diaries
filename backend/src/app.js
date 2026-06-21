@@ -6,9 +6,11 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
 import { env } from './config/env.js';
+import { logger } from './utils/logger.js';
 import * as eventBus from './events/eventBus.js';
 import * as auditHandler from './events/handlers/auditHandler.js';
 import * as notifyHandler from './events/handlers/notifyHandler.js';
+import * as linkAuditHandler from './events/handlers/linkAuditHandler.js';
 import { initScheduler } from './modules/reports/scheduler.js';
 import { ipAllowlistMiddleware, csrfDoubleSubmitMiddleware } from './middleware/security.middleware.js';
 
@@ -31,6 +33,7 @@ import filtersRouter from './modules/filters/filters.router.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
 import dailyDiaryRouter from './modules/daily-diary/daily-diary.router.js';
 import warehouseRouter from './modules/warehouse/warehouse.router.js';
+import recordLinksRouter from './modules/record-links/record-links.router.js';
 
 
 
@@ -129,6 +132,9 @@ app.use('/api/daily-diary', dailyDiaryRouter);
 app.use('/api/v1/warehouse', warehouseRouter);
 app.use('/api/warehouse', warehouseRouter);
 
+app.use('/api/v1/record-links', recordLinksRouter);
+app.use('/api/record-links',    recordLinksRouter);
+
 
 
 // Health check
@@ -146,7 +152,7 @@ app.use((req, res, next) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('[AppError] Caught global error:', err.stack || err.message);
+  logger.error('[AppError] Caught global error:', err.stack || err.message);
   return res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error'
@@ -156,23 +162,24 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   // Connect Event Broker
   await eventBus.connect();
-  
+
   // Start background handlers
   await auditHandler.init();
   await notifyHandler.init();
+  await linkAuditHandler.init();
   await initScheduler();
 
   app.listen(env.PORT, () => {
-    console.log(`===================================================`);
-    console.log(`  PHAROS API Server listening on port ${env.PORT}`);
-    console.log(`  Mode: ${env.NODE_ENV}`);
-    console.log(`===================================================`);
+    logger.info('===================================================');
+    logger.info(`  PHAROS API Server listening on port ${env.PORT}`);
+    logger.info(`  Mode: ${env.NODE_ENV}`);
+    logger.info('===================================================');
   });
 };
 
 if (process.env.PHAROS_TEST !== 'true' && process.argv[1] && (process.argv[1].endsWith('app.js') || process.argv[1].endsWith('app'))) {
   startServer().catch(err => {
-    console.error('[App] Failed to start server:', err.message);
+    logger.error('[App] Failed to start server:', err.message);
     process.exit(1);
   });
 }

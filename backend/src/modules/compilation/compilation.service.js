@@ -1,6 +1,7 @@
 import db from '../../config/db.js';
 import { publish } from '../../events/eventBus.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Parse compiled_summary JSON from DB row.
@@ -159,7 +160,7 @@ export const submitCompilation = async (id, userId) => {
         });
       } catch (e) {
         // Non-fatal: don't block submission if transition log fails
-        console.warn('[Compilation] Failed to log transition for record:', recordId, e.message);
+        logger.warn(`[Compilation] Failed to log transition for record: ${recordId} — ${e.message}`);
       }
     }
   }
@@ -172,7 +173,7 @@ export const submitCompilation = async (id, userId) => {
       submitted_by: userId,
     });
   } catch (e) {
-    console.warn('[Compilation] EventBus publish failed (non-fatal):', e.message);
+    logger.warn('[Compilation] EventBus publish failed (non-fatal):', e.message);
   }
 
   return parseSummary(updatedCompilation || compilation);

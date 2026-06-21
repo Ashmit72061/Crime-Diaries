@@ -164,7 +164,13 @@ const getRawRecords = async (date, psId, districtId, subDivId) => {
   }
 
   if (psId) {
-    query = query.where('records.ps_id', psId);
+    if (typeof psId === 'string' && psId.includes(',')) {
+      query = query.whereIn('records.ps_id', psId.split(','));
+    } else if (Array.isArray(psId)) {
+      query = query.whereIn('records.ps_id', psId);
+    } else {
+      query = query.where('records.ps_id', psId);
+    }
   }
   if (districtId) {
     query = query.where('records.district_id', districtId);

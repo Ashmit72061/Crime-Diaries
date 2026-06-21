@@ -144,6 +144,7 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
               <>
                 <div className="report-section-title">FIR Details</div>
                 <div className="report-meta-grid">
+                  {renderMetaItem("System UID", data.uid)}
                   {renderMetaItem("District", data.district)}
                   {renderMetaItem("Police Station", data.policeStation)}
                   {renderMetaItem("FIR / DD Number", data.firDdNumber)}
@@ -190,6 +191,7 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
               <>
                 <div className="report-section-title">PCR Dispatch Details</div>
                 <div className="report-meta-grid">
+                  {renderMetaItem("System UID", data.uid)}
                   {renderMetaItem("District", data.district)}
                   {renderMetaItem("Police Station", data.policeStation)}
                   {renderMetaItem("GD Number", data.gdNumber)}
@@ -237,6 +239,7 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
               <>
                 <div className="report-section-title">Unidentified Body Entry Metadata</div>
                 <div className="report-meta-grid">
+                  {renderMetaItem("System UID", data.uid)}
                   {renderMetaItem("UIDB Gazette Number", data.uidbNumber)}
                   {renderMetaItem("District", data.district)}
                   {renderMetaItem("Police Station", data.policeStation)}
@@ -284,6 +287,7 @@ export default function ReportModal({ isOpen, onClose, title, data, type }) {
               <>
                 <div className="report-section-title">Missing Report Metadata</div>
                 <div className="report-meta-grid">
+                  {renderMetaItem("System UID", data.uid)}
                   {renderMetaItem("District", data.district)}
                   {renderMetaItem("Police Station", data.policeStation)}
                   {renderMetaItem("DD Number", data.ddNumber)}

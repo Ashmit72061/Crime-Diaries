@@ -247,36 +247,56 @@ export default function StationPerformanceDashboard() {
     };
   }, [scopedStations, records, filters, isHq, userDistrictNode, nodes, psStats]);
 
-  const handleRowClick = (stationId) => {
-    const basePath = isHq ? "/hq/stations" : "/district/stations";
-    navigate(`${basePath}/${stationId}`);
+  const handleRowClick = () => {}
+  const getThemeClass = () => {
+    const role = user?.role;
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc-page';
+      case 'SHO':
+        return 'theme-sho-page';
+      case 'ACP':
+        return 'theme-acp-page';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district-page';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq-page';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin-page';
+      default:
+        return 'theme-shared-page';
+    }
   };
 
   /* ─────────────────────────── Loading screen ─────────────────────────── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F0F4F9] flex items-center justify-center">
+      <div className={`min-h-screen ${getThemeClass()} page-bg flex items-center justify-center font-sans`}>
         <div className="flex flex-col items-center gap-5">
           {/* Glowing icon */}
           <div className="relative">
-            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-2xl shadow-blue-500/40 flex items-center justify-center">
+            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-[#0d2a4a] to-[#16406d] shadow-2xl flex items-center justify-center">
               <Shield size={34} className="text-white" />
             </div>
-            <div className="absolute -inset-2 rounded-3xl bg-gradient-to-br from-[#003087]/30 to-[#0046C0]/30 blur-xl -z-10" />
+            <div className="absolute -inset-2 rounded-3xl bg-[var(--accent-glow)] blur-xl -z-10" />
             {/* Spinner badge */}
-            <div className="absolute -bottom-1.5 -right-1.5 h-7 w-7 rounded-full bg-white shadow-md border border-[#E2E8F0] flex items-center justify-center">
+            <div className="absolute -bottom-1.5 -right-1.5 h-7 w-7 rounded-full bg-[var(--bg-page-main)] shadow-md border border-[var(--border-card-theme)] flex items-center justify-center">
               <Spinner size="sm" />
             </div>
           </div>
           <div className="text-center">
-            <p className="text-base font-bold text-[#1A202C]">Loading Dashboard</p>
-            <p className="text-xs text-[#718096] mt-1">Fetching station metrics &amp; records…</p>
+            <p className="text-base font-bold text-[var(--text-main-theme)]">Loading Dashboard</p>
+            <p className="text-xs text-[var(--text-main-theme)] opacity-70 mt-1 font-semibold">Fetching station metrics &amp; records…</p>
           </div>
           {/* Animated dots */}
           <div className="flex gap-1.5 mt-1">
-            <span className="h-1.5 w-8 rounded-full bg-[#003087] animate-pulse" />
-            <span className="h-1.5 w-5 rounded-full bg-[#003087]/40 animate-pulse" style={{ animationDelay: "150ms" }} />
-            <span className="h-1.5 w-3 rounded-full bg-[#003087]/20 animate-pulse" style={{ animationDelay: "300ms" }} />
+            <span className="h-1.5 w-8 rounded-full bg-[var(--accent-color)] animate-pulse" />
+            <span className="h-1.5 w-5 rounded-full bg-[var(--accent-color)]/40 animate-pulse" style={{ animationDelay: "150ms" }} />
+            <span className="h-1.5 w-3 rounded-full bg-[var(--accent-color)]/20 animate-pulse" style={{ animationDelay: "300ms" }} />
           </div>
         </div>
       </div>
@@ -286,23 +306,23 @@ export default function StationPerformanceDashboard() {
   /* ─────────────────────────── Error screen ───────────────────────────── */
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F0F4F9] flex items-center justify-center px-6">
-        <div className="rounded-3xl border border-[#FCA5A5] bg-white shadow-xl shadow-red-100 max-w-md w-full overflow-hidden">
+      <div className={`min-h-screen ${getThemeClass()} page-bg flex items-center justify-center px-6 font-sans`}>
+        <div className="rounded-3xl border border-red-200/50 bg-[var(--bg-card-theme)] shadow-xl max-w-md w-full overflow-hidden text-[var(--text-main-theme)]">
           {/* Red accent top bar */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-[#DC2626] to-[#F87171]" />
+          <div className="h-1.5 w-full bg-gradient-to-r from-red-650 to-red-400" />
           <div className="p-8 text-center">
             <div className="relative mx-auto mb-5 h-16 w-16">
-              <div className="h-16 w-16 rounded-2xl bg-[#FEF2F2] border border-[#FCA5A5] flex items-center justify-center">
-                <AlertCircle size={28} className="text-[#DC2626]" />
+              <div className="h-16 w-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center">
+                <AlertCircle size={28} className="text-red-600" />
               </div>
               <div className="absolute -inset-1 rounded-2xl bg-red-100 blur-md -z-10" />
             </div>
-            <h3 className="text-base font-bold text-[#1A202C]">Unable to Load Data</h3>
-            <p className="mt-2 text-sm text-[#DC2626] font-medium">{error}</p>
-            <p className="mt-1 text-xs text-[#718096]">Check your connection and try refreshing the page.</p>
+            <h3 className="text-base font-bold text-[var(--text-main-theme)]">Unable to Load Data</h3>
+            <p className="mt-2 text-sm text-red-600 font-semibold">{error}</p>
+            <p className="mt-1 text-xs text-[var(--text-main-theme)] opacity-60 font-medium">Check your connection and try refreshing the page.</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#003087] to-[#0046C0] px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--accent-glow)] border-none cursor-pointer transition-all active:scale-95"
             >
               Retry
             </button>
@@ -316,13 +336,13 @@ export default function StationPerformanceDashboard() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#F0F4F9] text-[#1A202C]">
+    <div className={`min-h-screen ${getThemeClass()} page-bg text-[var(--text-main-theme)] font-sans`}>
 
       {/* ══════════════ HERO GRADIENT HEADER ══════════════ */}
-      <div className="relative bg-gradient-to-br from-[#0A1628] via-[#003087] to-[#0046C0] px-8 py-12 overflow-hidden">
+      <div className="relative hero-banner-gradient px-8 pt-8 pb-16 overflow-hidden">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-12 left-1/4 h-56 w-56 rounded-full bg-[#0046C0]/50 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 left-1/4 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute top-1/2 right-1/4 h-32 w-32 rounded-full bg-white/5 blur-2xl" />
         {/* Subtle grid pattern */}
         <div
@@ -335,7 +355,7 @@ export default function StationPerformanceDashboard() {
 
         <div className="relative z-10 mx-auto max-w-screen-xl">
           {/* Top badge row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 text-xs font-semibold text-white/80 backdrop-blur-sm tracking-wide">
               <Shield size={12} className="text-amber-400" />
               {isHq ? "DELHI POLICE · HQ CONSOLIDATED COMMAND" : "DELHI POLICE · DISTRICT COMMAND CENTER"}
@@ -349,42 +369,42 @@ export default function StationPerformanceDashboard() {
           </div>
 
           {/* Heading + inline hero stats */}
-          <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
             <div className="max-w-2xl">
-              <h1 className="text-4xl font-bold text-white tracking-tight leading-tight">
+              <h1 className="text-4xl font-bold text-white tracking-tight leading-tight font-display">
                 Station Wise Performance
               </h1>
-              <p className="mt-1 text-xl font-medium text-white/40 tracking-wide">
+              <p className="mt-1 text-xl font-medium text-white/70 tracking-wide">
                 {isHq ? "Consolidated Delhi Police Command" : `${userDistrictNode?.name_en || "District"} Boundary`}
               </p>
-              <p className="mt-4 text-sm text-white/55 leading-relaxed max-w-lg">
+              <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-lg font-semibold">
                 {isHq
                   ? "Cross-station performance analysis across all districts under Delhi Police HQ jurisdiction. Compare cases, arrests, and PCR response metrics."
                   : `Real-time performance monitoring for all police stations under the ${userDistrictNode?.name_en || "your"} district boundary.`}
               </p>
 
               {/* Breadcrumb location chips */}
-              <div className="mt-5 flex flex-wrap items-center gap-2">
+              <div className="mt-5 flex flex-wrap items-center gap-2 font-semibold">
                 <div className="flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
                   <MapPin size={11} className="text-white/50" />
-                  <span className="text-xs text-white/60">Delhi, India</span>
+                  <span className="text-xs text-white/70">Delhi, India</span>
                 </div>
                 {isHq ? (
                   <div className="flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
                     <Users size={11} className="text-white/50" />
-                    <span className="text-xs text-white/60">{calculatedData.summary.totalDistricts} Districts</span>
+                    <span className="text-xs text-white/70">{calculatedData.summary.totalDistricts} Districts</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
                     <MapPin size={11} className="text-white/50" />
-                    <span className="text-xs text-white/60">{userDistrictNode?.name_en || "District"}</span>
+                    <span className="text-xs text-white/70">{userDistrictNode?.name_en || "District"}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Hero metric tiles — derived from calculatedData, display only */}
-            <div className="flex flex-wrap gap-3 xl:flex-shrink-0 bg-slate 200">
+            {/* Hero metric tiles */}
+            <div className="flex flex-wrap gap-3 lg:flex-shrink-0 bg-transparent">
               {[
                 { label: "Stations",  value: calculatedData.summary.totalStations,  color: "text-white",        bg: "bg-white/10",           border: "border-white/20" },
                 { label: "Cases",     value: calculatedData.summary.totalCases,     color: "text-amber-300",    bg: "bg-amber-500/15",       border: "border-amber-400/30" },
@@ -408,39 +428,39 @@ export default function StationPerformanceDashboard() {
       </div>
 
       {/* ══════════════ PAGE BODY ══════════════ */}
-      <div className="mx-auto max-w-screen-xl px-6 pb-12">
+      <div className="mx-auto max-w-screen-xl px-6 pb-12 relative z-10 -mt-10 space-y-6">
 
         {/* ── KPI Summary Cards ── */}
-        <div className="mt-8">
+        {/* <div className="mt-8">
           <div className="mb-4 flex items-center gap-3">
-            <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#4A5568]">Performance Overview</h2>
-            <div className="flex-1 h-px bg-[#E2E8F0]" />
+            <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[var(--accent-color)] to-[var(--accent-color-hover)]" />
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--text-main-theme)] opacity-70">Performance Overview</h2>
+            <div className="flex-1 h-px bg-[var(--border-card-theme)]/70" />
           </div>
           <StationSummaryCards summary={calculatedData.summary} isHq={isHq} />
-        </div>
+        </div> */}
 
         {/* ── Filters Panel ── */}
-        <div className="mt-6 rounded-2xl border border-[#E2E8F0] bg-[#003080] shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[#003087]/5 hover:-translate-y-0.5">
+        <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-2xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
           {/* Panel header */}
-          <div className="flex items-center gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-blue 600 to-[#003087] to-blue 200 px-6 py-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-slate 200 to-slate 400 shadow-md shadow-blue-500/20 flex-shrink-0">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex items-center gap-3 border-b border-[var(--border-card-theme)]/70 bg-gradient-to-r from-[var(--bg-page-main)]/80 to-[var(--bg-page-main)]/40 px-6 py-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-page-main)]/50 border border-[var(--border-card-theme)] flex-shrink-0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Filter &amp; Search</p>
-              <p className="text-xs text-slate-400">Narrow results by district, station, record type or date range</p>
+              <p className="text-lg font-extrabold text-[var(--text-main-theme)] font-display">Filter &amp; Search</p>
+              <p className="text-xs text-[var(--text-main-theme)] opacity-70 font-semibold">Narrow results by district, station, record type or date range</p>
             </div>
             {/* Active filter badge */}
             {activeFilterCount > 0 ? (
-              <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[#003087] px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-color)] px-3 py-1 text-xs font-bold text-white shadow-sm">
                 <Activity size={10} />
                 {activeFilterCount} active
               </span>
             ) : (
-              <span className="ml-auto rounded-full border border-[#E2E8F0] bg-[#F8FAFF] px-3 py-1 text-xs font-medium text-[#718096]">
+              <span className="ml-auto rounded-full border border-[var(--border-card-theme)] bg-[var(--bg-page-main)] px-3 py-1 text-xs font-bold text-[var(--text-main-theme)] opacity-70">
                 No filters
               </span>
             )}
@@ -458,16 +478,16 @@ export default function StationPerformanceDashboard() {
         </div>
 
         {/* ── Station Performance Table ── */}
-        <div className="mt-6 rounded-3xl border border-[#E2E8F0] bg-[#003087] shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[#003087]/5">
+        <div className="theme-card border border-[var(--border-card-theme)] bg-[var(--bg-page-main)]/60 backdrop-blur-md rounded-3xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
           {/* Table panel header */}
-          <div className="relative border-b border-[#003087] bg-gradient-to-r from-[#003087] via-blue 600 to-blue 400 px-6 py-5">
+          <div className="relative border-b border-[var(--border-card-theme)]/70 bg-gradient-to-r from-[var(--bg-page-main)]/80 to-[var(--bg-page-main)]/40 px-6 py-5">
             {/* Left vertical accent */}
-            <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-blue to-[#0046C0]" />
+            <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-[var(--accent-color)]" />
 
             <div className="flex flex-wrap items-start justify-between gap-4 pl-4">
               <div>
-                <h2 className="text-base font-bold text-white">Station Comparative Analysis</h2>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <h2 className="text-xl font-extrabold text-[var(--text-main-theme)] font-display">Station Comparative Analysis</h2>
+                <p className="mt-0.5 text-xs text-[var(--text-main-theme)] opacity-70 font-semibold">
                   {calculatedData.stations.length} station{calculatedData.stations.length !== 1 ? "s" : ""}
                   {isHq ? ` · ${calculatedData.summary.totalDistricts} district${calculatedData.summary.totalDistricts !== 1 ? "s" : ""}` : ""}
                   {" "}· Click any row to drill down
@@ -475,18 +495,18 @@ export default function StationPerformanceDashboard() {
               </div>
 
               {/* Metric legend pills */}
-              <div className="flex flex-wrap gap-2 bg-[#003087]">
-                <div className="flex items-center gap-1.5 rounded-xl bg-slate 400 border border-[#FDE68A] px-3 py-1.5 shadow-sm">
-                  <Clock3 size={12} className="text-[#D97706]" />
-                  <span className="text-xs font-semibold text-[#D97706]">{calculatedData.summary.totalCases} Cases</span>
+              <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 shadow-sm">
+                  <Clock3 size={12} className="text-amber-700" />
+                  <span className="text-xs font-bold text-amber-700">{calculatedData.summary.totalCases} Cases</span>
                 </div>
-                <div className="flex items-center gap-1.5 rounded-xl bg-[#ECFDF5] border border-[#6EE7B7] px-3 py-1.5 shadow-sm">
-                  <CheckCircle2 size={12} className="text-[#059669]" />
-                  <span className="text-xs font-semibold text-[#059669]">{calculatedData.summary.totalArrests} Arrests</span>
+                <div className="flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 shadow-sm">
+                  <CheckCircle2 size={12} className="text-emerald-700" />
+                  <span className="text-xs font-bold text-emerald-700">{calculatedData.summary.totalArrests} Arrests</span>
                 </div>
-                <div className="flex items-center gap-1.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-1.5 shadow-sm">
-                  <Radio size={12} className="text-[#003087]" />
-                  <span className="text-xs font-semibold text-[#003087]">{calculatedData.summary.totalPcr} PCR</span>
+                <div className="flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-3 py-1.5 shadow-sm">
+                  <Radio size={12} className="text-blue-700" />
+                  <span className="text-xs font-bold text-blue-700">{calculatedData.summary.totalPcr} PCR</span>
                 </div>
               </div>
             </div>
@@ -504,11 +524,11 @@ export default function StationPerformanceDashboard() {
 
         {/* Footer */}
         <div className="mt-8 flex items-center justify-center gap-2">
-          <div className="h-px flex-1 max-w-[80px] bg-[#E2E8F0]" />
-          <p className="text-xs text-[#A0AEC5] font-medium">
+          <div className="h-px flex-1 max-w-[80px] bg-[var(--border-card-theme)]/70" />
+          <p className="text-xs text-[var(--text-main-theme)] opacity-60 font-semibold">
             Delhi Police Command System · Data refreshes on page load · All times IST
           </p>
-          <div className="h-px flex-1 max-w-[80px] bg-[#E2E8F0]" />
+          <div className="h-px flex-1 max-w-[80px] bg-[var(--border-card-theme)]/70" />
         </div>
       </div>
     </div>

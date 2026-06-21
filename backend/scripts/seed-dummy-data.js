@@ -62,7 +62,9 @@ const IPC_SECS    = ['302', '420', '379', '392', '66C'];
 
 function caseData(i, ps) {
   const loc = (ps === H.PS_PARLIAMENT || ps === H.PS_CONNAUGHT) ? LOCS_NDD[i%5] : LOCS_NWD[i%5];
+  const caseType = ['cctns(manual FIR)', 'eTheft', 'eMVT', 'NCRP', 'zero FIR'][i%5];
   return {
+    case_type: caseType,
     fir_no: `FIR/2026/${1000+i}`, fir_date: `2026-05-${pad(i%28+1)}`,
     gd_no: `GD/2026/${2000+i}`,   gd_date: `2026-05-${pad(i%28+1)}`,
     gd_time: `${pad((i*3)%24)}:${pad((i*7)%60)}`, beat_no: `B-${(i%10)+1}`,
@@ -77,7 +79,7 @@ function caseData(i, ps) {
     property_description: i%2===0 ? `Mobile phone, cash Rs.${(i+1)*500}` : '',
     property_status: ['Stolen','Recovered','NA'][i%3],
     status: ['Open','Chargesheeted','Open','Closed','Open'][i%5],
-    cctns_flag: i%2===0, zero_fir_flag: i%7===0, remarks: '',
+    cctns_flag: caseType === 'cctns(manual FIR)', zero_fir_flag: caseType === 'zero FIR', remarks: '',
   };
 }
 
@@ -418,12 +420,12 @@ const WF_CONFIG = [
 const LEVEL_CONTRACTS = [
   {
     id:'LDC_PS_DIST_ALL', from_level:'PS', to_level:'DISTRICT', route:'OPS_CHAIN', record_type:'*',
-    visible_field_keys: JSON.stringify(['fir_no','fir_date','local_head','occurrence_place','io_name','status','brief_facts','arrested_name','arrest_date','crime_head','pcr_no','call_head','missing_name','missing_date','status','found_date','found_place']),
+    visible_field_keys: JSON.stringify(['case_type','fir_no','fir_date','local_head','occurrence_place','io_name','status','brief_facts','arrested_name','arrest_date','crime_head','pcr_no','call_head','missing_name','missing_date','status','found_date','found_place']),
     aggregate_definitions: JSON.stringify([]), is_active:true, updated_at: new Date().toISOString(),
   },
   {
     id:'LDC_DIST_HQ_ALL', from_level:'DISTRICT', to_level:'HQ', route:'OPS_CHAIN', record_type:'*',
-    visible_field_keys: JSON.stringify(['fir_no','fir_date','local_head','occurrence_place','status','brief_facts','crime_head','call_head','missing_name','found_date']),
+    visible_field_keys: JSON.stringify(['case_type','fir_no','fir_date','local_head','occurrence_place','status','brief_facts','crime_head','call_head','missing_name','found_date']),
     aggregate_definitions: JSON.stringify([
       { type:'count', label_en:'Total Records',  label_hi:'कुल रिकॉर्ड' },
       { type:'count_by', field:'local_head', label_en:'By Crime Head', label_hi:'अपराध शीर्ष अनुसार' },
@@ -574,6 +576,7 @@ function buildFields() {
   const L = JSON.stringify(['PS','DISTRICT','HQ']);
   const E = JSON.stringify(['PS']);
   return [
+    { id:'C_29', field_key:'case_type',           field_type:'SELECT',   applicable_record_types:JSON.stringify(['CASE']),     label_en:'Case Registration Type',  label_hi:'मामला पंजीकरण प्रकार',          visible_to_levels:L, editable_by_levels:E, section:'general_info',             sort_order:0,  validation_rules:JSON.stringify({required:true}), options:JSON.stringify([{value:'cctns(manual FIR)',label_en:'cctns(manual FIR)',label_hi:'सीसीटीएनएस (मैनुअल एफआईआर)'},{value:'eTheft',label_en:'eTheft',label_hi:'ई-चोरी'},{value:'eMVT',label_en:'eMVT',label_hi:'ई-एमवीटी'},{value:'NCRP',label_en:'NCRP',label_hi:'एनसीआरपी'},{value:'zero FIR',label_en:'zero FIR',label_hi:'जीरो एफआईआर'}]) },
     { id:'C_1',  field_key:'fir_no',              field_type:'TEXT',     applicable_record_types:JSON.stringify(['CASE']),     label_en:'FIR Number',              label_hi:'प्राथमिकी (FIR) संख्या',       visible_to_levels:L, editable_by_levels:E, section:'general_info',             sort_order:1,  validation_rules:JSON.stringify({required:true}) },
     { id:'C_2',  field_key:'fir_date',             field_type:'DATE',     applicable_record_types:JSON.stringify(['CASE']),     label_en:'FIR Date',                label_hi:'एफआईआर तिथि',                 visible_to_levels:L, editable_by_levels:E, section:'general_info',             sort_order:2,  validation_rules:JSON.stringify({required:true}) },
     { id:'C_3',  field_key:'gd_no',               field_type:'TEXT',     applicable_record_types:JSON.stringify(['CASE']),     label_en:'GD Number',               label_hi:'जीडी नंबर',                   visible_to_levels:L, editable_by_levels:E, section:'general_info',             sort_order:3,  validation_rules:JSON.stringify({required:true}) },

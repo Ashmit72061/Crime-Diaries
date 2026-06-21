@@ -3,10 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Building, Map, ShieldAlert, Award, FileCheck, PhoneCall, Filter, Radio, MapPin, Clock3, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react';
 import api from '../../utils/api.js';
-import phqImage from '../../assets/phq.jpeg'
+import phqImage from '../../assets/phq.jpeg';
+import useAuthStore from '../../store/authStore.js';
 
 export default function HQDashboard() {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
   const [filterDistrict, setFilterDistrict] = useState('All');
   const [filterType, setFilterType] = useState('All');
 
@@ -55,48 +57,56 @@ export default function HQDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F4F9] text-[#1A202C]">
-
+    <div className="min-h-screen theme-hq-page page-bg">
+ 
       {/* ══════════════ HERO HEADER ══════════════ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0A1628] via-[#003087] to-[#0046C0] px-8 py-12">
-        {/* PHQ image as faint right-side overlay */}
+      <div className="relative overflow-hidden hero-banner-gradient px-8 py-8">
+        <span className="user-greeting-badge text-xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+          Hi, {user?.username || 'User'}
+        </span>
+        {/* PHQ image filling the complete dashboard background */}
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-10"
-          style={{ backgroundImage: `url(${phqImage})`, backgroundSize: 'cover', backgroundPosition: 'center left' }}
+          className="pointer-events-none absolute inset-0 w-full h-full"
+          style={{
+            backgroundImage: `url(${phqImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.65
+          }}
+        />
+        {/* Dark overlay layer for text readability contrast */}
+        <div
+          className="pointer-events-none absolute inset-0 w-full h-full bg-[#0a1120]/75"
         />
         {/* Decorative blur orbs */}
         <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-[#0046C0]/50 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute top-1/3 right-1/3 h-32 w-32 rounded-full bg-white/5 blur-2xl" />
         {/* Grid texture */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.04]"
           style={{ backgroundImage: 'repeating-linear-gradient(0deg,white 0,white 1px,transparent 1px,transparent 48px),repeating-linear-gradient(90deg,white 0,white 1px,transparent 1px,transparent 48px)' }}
         />
-
+ 
         <div className="relative z-10 mx-auto max-w-screen-xl">
           {/* Top row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/80 backdrop-blur-sm">
               <Building size={12} className="text-amber-400" />
               DELHI POLICE · HQ COMMAND CENTER
             </span>
-            <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1.5 backdrop-blur-sm">
-              <Radio size={11} className="animate-pulse text-emerald-400" />
-              <span className="text-xs font-semibold tracking-wide text-emerald-300">LIVE FEED</span>
-            </div>
           </div>
-
+ 
           {/* Heading + hero stat tiles */}
-          <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <h1 className="text-4xl font-bold leading-tight tracking-tight text-white">
                 Delhi Police
               </h1>
-              <p className="mt-1 text-xl font-medium tracking-wide text-white/40">
+              <p className="mt-1 text-xl font-semibold tracking-wide text-slate-300">
                 Headquarters Command Console
               </p>
-              <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/55">
+              <p className="mt-4 max-w-lg text-sm leading-relaxed text-slate-200">
                 Global command center overview — comparative metrics and operational aggregates across all 15 ranges and zones of Delhi.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
@@ -110,13 +120,13 @@ export default function HQDashboard() {
                 </div>
               </div>
             </div>
-
+ 
             {/* Hero metric tiles */}
-            <div className="flex flex-wrap gap-3 xl:flex-shrink-0">
+            <div className="flex flex-wrap gap-3 lg:flex-shrink-0">
               {[
-                { label: 'FIR Cases',  value: (stats.cases_today   || 0) * 15, color: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-400/30'  },
-                { label: 'PCR Calls',  value: (stats.pcr_today     || 0) * 20, color: 'text-sky-300',     bg: 'bg-sky-500/15',     border: 'border-sky-400/30'    },
-                { label: 'Arrests',    value: (stats.arrests_today || 0) * 12, color: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-400/30' },
+                { label: 'FIR Cases',  value: (stats.cases_today   || 0) * 15, color: 'text-amber-300',   bg: 'bg-white/10',   border: 'border-white/10'  },
+                { label: 'PCR Calls',  value: (stats.pcr_today     || 0) * 20, color: 'text-sky-300',     bg: 'bg-white/10',     border: 'border-white/10'    },
+                { label: 'Arrests',    value: (stats.arrests_today || 0) * 12, color: 'text-emerald-300', bg: 'bg-white/10', border: 'border-white/10' },
               ].map((tile) => (
                 <div
                   key={tile.label}
@@ -129,18 +139,18 @@ export default function HQDashboard() {
             </div>
           </div>
         </div>
-
+ 
         {/* Bottom separator */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </div>
-
+ 
       {/* ══════════════ PAGE BODY ══════════════ */}
       <div className="mx-auto max-w-screen-xl px-6 pb-12">
-
+ 
         {/* ── Overview Stat Cards ── */}
         <div className="mt-8">
           <div className="mb-4 flex items-center gap-3">
-            <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
+            <div className="h-5 w-1 rounded-full bg-gradient-to-b from-[var(--accent-color-hover)] to-[var(--accent-color)]" />
             <h2 className="text-xs font-bold uppercase tracking-widest text-[#4A5568]">Operational Overview</h2>
             <div className="h-px flex-1 bg-[#E2E8F0]" />
           </div>
@@ -152,7 +162,7 @@ export default function HQDashboard() {
               return (
                 <div
                   key={idx}
-                  className="group rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5"
+                  className="group rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--accent-glow)]"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -169,12 +179,12 @@ export default function HQDashboard() {
             })}
           </div>
         </div>
-
+ 
         {/* ── Scope Filters ── */}
-        <div className="mt-6 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#003087]/5">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--accent-glow)]">
           {/* Panel header */}
           <div className="flex items-center gap-3 border-b border-[#E2E8F0] bg-gradient-to-r from-[#F8FAFF] to-white px-6 py-4">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-color-hover)] to-[var(--accent-color)] shadow-md shadow-blue-500/20">
               <Filter size={13} className="text-white" />
             </div>
             <div>
@@ -245,7 +255,7 @@ export default function HQDashboard() {
             <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-gradient-to-b from-[#003087] to-[#0046C0]" />
 
             <div className="flex items-center gap-3 pl-4">
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#003087] to-[#0046C0] shadow-md shadow-blue-500/20">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent-color-hover)] to-[var(--accent-color)] shadow-md shadow-blue-500/20">
                 <ShieldAlert size={16} className="text-white" />
               </div>
               <div>

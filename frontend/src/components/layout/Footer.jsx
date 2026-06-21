@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { APP_NAME } from '../../utils/constants.js';
+import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
 
 export const Footer = () => (
   <footer className="public-footer-container py-12">
@@ -10,7 +11,7 @@ export const Footer = () => (
         {/* Brand */}
         <div className="col-span-1 md:col-span-2 flex flex-col gap-3">
           <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-5 h-5 text-[#cca43b]" />
+            <img src={delhiPoliceLogo} alt="Delhi Police Logo" className="w-7 h-7 object-contain" />
             <span className="font-bold text-lg public-footer-title tracking-wider">{APP_NAME}</span>
           </div>
           <p className="text-sm public-footer-text max-w-sm leading-relaxed">

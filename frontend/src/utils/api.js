@@ -137,6 +137,7 @@ const initMockDB = () => {
         created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
         updated_at: new Date(Date.now() - 3600000 * 2).toISOString(),
         data: {
+          case_type: 'cctns(manual FIR)',
           fir_no: '210/2026',
           fir_date: '2026-06-15',
           gd_no: '12A',
@@ -155,10 +156,15 @@ const initMockDB = () => {
           io_name: 'SI Harish Rawat',
           io_pis: 'PIS-49281034',
           io_mobile: '9876543210',
-          property_description: 'Black leather shoulder bag containing cash and paper transcripts',
+          stolen_property: 'Black leather shoulder bag containing cash and paper transcripts',
           property_status: 'Stolen',
           status: 'Open',
           remarks: 'CCTV footage of adjacent cameras is being analysed.',
+          property_description: 'Black leather shoulder bag containing cash and paper transcripts',
+          recovered_property: '',
+          recovered_property_status: 'NA',
+          recovered_case_status: 'Open',
+          recovered_remarks: '',
           cctns_flag: true,
           etheft_flag: false,
           emvt_flag: false,
@@ -387,11 +393,25 @@ const formSchemas = {
       title_en: 'General Case Metadata',
       title_hi: 'सामान्य मामला मेटाडेटा',
       fields: [
+        {
+          field_key: 'case_type',
+          field_type: 'SELECT',
+          label_en: 'Case Registration Type',
+          label_hi: 'मामला पंजीकरण प्रकार',
+          validation_rules: { required: true },
+          options: [
+            { value: 'cctns(manual FIR)', label_en: 'cctns(manual FIR)', label_hi: 'सीसीटीएनएस (मैनुअल एफआईआर)' },
+            { value: 'eTheft', label_en: 'eTheft', label_hi: 'ई-चोरी' },
+            { value: 'eMVT', label_en: 'eMVT', label_hi: 'ई-एमवीटी' },
+            { value: 'NCRP', label_en: 'NCRP', label_hi: 'एनसीआरपी' },
+            { value: 'zero FIR', label_en: 'zero FIR', label_hi: 'जीरो एफआईआर' }
+          ]
+        },
         { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number', label_hi: 'प्राथमिकी (FIR) संख्या', validation_rules: { required: true } },
         { field_key: 'fir_date', field_type: 'DATE', label_en: 'FIR Date', label_hi: 'प्राथमिकी की तिथि', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TEXT', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: false } },
+        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: false } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -401,6 +421,7 @@ const formSchemas = {
       title_hi: 'घटना का विवरण',
       fields: [
         { field_key: 'occurrence_date', field_type: 'DATE', label_en: 'Date of Occurrence', label_hi: 'घटना की तिथि', validation_rules: { required: true } },
+        { field_key: 'time_of_occurrence', field_type: 'TIME', label_en: 'Time of Occurrence', label_hi: 'घटना का समय', validation_rules: { required: true } },
         { field_key: 'occurrence_place', field_type: 'TEXT', label_en: 'Place of Occurrence', label_hi: 'घटना का स्थान', validation_rules: { required: true } },
         { field_key: 'brief_facts', field_type: 'TEXTAREA', label_en: 'Brief Facts of the Case', label_hi: 'मामले के संक्षिप्त तथ्य', validation_rules: { required: true } },
         {
@@ -421,7 +442,7 @@ const formSchemas = {
         },
         { field_key: 'act_name', field_type: 'TEXT', label_en: 'Act Name', label_hi: 'अधिनियम का नाम', validation_rules: { required: true } },
         { field_key: 'sections', field_type: 'TEXT', label_en: 'Section(s) Code', label_hi: 'संबद्ध धारा संख्या(एँ)', validation_rules: { required: true } },
-        { field_key: 'beat_no', field_type: 'TEXT', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
+        { field_key: 'beat_no', field_type: 'NUMBER', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
       ]
     },
     {
@@ -447,37 +468,68 @@ const formSchemas = {
       ]
     },
     {
-      section: 'property_status',
-      title_en: 'Property Details & Case Status',
-      title_hi: 'संपत्ति विवरण और केस की स्थिति',
+      section: 'stolen_property',
+      title_en: 'Stolen Property',
+      title_hi: 'चोरी की गई संपत्ति',
       fields: [
-        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
+        { field_key: 'stolen_property', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
         {
           field_key: 'property_status',
           field_type: 'SELECT',
           label_en: 'Property Status',
           label_hi: 'संपत्ति की स्थिति',
           options: [
-            { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी' },
-            { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
-            { value: 'Partly Recovered', label_en: 'Partly Recovered', label_hi: 'आंशिक रूप से बरामद' },
-            { value: 'Not Applicable', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+            { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' },
+            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
           ],
           validation_rules: { required: true }
         },
         {
           field_key: 'status',
           field_type: 'SELECT',
-          label_en: 'Investigation Status',
-          label_hi: 'जांच की स्थिति',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
           options: [
-            { value: 'Open', label_en: 'Active / Under Investigation', label_hi: 'सक्रिय / जांच के अधीन' },
-            { value: 'Chargesheeted', label_en: 'Chargesheet Submitted', label_hi: 'आरोप पत्र दाखिल' },
-            { value: 'Closed', label_en: 'Closed / Final Report', label_hi: 'बंद / अंतिम रिपोर्ट दाखिल' }
+            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
+            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
+            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
           ],
           validation_rules: { required: true }
         },
-        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'General Remarks', label_hi: 'सामान्य टिप्पणी', validation_rules: { required: false } }
+        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
+      ]
+    },
+    {
+      section: 'recovered_property',
+      title_en: 'Recovered Property',
+      title_hi: 'बरामद संपत्ति',
+      fields: [
+        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
+        { field_key: 'recovered_property', field_type: 'TEXTAREA', label_en: 'Recovery Property', label_hi: 'बरामद की गई संपत्ति', validation_rules: { required: false } },
+        {
+          field_key: 'recovered_property_status',
+          field_type: 'SELECT',
+          label_en: 'Property Status',
+          label_hi: 'संपत्ति की स्थिति',
+          options: [
+            { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
+            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'recovered_case_status',
+          field_type: 'SELECT',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
+          options: [
+            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
+            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
+            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
+          ],
+          validation_rules: { required: true }
+        },
+        { field_key: 'recovered_remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
       ]
     },
     {
@@ -501,7 +553,7 @@ const formSchemas = {
       fields: [
         { field_key: 'linked_fir_dd_no', field_type: 'TEXT', label_en: 'Linked Case FIR / DD Number', label_hi: 'संबद्ध प्राथमिकी / डी.डी. संख्या', validation_rules: { required: false } },
         { field_key: 'linked_fir_dd_date', field_type: 'DATE', label_en: 'Linked Case FIR Date', label_hi: 'संबद्ध प्राथमिकी तिथि', validation_rules: { required: false } },
-        { field_key: 'linked_fir_dd_time', field_type: 'TEXT', label_en: 'Linked Case Occurrence Time', label_hi: 'संबद्ध घटना का समय', validation_rules: { required: false } },
+        { field_key: 'linked_fir_dd_time', field_type: 'TIME', label_en: 'Linked Case Occurrence Time', label_hi: 'संबद्ध घटना का समय', validation_rules: { required: false } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -513,7 +565,7 @@ const formSchemas = {
         { field_key: 'arrested_name', field_type: 'TEXT', label_en: 'Name of Arrested/Detained Person', label_hi: 'गिरफ्तार/हिरासत में लिए गए व्यक्ति का नाम', validation_rules: { required: true } },
         { field_key: 'arrested_address', field_type: 'TEXTAREA', label_en: 'Address of Arrested Person', label_hi: 'गिरफ्तार व्यक्ति का पता', validation_rules: { required: true } },
         { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Date of Arrest', label_hi: 'गिरफ्तारी की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrest_time', field_type: 'TEXT', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
+        { field_key: 'arrest_time', field_type: 'TIME', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
         { field_key: 'arrest_place', field_type: 'TEXT', label_en: 'Place of Arrest', label_hi: 'गिरफ्तारी का स्थान', validation_rules: { required: true } },
       ]
     },
@@ -662,7 +714,7 @@ const formSchemas = {
       fields: [
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TEXT', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: true } },
+        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -721,10 +773,10 @@ const formSchemas = {
       fields: [
         { field_key: 'arrival_dd_no', field_type: 'TEXT', label_en: 'Arrival DD Entry Number', label_hi: 'घटनास्थल पर आगमन DD संख्या', validation_rules: { required: true } },
         { field_key: 'arrival_date', field_type: 'DATE', label_en: 'Arrival Date at Scene', label_hi: 'घटनास्थल पर आगमन की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrival_time', field_type: 'TEXT', label_en: 'Arrival Time at Scene', label_hi: 'घटनास्थल पर आगमन का समय', validation_rules: { required: true } },
+        { field_key: 'arrival_time', field_type: 'TIME', label_en: 'Arrival Time at Scene', label_hi: 'घटनास्थल पर आगमन का समय', validation_rules: { required: true } },
         { field_key: 'latitude', field_type: 'TEXT', label_en: 'Incident Location Latitude', label_hi: 'घटना स्थल अक्षांश', validation_rules: { required: false } },
         { field_key: 'longitude', field_type: 'TEXT', label_en: 'Incident Location Longitude', label_hi: 'घटना स्थल रेखांश', validation_rules: { required: false } },
-        { field_key: 'beat_no', field_type: 'TEXT', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
+        { field_key: 'beat_no', field_type: 'NUMBER', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
       ]
     }
   ],
@@ -781,7 +833,7 @@ const formSchemas = {
         { field_key: 'last_seen_location', field_type: 'TEXT', label_en: 'Last Seen Location Address', label_hi: 'अंतिम बार देखे जाने का पता', validation_rules: { required: false } },
         { field_key: 'found_location', field_type: 'TEXT', label_en: 'Found / Recovery Location Address', label_hi: 'बरामदगी / मिलने का पता', validation_rules: { required: false } },
         { field_key: 'missing_recovered_date', field_type: 'DATE', label_en: 'Date Missing / Recovered', label_hi: 'लापता होने / बरामद होने की तिथि', validation_rules: { required: true } },
-        { field_key: 'missing_recovered_time', field_type: 'TEXT', label_en: 'Time Missing / Recovered', label_hi: 'लापता होने / बरामद होने का समय', validation_rules: { required: true } },
+        { field_key: 'missing_recovered_time', field_type: 'TIME', label_en: 'Time Missing / Recovered', label_hi: 'लापता होने / बरामद होने का समय', validation_rules: { required: true } },
       ]
     },
     {
@@ -912,9 +964,9 @@ api.interceptors.request.use(
       if (!badgeNo || !password) {
         throw createMockError('Missing badge number or security key', 400);
       }
-      
+
       const node = findNodeById(selectedNodeId || 'PS_NDD_PARLIAMENT_STREET') || POLICE_HIERARCHY.children[0].children[1].children[0].children[0];
-      
+
       let mockRole = node.type;
       const lowerB = badgeNo.toLowerCase();
       if (lowerB.includes('sho')) {
@@ -931,6 +983,8 @@ api.interceptors.request.use(
         mockRole = 'SYSTEM_ADMIN';
       }
 
+      const stationName = node.stationName || '';
+      const psCode = node.code || stationName.split(' ').filter(w => w.length > 0).map(w => w[0].toUpperCase()).join('').substring(0, 6) || 'PS';
       const mockUser = {
         userId: 'mock-usr-' + badgeNo.toLowerCase(),
         badgeNo,
@@ -939,19 +993,20 @@ api.interceptors.request.use(
         level: node.type,
         psId: node.type === 'PS' ? node.id : '',
         districtId: node.type === 'DISTRICT' ? node.id : 'DIST_NDD',
-        stationName: node.stationName || '',
+        stationName,
         districtKey: node.districtKey || '',
+        psCode,
         username: node.officerName || 'Officer Ramesh',
         rank: node.rank || 'Head Constable',
         pis: node.pis || 'PIS-28521904',
       };
-      
+
       const tokens = {
         access_token: 'mock-jwt-access-token',
         refresh_token: 'mock-jwt-refresh-token',
         user: mockUser
       };
-      
+
       return Promise.reject({
         isMock: true,
         response: createMockResponse(tokens)
@@ -991,7 +1046,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) defaultUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
       return Promise.reject({
         isMock: true,
@@ -1063,15 +1118,22 @@ api.interceptors.request.use(
       const payload = typeof config.data === 'string' ? JSON.parse(config.data) : (config.data || {});
       const { record_type, data } = payload;
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
-      
+
       const userJSON = localStorage.getItem('crime-diaries-auth');
       let currentUser = { psId: 'PS_NDD_PARLIAMENT_STREET', districtId: 'DIST_NDD', username: 'HC Ramesh Kumar' };
       if (userJSON) {
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
+
+      const _typeCodes = { CASE: 'CSE', ARREST: 'ARR', PCR_CALL: 'PCR', MISSING: 'MSP', UIDB: 'UDB' };
+      const _year = new Date().getFullYear();
+      const _psCode = currentUser.psCode || (currentUser.stationName?.split(' ').filter(w => w.length > 0).map(w => w[0].toUpperCase()).join('').substring(0, 6)) || 'PS';
+      const _existingCount = allRecords.filter(r => r.record_type === record_type && r.ps_id === (currentUser.psId || 'PS_NDD_PARLIAMENT_STREET')).length;
+      const _typeCode = _typeCodes[record_type] || record_type.substring(0, 3).toUpperCase();
+      const mockUid = `${_typeCode}/${_year}/${_psCode}/${String(_existingCount + 1).padStart(6, '0')}`;
 
       const newRecord = {
         id: 'rec-' + Math.random().toString(36).substring(2, 9),
@@ -1081,10 +1143,11 @@ api.interceptors.request.use(
         current_status: 'DRAFT',
         current_level: 'PS',
         version: 1,
+        uid: mockUid,
         created_by: currentUser.username,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        data: data || {},
+        data: { ...(data || {}), uid: mockUid },
         revisions: [
           {
             revision_number: 1,
@@ -1098,7 +1161,7 @@ api.interceptors.request.use(
         ],
         transitions: []
       };
-      
+
       allRecords.push(newRecord);
       localStorage.setItem('prism_mock_records', JSON.stringify(allRecords));
       return Promise.reject({
@@ -1116,7 +1179,7 @@ api.interceptors.request.use(
       if (idx === -1) {
         throw createMockError('Record not found', 404);
       }
-      
+
       const record = allRecords[idx];
       if (record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC') {
         throw createMockError('Lock violation: Record can only be modified in DRAFT or SENT_BACK state', 400);
@@ -1128,7 +1191,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user?.username) currentUsername = parsed.state.user.username;
-        } catch(e){}
+        } catch (e) { }
       }
 
       // Compute changes
@@ -1191,7 +1254,7 @@ api.interceptors.request.use(
       if (idx === -1) {
         throw createMockError('Record not found', 404);
       }
-      
+
       const record = allRecords[idx];
       record.current_status = 'PENDING_SHO';
       record.updated_at = new Date().toISOString();
@@ -1229,12 +1292,12 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
-      
+
       const record = allRecords[idx];
       const oldStatus = record.current_status;
-      
+
       if (record.current_status === 'PENDING_SHO') {
         record.current_status = 'DISTRICT_REVIEW';
         record.current_level = 'DISTRICT';
@@ -1242,7 +1305,7 @@ api.interceptors.request.use(
         record.current_status = 'COMPILED';
         record.current_level = 'HQ';
       }
-      
+
       record.updated_at = new Date().toISOString();
       record.transitions.unshift({
         from_level: oldStatus === 'PENDING_SHO' ? 'PS' : 'DISTRICT',
@@ -1279,15 +1342,15 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
-      
+
       const record = allRecords[idx];
       const oldStatus = record.current_status;
       record.current_status = 'SENT_BACK_HC';
       record.current_level = 'PS';
       record.updated_at = new Date().toISOString();
-      
+
       record.transitions.unshift({
         from_level: oldStatus === 'PENDING_SHO' ? 'PS' : 'DISTRICT',
         to_level: 'PS',
@@ -1317,7 +1380,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       let filteredQueue = [];
@@ -1344,7 +1407,7 @@ api.interceptors.request.use(
         try {
           const parsed = JSON.parse(userJSON);
           if (parsed.state?.user) currentUser = parsed.state.user;
-        } catch(e){}
+        } catch (e) { }
       }
 
       let count = 0;
@@ -1387,7 +1450,7 @@ api.interceptors.request.use(
     if (url.match(/\/compilations$/) && method === 'POST') {
       const { period, district_id } = JSON.parse(config.data);
       const allRecords = JSON.parse(localStorage.getItem('prism_mock_records') || '[]');
-      
+
       // Filter records in district for the date
       const matched = allRecords.filter(r => r.record_date === period && r.current_status === 'COMPILED');
       const firs = matched.filter(r => r.record_type === 'CASE').length;

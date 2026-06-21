@@ -21,7 +21,7 @@ const start = async () => {
     await initSubscriptions();
 
     // 3. Start Express server
-    httpServer.on('error', (e) => { console.error('SERVER ERROR:', e); process.exit(1); });
+    httpServer.on('error', (e) => { logger.error(`[Server] HTTP server error: ${e.message}`); process.exit(1); });
     httpServer.listen(env.PORT, () => {
       logger.info('===================================================');
       logger.info(`  🚀 PHAROS API Server is ONLINE`);

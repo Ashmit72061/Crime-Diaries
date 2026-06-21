@@ -55,7 +55,7 @@ export default function UnifiedFilterStrip({ filters, onFilterChange, allowedSta
     <div className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-3 flex flex-wrap items-center gap-4 transition-all hover:shadow-md mb-6">
       {/* Category Filter */}
       <div className="flex items-center gap-2">
-        <ListFilter size={16} className="text-[#0f52ba]" />
+        <ListFilter size={16} className="text-[var(--accent-color)]" />
         <Select 
           value={filters.type || 'ALL'} 
           onChange={handleTypeChange}
@@ -75,7 +75,7 @@ export default function UnifiedFilterStrip({ filters, onFilterChange, allowedSta
       {/* Status Filter */}
       {allowedStatuses.length > 0 && (
         <div className="flex items-center gap-2">
-          <Filter size={16} className="text-[#0f52ba]" />
+          <Filter size={16} className="text-[var(--accent-color)]" />
           <Select 
             value={filters.status || 'ALL'} 
             onChange={handleStatusChange}
@@ -99,7 +99,7 @@ export default function UnifiedFilterStrip({ filters, onFilterChange, allowedSta
         <RangePicker 
           onChange={handleDateRangeChange}
           value={filters.dateFrom && filters.dateTo ? [dayjs(filters.dateFrom), dayjs(filters.dateTo)] : null}
-          className="bg-slate-50 border-transparent hover:bg-slate-100 hover:border-[#0f52ba] transition-colors shadow-none rounded-lg w-full sm:w-auto font-medium"
+          className="bg-slate-50 border-transparent hover:bg-slate-100 hover:border-[var(--accent-color)] transition-colors shadow-none rounded-lg w-full sm:w-auto font-medium"
           format="DD/MM/YYYY"
         />
       </div>
@@ -113,7 +113,7 @@ export default function UnifiedFilterStrip({ filters, onFilterChange, allowedSta
           value={localSearch}
           onChange={e => setLocalSearch(e.target.value)}
           prefix={<Search size={16} className="text-slate-400" />}
-          className="bg-slate-50 border-transparent hover:bg-slate-100 hover:border-[#0f52ba] focus:bg-white focus:border-[#0f52ba] transition-colors shadow-none rounded-lg py-1.5 px-3 font-medium"
+          className="bg-slate-50 border-transparent hover:bg-slate-100 hover:border-[var(--accent-color)] focus:bg-white focus:border-[var(--accent-color)] transition-colors shadow-none rounded-lg py-1.5 px-3 font-medium"
           allowClear
         />
       </div>

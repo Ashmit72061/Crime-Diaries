@@ -39,6 +39,7 @@ const AuditPage            = lazy(() => import('../pages/admin/AuditPage.jsx'));
 const LevelContractsPage   = lazy(() => import('../pages/admin/LevelContractsPage.jsx'));
 const LegacyDataPage       = lazy(() => import('../pages/admin/LegacyDataPage.jsx'));
 const CustomFieldsPage     = lazy(() => import('../pages/district/CustomFieldsPage.jsx'));
+const PersonSearchPage     = lazy(() => import('../pages/PersonSearchPage.jsx'));
 
 // Station Wise Views (Unified Components)
 const StationPerformanceDashboard = lazy(() => import('../pages/shared/StationPerformanceDashboard.jsx'));
@@ -59,7 +60,7 @@ function RoleRedirect() {
   const routes = {
     PS: '/records',          // Head Constable (HC)
     HC: '/records',          // Head Constable (HC)
-    SHO: '/queue',           // Station House Officer
+    SHO: '/analytics',           // Station House Officer
     ACP: '/queue',           // Assistant Commissioner of Police
     DISTRICT: '/district',   // District DCP
     DISTRICT_OFFICER: '/district',
@@ -122,6 +123,7 @@ export const AppRouter = () => (
             <Route path="/admin/legacy" element={<LegacyDataPage />} />
 
             {/* Station Wise Views */}
+            <Route path="/person-search" element={<PersonSearchPage />} />
             <Route path="/district/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/district/stations" element={<StationPerformanceDashboard />} />
             <Route path="/district/stations/:id" element={<StationDetailView />} />

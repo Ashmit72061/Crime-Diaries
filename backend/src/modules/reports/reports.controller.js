@@ -5,6 +5,7 @@ import fs from 'fs';
 import puppeteer from 'puppeteer';
 import ExcelJS from 'exceljs';
 import { publish } from '../../events/eventBus.js';
+import { logger } from '../../utils/logger.js';
 
 const parseJsonField = (val) => {
   if (val === null || val === undefined) return null;
@@ -1000,7 +1001,7 @@ export const runScheduleNow = async (req, res) => {
           last_run_status: 'SUCCESS'
         });
       } catch (err) {
-        console.error('[RunScheduleNow] Immediate execution failed:', err.message);
+        logger.error('[RunScheduleNow] Immediate execution failed:', err.message);
         await db('scheduled_reports').where({ id }).update({
           last_run_at: new Date().toISOString(),
           last_run_status: 'FAILED'

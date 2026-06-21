@@ -27,7 +27,9 @@ const useAuthStore = create(
           const mergedUser = {
             ...userData,
             rank: rank,
-            role: role
+            role: role,
+            stationName: userData.ps_name_en || userData.stationName || null,
+            districtKey: userData.district_name_en || userData.districtKey || null,
           };
           
           set({ 

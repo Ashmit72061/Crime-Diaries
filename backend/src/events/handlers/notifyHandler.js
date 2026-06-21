@@ -2,6 +2,7 @@ import * as eventBus from '../eventBus.js';
 import db from '../../config/db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { pushToUser } from '../../modules/notifications/sse.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Helper: insert a notification row and push it instantly via SSE.
@@ -39,7 +40,7 @@ export async function init() {
         });
       }
     } catch (err) {
-      console.error('[NotifyHandler] Submit notification failed:', err.message);
+      logger.error('[NotifyHandler] Submit notification failed:', err.message);
     }
   });
 
@@ -59,7 +60,7 @@ export async function init() {
         record_id,
       });
     } catch (err) {
-      console.error('[NotifyHandler] Approve notification failed:', err.message);
+      logger.error('[NotifyHandler] Approve notification failed:', err.message);
     }
   });
 
@@ -79,7 +80,7 @@ export async function init() {
         record_id,
       });
     } catch (err) {
-      console.error('[NotifyHandler] Send back notification failed:', err.message);
+      logger.error('[NotifyHandler] Send back notification failed:', err.message);
     }
   });
 
@@ -102,7 +103,7 @@ export async function init() {
         });
       }
     } catch (err) {
-      console.error('[NotifyHandler] Compilation notification failed:', err.message);
+      logger.error('[NotifyHandler] Compilation notification failed:', err.message);
     }
   });
 }

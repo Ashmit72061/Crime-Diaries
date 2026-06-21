@@ -21,6 +21,7 @@ import {
 import { syncBridgeTables } from './bridges.js';
 import { safeParseDate, safeParseInt } from './normalize.js';
 import db from '../../../config/db.js';
+import { logger } from '../../../utils/logger.js';
 
 // Parse approximate age range to get a numeric representative (e.g. "40-50 yrs" -> 45)
 function parseApproxAgeNum(approxAge) {
@@ -355,7 +356,7 @@ export async function runWarehouseSync(sourceTableType = 'ALL', forceFullSync = 
     };
 
   } catch (err) {
-    console.error('Warehouse sync failed:', err);
+    logger.error('[Warehouse] Warehouse sync failed:', err.message);
     await wh('sync_log')
       .where({ id: logId })
       .update({

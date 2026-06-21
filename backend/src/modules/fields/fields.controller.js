@@ -48,14 +48,16 @@ const SECTION_TITLES = {
   person_details:           { en: 'Person Details',                         hi: 'व्यक्ति विवरण' },
   officer_informant:        { en: 'Officers & Informant',                   hi: 'अधिकारी और सूचना प्रदाता' },
   discovery_details:        { en: 'Discovery Details',                      hi: 'बरामदगी का विवरण' },
-  corpse_desc:              { en: 'Physical Description',                   hi: 'शारीरिक विवरण' },
+  corpse_desc:              { en: 'Corpse Description',                     hi: 'शव विवरण' },
   zipnet_status:            { en: 'ZIPNET & Status',                        hi: 'ज़िपनेट और स्थिति' },
   // ── New sections added from MUT Form spec ───────────────────────────────────
   arrest_details:           { en: 'Arrest Details',                         hi: 'गिरफ्तारी का विवरण' },
   special_scheme:           { en: 'If Arrested During Special Scheme',      hi: 'यदि विशेष योजना के दौरान गिरफ्तार' },
   missing_details:          { en: 'Missing Person Details',                 hi: 'लापता व्यक्ति का विवरण' },
   physical_description:     { en: 'Physical Description',                   hi: 'शारीरिक हुलिया' },
-  uidb_details:             { en: 'UIDB Details',                           hi: 'अज्ञात शव विवरण' },
+  uidb_details:             { en: 'If Filed by ACP/SDM',                    hi: 'यदि एसीपी/एसडीएम द्वारा दायर किया गया' },
+  stolen_property:          { en: 'Stolen Property',                        hi: 'चोरी की गई संपत्ति' },
+  recovered_property:       { en: 'Recovered Property',                     hi: 'बरामद संपत्ति' },
 };
 
 const VALID_FIELD_TYPES = ['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'DATETIME', 'SELECT', 'BOOLEAN'];

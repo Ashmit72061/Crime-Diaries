@@ -22,6 +22,7 @@ import {
   FileSignature,
   Archive,
   Layers,
+  Upload,
 } from "lucide-react";
 import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
@@ -47,14 +48,16 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "new-pcr",      label: t('recordTypes.PCR_CALL','PCR / Kalandra Call'),      icon: PhoneCall,     to: "/records/new/PCR_CALL" },
         { id: "new-missing",  label: t('recordTypes.MISSING', 'Missing Persons Register'), icon: Search,        to: "/records/new/MISSING" },
         { id: "new-uidb",     label: t('recordTypes.UIDB',    'UIDB Unidentified Bodies'), icon: Fingerprint,   to: "/records/new/UIDB" },
+        { id: "bulk-import",  label: t('nav.bulkImport',      'Bulk Import'),              icon: Upload,        to: "/admin/legacy" },
       );
     }
 
     // ── Reviewer / SHO Desk ───────────────────────────────────────────────────
     if (role === 'SHO') {
       items.push(
-        { id: "queue", label: t('nav.queue', 'Approval Desk'), icon: ClipboardList, to: "/queue" },
-        { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" }
+        { id: "analytics",     label: t('nav.analytics',    'Analytics Console'), icon: BarChart3,    to: "/analytics" },
+        { id: "queue",         label: t('nav.queue',        'Approval Desk'),     icon: ClipboardList, to: "/queue" },
+        { id: "person-search", label: t('nav.personSearch', 'Person Search'),     icon: Search,       to: "/person-search" }
       );
     }
 
@@ -67,7 +70,9 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "compile", label: t('nav.compile', 'Compile Records'), icon: FileSpreadsheet, to: "/compile" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
         { id: "reports",        label: t('nav.reports',       'Excel Export Manager'),    icon: FileSpreadsheet, to: "/reports" },
-        { id: "custom-fields",  label: t('nav.customFields',  'District Custom Fields'),   icon: Layers,          to: "/district/custom-fields" }
+        { id: "person-search",  label: t('nav.personSearch',  'Person Search'),            icon: Search,          to: "/person-search" },
+        { id: "custom-fields",  label: t('nav.customFields',  'District Custom Fields'),   icon: Layers,          to: "/district/custom-fields" },
+        { id: "bulk-import",    label: t('nav.bulkImport',    'Bulk Import'),             icon: Upload,          to: "/admin/legacy" }
       );
     }
 
@@ -77,8 +82,9 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "hq", label: t('nav.hq', 'Command Center'), icon: Building, to: "/hq" },
         { id: "station-wise", label: t('nav.stationWise', 'Station Wise View'), icon: Building, to: "/hq/stations" },
         { id: "analytics", label: t('nav.analytics', 'Analytics Console'), icon: BarChart3, to: "/analytics" },
-        { id: "reports", label: t('nav.reports', 'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" },
-        { id: "legacy", label: t('nav.legacy', 'Legacy Data'), icon: Archive, to: "/admin/legacy" }
+        { id: "reports",       label: t('nav.reports',      'Excel Export Manager'), icon: FileSpreadsheet, to: "/reports" },
+        { id: "person-search", label: t('nav.personSearch', 'Person Search'),         icon: Search,          to: "/person-search" },
+        { id: "bulk-import",   label: t('nav.bulkImport',   'Bulk Import'),           icon: Upload,          to: "/admin/legacy" }
       );
     }
 
@@ -90,7 +96,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "admin-fields",          label: t('nav.adminFields',        'Field Registry'),    icon: Settings,      to: "/admin/fields" },
         { id: "admin-audit",           label: t('nav.adminAudit',         'Audit Ledger'),      icon: ShieldAlert,   to: "/admin/audit" },
         { id: "admin-level-contracts", label: t('nav.levelContracts',     'Level Contracts'),   icon: FileSignature, to: "/admin/level-contracts" },
-        { id: "admin-legacy",          label: t('nav.legacyData',         'Legacy Data'),       icon: Archive,       to: "/admin/legacy" }
+        { id: "bulk-import",          label: t('nav.bulkImport',         'Bulk Import'),       icon: Upload,        to: "/admin/legacy" }
       );
     }
 
@@ -115,9 +121,32 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     }
   };
 
+  const getRoleThemeClass = () => {
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc';
+      case 'SHO':
+        return 'theme-sho';
+      case 'ACP':
+        return 'theme-acp';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin';
+      default:
+        return 'theme-hq';
+    }
+  };
+
   return (
     <aside 
-      className={`sidebar-nav ${isCollapsed ? "collapsed" : "expanded"}`}
+      className={`sidebar-nav ${isCollapsed ? "collapsed" : "expanded"} ${getRoleThemeClass()}`}
       aria-label="Primary Navigation"
     >
       <div className="sidebar-header">

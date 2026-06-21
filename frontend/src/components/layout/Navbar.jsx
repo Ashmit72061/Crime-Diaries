@@ -5,6 +5,7 @@ import useAuthStore from '../../store/authStore.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES, APP_NAME } from '../../utils/constants.js';
 import { Button } from '../ui/Button.jsx';
+import delhiPoliceLogo from '../../assets/delhi_police_logo.png';
 
 const navLinks = [
   { label: 'About PRISM', to: '#about' },
@@ -24,7 +25,7 @@ export const Navbar = () => {
 
           {/* Logo */}
           <Link to={ROUTES.HOME} className="flex items-center gap-2 group">
-            <Shield className="w-6 h-6 text-[#cca43b] group-hover:text-amber-400 transition-colors" />
+            <img src={delhiPoliceLogo} alt="Delhi Police Logo" className="w-8 h-8 object-contain" />
             <span className="font-bold text-lg public-navbar-logo tracking-tight font-display">{APP_NAME}</span>
           </Link>
 
@@ -34,6 +35,12 @@ export const Navbar = () => {
               <a
                 key={link.to}
                 href={link.to}
+                onClick={(e) => {
+                  if (link.to === '#about') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
                 className="px-4 py-2 rounded-lg text-sm font-medium public-navbar-link transition-colors"
               >
                 {link.label}
@@ -66,7 +73,13 @@ export const Navbar = () => {
             <a
               key={link.to}
               href={link.to}
-              onClick={() => setMobileOpen(false)}
+              onClick={(e) => {
+                setMobileOpen(false);
+                if (link.to === '#about') {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-[#cca43b] transition-colors"
             >
               {link.label}

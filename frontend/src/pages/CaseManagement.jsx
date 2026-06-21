@@ -3,6 +3,8 @@ import { useOutletContext } from "react-router-dom";
 import { Save, FileCheck, Users, MapPin, Shield, HelpCircle, Plus, Trash2, AlertTriangle, ShieldOff } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
 import useAuthStore from "../store/authStore.js";
+import api from "../utils/api.js";
+import toast from "react-hot-toast";
 
 export default function CaseManagement() {
   const { onSubmitReport, addNotification } = useOutletContext();
@@ -12,7 +14,7 @@ export default function CaseManagement() {
     uid: "",
     localHead: "",
     firNumber: "",
-    firDate: "",
+    firDate: new Date().toISOString().split('T')[0],
     underSection: "",
     caseType: "",
     sidNumber: "",
@@ -170,18 +172,32 @@ export default function CaseManagement() {
     addNotification("Case diary draft saved successfully.", "success");
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSubmitReport("Case diary report docket", formData, "case");
-    } else {
-      addNotification("Please correct the highlighted form errors.", "danger");
-      // Focus first error field for accessibility
+    if (!validateForm()) {
       const firstErrorKey = Object.keys(errors)[0];
       if (firstErrorKey) {
         const el = document.getElementsByName(firstErrorKey)[0];
         if (el) el.focus();
       }
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await api.post('/v1/records', {
+        record_type: 'CASE',
+        record_date: formData.firDate || new Date().toISOString().split('T')[0],
+        data: formData
+      });
+      const uid = res.data.data?.uid;
+      const savedData = { ...formData, uid: uid || formData.uid };
+      onSubmitReport("Case diary report docket", savedData, "case");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save record.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -261,9 +277,10 @@ export default function CaseManagement() {
                 type="submit" 
                 className="btn btn-primary transition-standard"
                 aria-label="Submit case and auto-generate command report"
+                disabled={isSubmitting}
               >
                 <FileCheck size={16} aria-hidden="true" className="menu-icon" />
-                <span>Submit Case</span>
+                <span>{isSubmitting ? 'Saving…' : 'Submit Case'}</span>
               </button>
             )}
           </div>
@@ -278,16 +295,16 @@ export default function CaseManagement() {
             </div>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label" htmlFor="uid">UID</label>
+                <label className="form-label" htmlFor="uid">System UID</label>
                 <input
                   type="text"
                   id="uid"
                   name="uid"
                   className="form-control"
-                  value={formData.uid}
-                  onChange={handleInputChange}
-                  placeholder="e.g. UID-2026/DL-4921…"
-                  autocomplete="off"
+                  value={formData.uid || ""}
+                  readOnly
+                  disabled
+                  placeholder="Auto-assigned upon submission"
                 />
               </div>
 

@@ -3,17 +3,20 @@ import { useOutletContext } from "react-router-dom";
 import { Save, FileCheck, Search, User, MapPin, Award, CheckSquare, AlertTriangle, Shield, ShieldOff } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
 import useAuthStore from "../store/authStore.js";
+import api from "../utils/api.js";
+import toast from "react-hot-toast";
 
 export default function MissingPersonEntry() {
   const { onSubmitReport, addNotification } = useOutletContext();
   const { user } = useAuthStore();
   const [activeStep, setActiveStep] = useState(1);
   const [formData, setFormData] = useState({
+    uid: "",
     district: "New Delhi District (NDD)",
     policeStation: "Parliament Street",
     ddNumber: "",
-    dateTime: "",
-    missingDate: "",
+    dateTime: new Date().toISOString().split('T')[0],
+    missingDate: new Date().toISOString().split('T')[0],
     missingPlace: "",
     name: "",
     age: "",
@@ -133,17 +136,32 @@ export default function MissingPersonEntry() {
     addNotification("Missing report draft entry saved.", "success");
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmitReport("Missing person search docket", formData, "missing");
-    } else {
-      addNotification("Please correct the highlighted form errors.", "danger");
+    if (!validate()) {
       const firstErrorKey = Object.keys(errors)[0];
       if (firstErrorKey) {
         const el = document.getElementsByName(firstErrorKey)[0];
         if (el) el.focus();
       }
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await api.post('/v1/records', {
+        record_type: 'MISSING',
+        record_date: formData.missingDate || formData.dateTime?.split('T')[0] || new Date().toISOString().split('T')[0],
+        data: formData
+      });
+      const uid = res.data.data?.uid;
+      const savedData = { ...formData, uid: uid || formData.uid };
+      onSubmitReport("Missing person search docket", savedData, "missing");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save record.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -223,9 +241,10 @@ export default function MissingPersonEntry() {
                 type="submit" 
                 className="btn btn-primary transition-standard"
                 aria-label="Submit missing person docket entry"
+                disabled={isSubmitting}
               >
                 <FileCheck size={16} aria-hidden="true" className="menu-icon" />
-                <span>Submit Entry</span>
+                <span>{isSubmitting ? 'Saving…' : 'Submit Entry'}</span>
               </button>
             )}
           </div>
@@ -289,6 +308,20 @@ export default function MissingPersonEntry() {
                     ))}
                   </select>
                   {errors.policeStation && <span className="text-red-500 text-xs mt-1">{errors.policeStation}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="uid">System UID</label>
+                  <input
+                    type="text"
+                    id="uid"
+                    name="uid"
+                    className="form-control"
+                    value={formData.uid || ""}
+                    readOnly
+                    disabled
+                    placeholder="Auto-assigned upon submission"
+                  />
                 </div>
 
                 <div className="form-group">

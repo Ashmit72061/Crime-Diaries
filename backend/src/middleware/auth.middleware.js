@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 import { roleRateLimitMiddleware } from './security.middleware.js';
 
 const isKeycloakEnabled = !!process.env.KEYCLOAK_URL;
@@ -15,7 +16,7 @@ if (isKeycloakEnabled) {
       'bearer-only': true
     });
   } catch (err) {
-    console.warn('[Auth] Failed to initialize keycloak-connect, falling back to JWT.', err.message);
+    logger.warn('[Auth] Failed to initialize keycloak-connect, falling back to JWT.', err.message);
   }
 }
 

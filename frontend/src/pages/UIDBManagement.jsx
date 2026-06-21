@@ -3,17 +3,20 @@ import { useOutletContext } from "react-router-dom";
 import { Save, FileCheck, Fingerprint, User, MapPin, CheckSquare, Sparkles, AlertTriangle, Shield, ShieldOff } from "lucide-react";
 import { DISTRICTS_AND_STATIONS } from "../utils/policeData.js";
 import useAuthStore from "../store/authStore.js";
+import api from "../utils/api.js";
+import toast from "react-hot-toast";
 
 export default function UIDBManagement() {
   const { onSubmitReport, addNotification } = useOutletContext();
   const { user } = useAuthStore();
   const [activeStep, setActiveStep] = useState(1);
   const [formData, setFormData] = useState({
+    uid: "",
     uidbNumber: "",
     district: "New Delhi District (NDD)",
     policeStation: "Parliament Street",
     ddNumber: "",
-    ddDate: "",
+    ddDate: new Date().toISOString().split('T')[0],
     dutyOfficer: "",
     ioName: "",
     informantName: "",
@@ -130,17 +133,32 @@ export default function UIDBManagement() {
     addNotification("UIDB record draft saved.", "success");
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmitReport("UIDB recovery & identification docket", formData, "uidb");
-    } else {
-      addNotification("Please correct the highlighted form errors.", "danger");
+    if (!validate()) {
       const firstErrorKey = Object.keys(errors)[0];
       if (firstErrorKey) {
         const el = document.getElementsByName(firstErrorKey)[0];
         if (el) el.focus();
       }
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await api.post('/v1/records', {
+        record_type: 'UIDB',
+        record_date: formData.uidbDate || formData.ddDate || new Date().toISOString().split('T')[0],
+        data: formData
+      });
+      const uid = res.data.data?.uid;
+      const savedData = { ...formData, uid: uid || formData.uid };
+      onSubmitReport("UIDB recovery & identification docket", savedData, "uidb");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save record.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -151,8 +169,8 @@ export default function UIDBManagement() {
           <h1>Unidentified Dead Body (UIDB) Log</h1>
           <p className="page-desc">Register recovered unidentified bodies, enter physical descriptions, and sync with ZIPNET national databases.</p>
         </div>
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="btn btn-secondary transition-standard"
           onClick={handleQuickFill}
           aria-label="Pre-fill UIDB form fields with mock tracking data"
@@ -186,8 +204,8 @@ export default function UIDBManagement() {
           </div>
           <div className="form-actions-toolbar-right">
             {activeStep > 1 && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-secondary transition-standard"
                 onClick={() => setActiveStep(prev => prev - 1)}
                 aria-label="Go to previous section"
@@ -195,9 +213,9 @@ export default function UIDBManagement() {
                 <span>Back</span>
               </button>
             )}
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               className="btn btn-secondary transition-standard"
               onClick={handleSaveDraft}
               aria-label="Save draft UIDB record"
@@ -205,10 +223,10 @@ export default function UIDBManagement() {
               <Save size={16} aria-hidden="true" className="menu-icon" />
               <span>Save Draft</span>
             </button>
-            
+
             {activeStep < 3 ? (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-primary transition-standard"
                 onClick={() => setActiveStep(prev => prev + 1)}
                 aria-label="Go to next section"
@@ -216,13 +234,14 @@ export default function UIDBManagement() {
                 <span>Next</span>
               </button>
             ) : (
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary transition-standard"
                 aria-label="Submit UIDB and log to central registry"
+                disabled={isSubmitting}
               >
                 <FileCheck size={16} aria-hidden="true" className="menu-icon" />
-                <span>Submit UIDB Entry</span>
+                <span>{isSubmitting ? 'Saving…' : 'Submit UIDB Entry'}</span>
               </button>
             )}
           </div>
@@ -301,6 +320,20 @@ export default function UIDBManagement() {
                     ))}
                   </select>
                   {errors.policeStation && <span className="text-red-500 text-xs mt-1">{errors.policeStation}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="uid">System UID</label>
+                  <input
+                    type="text"
+                    id="uid"
+                    name="uid"
+                    className="form-control"
+                    value={formData.uid || ""}
+                    readOnly
+                    disabled
+                    placeholder="Auto-assigned upon submission"
+                  />
                 </div>
 
                 <div className="form-group">

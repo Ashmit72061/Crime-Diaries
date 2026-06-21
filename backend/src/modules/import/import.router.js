@@ -4,9 +4,11 @@ import path from 'path';
 import fs from 'fs';
 import * as importController from './import.controller.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
-import { allow } from '../../middleware/rbac.middleware.js';
+import { allow, enforceScope } from '../../middleware/rbac.middleware.js';
 
 const router = Router();
+
+router.use(authMiddleware, enforceScope);
 
 // Ensure local temp uploads directory exists
 const tempDir = './temp-imports';
@@ -26,10 +28,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.get('/template/:record_type', authMiddleware, importController.downloadImportTemplate);
-router.post('/validate', authMiddleware, allow('HC', 'DISTRICT_OFFICER', 'HQ_ADMIN', 'SYSTEM_ADMIN'), upload.single('file'), importController.validateImportBatch);
-router.post('/confirm/:batchId', authMiddleware, importController.confirmImportBatch);
-router.get('/batches', authMiddleware, importController.listBatches);
-router.get('/batches/:batchId', authMiddleware, importController.getBatchDetail);
+router.get('/template/:record_type', importController.downloadImportTemplate);
+router.post('/validate', allow('HC', 'DISTRICT_OFFICER', 'HQ_ADMIN', 'SYSTEM_ADMIN'), upload.single('file'), importController.validateImportBatch);
+router.post('/confirm/:batchId', importController.confirmImportBatch);
+router.get('/batches', importController.listBatches);
+router.get('/batches/:batchId', importController.getBatchDetail);
 
 export default router;

@@ -31,7 +31,7 @@ export default function FormSection({
       {/* Section header */}
       <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
         <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[#0f52ba]/10 text-[#0f52ba] text-xs font-bold border border-[#0f52ba]/20">
+          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
             {currentStep + 1}
           </span>
           <h2 className="text-base font-bold text-slate-800 tracking-wide">
