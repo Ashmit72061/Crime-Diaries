@@ -2,7 +2,14 @@ import bcrypt from 'bcryptjs';
 
 export async function seed(knex) {
   // Clear tables
+  await knex('legacy_amendments').del().catch(() => {});
+  await knex('legacy_import_batches').del().catch(() => {});
+  await knex('import_batches').del().catch(() => {});
   await knex('audit_logs').del();
+  await knex('record_revisions').del();
+  await knex('records').del();
+  await knex('field_registry').del();
+  await knex('users').del();
   await knex('custom_field_values').del();
   await knex('custom_field_definitions').del();
   await knex('filter_presets').del();

@@ -33,5 +33,5 @@ start "PHAROS Frontend" cmd /k "cd ../frontend && npm run dev"
 echo.
 
 echo [6/6] Launching local backend server...
-echo Server running on http://localhost:3000
+echo Server running on http://localhost:5000
 npm run dev
