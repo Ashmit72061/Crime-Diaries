@@ -5,12 +5,12 @@ import path from 'path';
 
 export const getRecords = async (req, res) => {
   const type = req.query.type || req.query.record_type;
-  const { status, dateFrom, dateTo, search } = req.query;
+  const { status, dateFrom, dateTo, search, linked_case_id, linked_fir_no } = req.query;
 
   try {
     const records = await recordsService.listRecords(
       type,
-      { status: status !== 'ALL' ? status : null, dateFrom, dateTo, search },
+      { status: status !== 'ALL' ? status : null, dateFrom, dateTo, search, linked_case_id, linked_fir_no },
       req.jurisdictionQuery
     );
     const maskedRecords = await Promise.all(

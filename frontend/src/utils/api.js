@@ -940,6 +940,11 @@ api.interceptors.request.use(
       return config;
     }
 
+    // Bypass mock interception for binary downloads/exports
+    if (config.responseType === 'blob' || config.responseType === 'arraybuffer') {
+      return config;
+    }
+
     // Return custom mock responses
     const method = config.method.toUpperCase();
     const url = config.url;
@@ -978,6 +983,8 @@ api.interceptors.request.use(
         mockRole = 'SYSTEM_ADMIN';
       }
 
+      const stationName = node.stationName || '';
+      const psCode = node.code || stationName.split(' ').filter(w => w.length > 0).map(w => w[0].toUpperCase()).join('').substring(0, 6) || 'PS';
       const mockUser = {
         userId: 'mock-usr-' + badgeNo.toLowerCase(),
         badgeNo,
@@ -986,8 +993,9 @@ api.interceptors.request.use(
         level: node.type,
         psId: node.type === 'PS' ? node.id : '',
         districtId: node.type === 'DISTRICT' ? node.id : 'DIST_NDD',
-        stationName: node.stationName || '',
+        stationName,
         districtKey: node.districtKey || '',
+        psCode,
         username: node.officerName || 'Officer Ramesh',
         rank: node.rank || 'Head Constable',
         pis: node.pis || 'PIS-28521904',
@@ -1120,6 +1128,13 @@ api.interceptors.request.use(
         } catch (e) { }
       }
 
+      const _typeCodes = { CASE: 'CSE', ARREST: 'ARR', PCR_CALL: 'PCR', MISSING: 'MSP', UIDB: 'UDB' };
+      const _year = new Date().getFullYear();
+      const _psCode = currentUser.psCode || (currentUser.stationName?.split(' ').filter(w => w.length > 0).map(w => w[0].toUpperCase()).join('').substring(0, 6)) || 'PS';
+      const _existingCount = allRecords.filter(r => r.record_type === record_type && r.ps_id === (currentUser.psId || 'PS_NDD_PARLIAMENT_STREET')).length;
+      const _typeCode = _typeCodes[record_type] || record_type.substring(0, 3).toUpperCase();
+      const mockUid = `${_typeCode}/${_year}/${_psCode}/${String(_existingCount + 1).padStart(6, '0')}`;
+
       const newRecord = {
         id: 'rec-' + Math.random().toString(36).substring(2, 9),
         record_type,
@@ -1128,10 +1143,11 @@ api.interceptors.request.use(
         current_status: 'DRAFT',
         current_level: 'PS',
         version: 1,
+        uid: mockUid,
         created_by: currentUser.username,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        data: data || {},
+        data: { ...(data || {}), uid: mockUid },
         revisions: [
           {
             revision_number: 1,

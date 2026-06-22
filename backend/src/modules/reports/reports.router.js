@@ -9,6 +9,7 @@ const router = Router();
 // ── Report Builder (Custom Report Engine) ─────────────────────────────────────
 // Mounts at /api/reports/builder and /api/v1/reports/builder
 // Must be declared BEFORE any :id parameterized routes to avoid conflicts.
+
 router.use('/builder', reportBuilderRouter);
 
 router.get('/templates', authMiddleware, reportsController.getTemplates);
