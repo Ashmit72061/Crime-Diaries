@@ -9,7 +9,6 @@ export async function seed(knex) {
   await knex('record_revisions').del();
   await knex('records').del();
   await knex('field_registry').del();
-  await knex('users').del();
   await knex('custom_field_values').del();
   await knex('custom_field_definitions').del();
   await knex('filter_presets').del();
@@ -22,6 +21,7 @@ export async function seed(knex) {
   await knex('record_revisions').del();
   await knex('records').del();
   await knex('field_registry').del();
+  await knex('filter_presets').del();
   await knex('users').del();
 
   // 1. Hierarchy nodes are now seeded via migrations (20260620000000_full_delhi_hierarchy.js)
