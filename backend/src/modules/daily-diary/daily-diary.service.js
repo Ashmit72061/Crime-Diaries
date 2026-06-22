@@ -18,66 +18,46 @@ export const REPORTS = [
   { tableName: "excel_9arrested_efir_theft",       label: "Arrested - E-FIR Theft",            type: "list",    num: 9  },
   { tableName: "excel_10arrested_efir_mv_theft",   label: "Arrested - E-FIR MV Theft",         type: "list",    num: 10 },
   { tableName: "excel_11proclaimed_offenders",     label: "Proclaimed Offenders",              type: "list",    num: 11 },
-  { tableName: "excel_12listed_criminals_action",  label: "Listed Criminals Action",           type: "list",    num: 12 },
   { tableName: "excel_13arrested_24_hrs_list",     label: "Arrested - Last 24 Hrs",            type: "list",    num: 13 },
   { tableName: "excel_14pi_disposal_manual",       label: "PI Disposal - Manual",              type: "list",    num: 14 },
   { tableName: "excel_15pi_disposal_eproperty",    label: "PI Disposal - E-Property",          type: "list",    num: 15 },
   { tableName: "excel_16pi_disposal_emvt",         label: "PI Disposal - E-MVT",               type: "list",    num: 16 },
-  { tableName: "excel_17juveniles_conflict_law",   label: "Juveniles in Conflict with Law",    type: "list",    num: 17 },
   { tableName: "excel_18missing_persons",          label: "Missing Persons",                   type: "list",    num: 18 },
   { tableName: "excel_19uidb",                     label: "UIDB (Unidentified Bodies)",        type: "list",    num: 19 },
   { tableName: "excel_20abandoned_persons",        label: "Abandoned Persons",                 type: "list",    num: 20 },
   { tableName: "excel_21traced_persons",           label: "Traced Persons",                    type: "list",    num: 21 },
   { tableName: "excel_22women_missing",            label: "Women Missing",                     type: "summary", num: 22 },
   { tableName: "excel_23children_missing",         label: "Children Missing",                  type: "summary", num: 23 },
-  { tableName: "excel_24preventive_action",        label: "Preventive Action",                 type: "list",    num: 24 },
   { tableName: "excel_25inquest_registered",       label: "Inquest Registered",                type: "list",    num: 25 },
   { tableName: "excel_26inquest_acpsdm_disposal",  label: "Inquest ACP/SDM Disposal",          type: "list",    num: 26 },
-  { tableName: "excel_27important_cases",          label: "Important Cases",                   type: "list",    num: 27 },
   { tableName: "excel_28fir_goswara_summary",      label: "FIR Goswara Summary",               type: "summary", num: 28 },
-  { tableName: "excel_29financial_fraud_arrest",   label: "Financial Fraud Arrest",            type: "list",    num: 29 },
-  { tableName: "excel_30patrolling_checking",      label: "Patrolling / Checking",             type: "summary", num: 30 },
-  { tableName: "excel_31ndps_action",              label: "NDPS Action",                       type: "summary", num: 31 },
-  { tableName: "excel_32servant_verification",     label: "Servant Verification",              type: "summary", num: 32 },
-  { tableName: "excel_33mobile_recovered_ps",      label: "Mobile Recovered - PS",             type: "list",    num: 33 },
-  { tableName: "excel_34mobile_recovered_summary", label: "Mobile Recovered Summary",          type: "summary", num: 34 },
 ];
 
-const REPORT_COLUMNS = {
-  excel_1manual_fir: ['ps', 'fir_no', 'us', 'name_of_complainant', 'father_husband_name_of_complainant', 'address_of_complainant', 'time_of_occurrence', 'place_of_occurrence', 'time_of_occurrence_1', 'place_of_occurrence_1', 'gist', 'arrested_person', 'name_of_accused'],
+export const REPORT_COLUMNS = {
+  excel_1manual_fir: ['ps', 'fir_no', 'us', 'name_of_complainant', 'father_husband_name_of_complainant', 'address_of_complainant', 'time_of_occurrence', 'place_of_occurrence', 'time_of_occurrence_1', 'place_of_occurrence_1', 'gist', 'arrested_name', 'arrested_father_husband_name', 'arrested_address', 'accused_name', 'accused_father_name', 'accused_address', 'accused_extra'],
   excel_2eburglary_cases: ['sr_no', 'ps', 'efir_no', 'us', 'name_of_complainant', 'father_husband_name_of_complainant', 'address_of_complainant', 'time_of_occurrence', 'stolen_items', 'place_of_occurrence', 'io_name', 'io_mobile_no', 'beat_no'],
   excel_3ehouse_theft_cases: ['sr_no', 'ps', 'efir_no', 'us', 'name_of_complainant', 'father_husband_name_of_complainant', 'address_of_complainant', 'place_of_occurrence', 'time_of_occurrence', 'stolen_items', 'place_of_occurrence_1', 'io_name', 'io_mobile_no', 'beat_no'],
   excel_4eother_theft_cases: ['sr_no', 'ps', 'efir_no', 'us', 'name_of_complainant', 'father_husband_name_of_complainant', 'address_of_complainant', 'time_of_occurrence', 'stolen_items', 'place_of_occurrence', 'io_name', 'io_mobile_no', 'beat_no'],
   excel_5mvt_cases: ['sr', 'ps', 'fir_no', 'us', 'date_of_occurrence', 'time_of_occurrence', 'place_of_occurrence', 'name_of_complainant', 'father_husband_name_of_complainant', 'address_of_complainant', 'vehicle_no', 'vehicle_type', 'io_name', 'io_mobile_no', 'beat_no', '1st_cd_uploaded_in_24_hrs_yesno', 'whether_footage_is_collected_or_not'],
   excel_6arrested_all_heads: ['bnsipc', 'total_no_dd_126170_bnss', 'total_no_dd_126169_bnss', 'total_no_dd_109_bnss', '109_g', 'total_l_no_dd_110_bnss', '110_g', '929397_dp_act', 'total_no_dd_40_ex', '40_ex', '351d', 'aact', 'gact', '33_ex', 'ndps', 'others_act', 'others_bnss', 'po'],
   excel_7arrested_east_district: ['sn', 'fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'name_of_io', 'pcjcbail', 'prev_involvement_no_of_cases', 'recovery', 'whether_accused_is_bc_or_not', 'integrated_pi', 'group_patrolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members'],
-  excel_8arrested_kalandara: ['sn', 'fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'name_of_io', 'pcjcbail', 'prev_involvement_no_of_cases', 'recovery', 'whether_accused_is_bc_or_not', 'integrated_pi', 'group_patrolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members', 'firdd_no', 'place_of_occurrence', 'io', 'prev_involvement', 'integrated_pick'],
-  excel_9arrested_efir_theft: ['sn', 'fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'name_of_io', 'pcjcbail', 'prev_involvement_no_of_cases', 'recovery', 'whether_accused_is_bc_or_not', 'integrated_pi', 'group_patrolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members', 'firdd_no', 'prev_involvement_no_of_cases_head', 'group_rolling'],
-  excel_10arrested_efir_mv_theft: ['sn', 'fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'name_of_io', 'pcjcbail', 'prev_involvement_no_of_cases', 'recovery', 'whether_accused_is_bc_or_not', 'integrated_pi', 'group_patrolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members', 'integrated_rate_picked'],
+  excel_8arrested_kalandara: ['sn', 'fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'place_of_occurrence', 'io', 'pcjcbail', 'prev_involvement', 'recovery', 'whether_accused_is_bc_or_not', 'integrated_pick', 'group_patrolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members'],
+  excel_9arrested_efir_theft: ['sn', 'fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'name_of_io', 'pcjcbail', 'prev_involvement_no_of_cases_head', 'recovery', 'whether_accused_is_bc_or_not', 'group_rolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members'],
+  excel_10arrested_efir_mv_theft: ['fir_no', 'us', 'name', 'father_husband_name', 'address', 'age', 'name_of_io', 'pcjcbail', 'prev_involvement_no_of_cases', 'recovery', 'whether_accused_is_bc_or_not', 'integrated_rate_picked', 'group_patrolling', 'cycle_patrolling', 'by_antisnatching_team', 'by_prahari', 'by_eyes_ears_scheme_members'],
   excel_11proclaimed_offenders: ['sn', 'ps', 'dd_nofir_no', 'us', 'details_of_po_name', 'details_of_po_parental', 'details_of_po_address', 'case_in_which_declared_po', 'name_of_court_which_declared_po'],
-  excel_12listed_criminals_action: ['sn', 'name_of_ps', 'name_of_criminal', 'category', 'normal_arrest_in_fir', '126169_bnss', '126170_bnss', '129_bnss_110_g_crpc', 'arrest_of_po', 'externment_proposal', 'history_sheet_proposal', 'tracing_an_absent_bc', '107_bnss', '111_bnss', '112_bnss', 'others', 'remarks'],
   excel_13arrested_24_hrs_list: ['s_no', 'name_nick_name', 'father_namehusband_name', 'address', 'age', 'firdd_no', 'us', 'police_station', 'name_of_io', 'rank_of_io', 'mobile_no_of_io', 'remarks_pc_remand_formal_arrest_bail_etc'],
   excel_14pi_disposal_manual: ['s_no', 'fir_no', 'date', 'us', 'rc', 'challan_untrace_cancel'],
   excel_15pi_disposal_eproperty: ['s_no', 'fir_no', 'date', 'us', 'rc', 'challan_untrace_cancel'],
   excel_16pi_disposal_emvt: ['s_no', 'fir_no', 'date', 'us', 'rc', 'challan_untrace_cancel'],
-  excel_17juveniles_conflict_law: ['sr_no', 'police_station', 'firdd_no', 'date', 'us', 'name_of_juvenile', 'fathjer_husband_name_of_juvenile', 'address_of_juvenile', 'category_of_juvenile', 'age_of_juvenile', 'action_intervention_by_police_iojwongo', 'present_status_of_juvenile', 'order_by_cwcjjb', 'brief_factsremarks'],
   excel_18missing_persons: ['sno', 'dd_no', 'dd_date', 'name_of_operator_to_whom_mps', 'name_of_missing_person', 'address_of_missing_person', 'missing_date', 'age', 'height', 'built', 'complexion', 'face', 'hair', 'beard', 'mustaches', 'upper_dress_color', 'lower_dress_color', 'name_of_io'],
   excel_19uidb: ['sno', 'dd_no', 'dd_date', 'found_place', 'found_date', 'sex', 'age', 'height', 'built', 'complexion', 'face', 'hair', 'beard', 'mustaches', 'upper_dress_color', 'lower_dress_color', 'name_of_io'],
   excel_20abandoned_persons: ['sno', 'dd_no', 'found_place', 'found_date', 'sex', 'age', 'height', 'built', 'complexion', 'face', 'hair', 'beard', 'mustaches', 'upper_dress_color', 'lower_dress_color', 'name_of_io'],
   excel_21traced_persons: ['sno', 'dd_no', 'dd_date', 'name_of_operator_to_whom_mps', 'name_of_traced_person', 'fatherhusband_name_of_traced_person', 'address_of_traced_person', 'name_of_io'],
   excel_22women_missing: ['pcr_call', 'dd_entry_complaint', 'total', 'traced', 'case_registered', 'pending'],
   excel_23children_missing: ['pcr_call_male', 'pcr_call_female', 'dd_entrycomplaint_male', 'dd_entrycomplaint_female', 'total_male', 'total_female', 'traced_male', 'traced_female', 'case_registered_male', 'case_registered_female'],
-  excel_24preventive_action: ['persons_detained', 'dd_no_us_661_66_dp_act', 'no_of_us_661_66_dp_act', 'dd_no_129_bnss_128_bnss', 'no_of_129_bnss_128_bnss', 'dd_no_40a_b_delhi_excise_act', 'no_of_40a_b_delhi_excise_act', 'dd_no_126169_bnss', 'no_of_126169_bnss', 'dd_no_126170_bnss', 'no_of_126170_bnss', 'dd_no_bc_check', 'no_of_bc_check', 'dd_no_929397_dp_act', 'no_of_929397_dp_act'],
   excel_25inquest_registered: ['sn', 'dd_no', 'date', 'us', 'name_of_deceased', 'fatherhusband_name_of_deceased', 'address_of_deceased', 'sex', 'age', 'cause_of_death', 'place_of_occurrence', 'io'],
   excel_26inquest_acpsdm_disposal: ['sno', 'dd_no', 'date', 'us', 'name_of_deceased', 'fatherhusband_name_of_deceased', 'address_of_deceased', 'sex', 'age', 'cause_of_death', 'date_of_filed_by_acpsdm'],
-  excel_27important_cases: ['s_no', 'case_type_category_of_offence', 'police_station', 'district', 'fir_no', 'date_ddmmyyyy', 'under_sections_act_ipc_bns_bnss', 'brief_facts_of_the_case', 'accused_person_name', 'fathers_name', 'recovery_made_property_weapon_cash_etc'],
-  excel_28fir_goswara_summary: ['district', 'manual_fir', 'theft_efir', 'house_theft_efir', 'burglary_efir', 'mvt_motor_vehicle_theft', 'total'],
-  excel_29financial_fraud_arrest: ['zone', 'range', 'district', 'case_fir_no', 'us', 'date', 'ps', 'cheated_amount', 'modus_operandi', 'no_of_accused_arrested', 'respective_role_of_accused'],
-  excel_30patrolling_checking: ['district', 'no_of_vulnerable_areas_parks_other_crime_spots', 'time_slot_for_conducting_patrolling_checking_caso', 'excise', 'gambling', 'other_legal_action', 'sec_65_dp_act...', 'sec_66_dp_act...', 'sec_40a40b_excise_act...', 'sec_126169_bnss...', 'sec_126170_bnss...', 'sec_128_bnss...', 'sec_129_bnss...', 'counselling_of_juveniles'],
-  excel_31ndps_action: ['s_no', 'district', 'no_of_ps', 'cases_registered_under_ndps_act', 'qty_recovered', 'persons_arrested_bound_down'],
-  excel_32servant_verification: ['s_no', 'district', 'no_of_ps', 'verification_form_filled_up_today', 'verification_form_filled_up_upto_date', 'sent_for_address_verification_within_delhi', 'sent_for_address_verification_outside_delhi'],
-  excel_33mobile_recovered_ps: ['sr_no', 'fir_no_comp_no', 'fir_date', 'police_station', 'mobile_model', 'status', 'recovery_date', 'handed_over_seized', 'name_of_police_officer_who_recovered_the_mobile'],
-  excel_34mobile_recovered_summary: ['sno', 'police_station', 'no_of_mobile_phones_recovered_by_ps', 'mobile_recovered_by_mobile_tracing_team', 'total']
+  excel_28fir_goswara_summary: ['district', 'manual_fir', 'theft_efir', 'house_theft_efir', 'burglary_efir', 'mvt_motor_vehicle_theft', 'total']
 };
 
 const parseJsonField = (val) => {
@@ -153,6 +133,18 @@ const isFinancialFraudArrest = (d) => {
 
 // Fetch raw records from DB with scoping
 const getRawRecords = async (date, psId, districtId, subDivId) => {
+  let recordIds = null;
+  if (districtId) {
+    const compilation = await db('compilations')
+      .where({ source_entity_id: districtId, period: date })
+      .first();
+    if (compilation) {
+      recordIds = typeof compilation.record_ids === 'string'
+        ? JSON.parse(compilation.record_ids)
+        : (compilation.record_ids || []);
+    }
+  }
+
   let query = db('records')
     .select(
       'records.*',
@@ -163,8 +155,13 @@ const getRawRecords = async (date, psId, districtId, subDivId) => {
     )
     .leftJoin('hierarchy_nodes as ps', 'records.ps_id', 'ps.id')
     .leftJoin('hierarchy_nodes as dist', 'records.district_id', 'dist.id')
-    .where('records.record_date', date)
     .whereNot('records.current_status', 'DRAFT');
+
+  if (recordIds && recordIds.length > 0) {
+    query = query.whereIn('records.id', recordIds);
+  } else {
+    query = query.where('records.record_date', date);
+  }
 
   if (psId) {
     if (typeof psId === 'string' && psId.includes(',')) {
@@ -233,8 +230,13 @@ export const mapRecordsToSheets = (records, targetDate) => {
       time_of_occurrence_1: d.occurrence_time || d.gd_time || '',
       place_of_occurrence_1: d.occurrence_place || '',
       gist: d.brief_facts || '',
-      arrested_person: d.arrested_person || d.accused_name || 'None',
-      name_of_accused: d.accused_name || 'Unknown'
+      arrested_name: d.arrested_person || d.accused_name || 'None',
+      arrested_father_husband_name: d.arrested_father_husband_name || d.accused_father_name || '',
+      arrested_address: d.arrested_address || d.accused_address || '',
+      accused_name: d.accused_name || 'Unknown',
+      accused_father_name: d.accused_father_name || '',
+      accused_address: d.accused_address || '',
+      accused_extra: ''
     };
   });
 
@@ -996,73 +998,128 @@ export const getDailyDiaryData = async (user, date, psId, districtId, subDivId, 
   return mapped;
 };
 
-// Export to XLSX (export)
+
+// Human-readable header labels for each column (maps REPORT_COLUMNS keys -> display names)
+const COLUMN_LABELS = {
+  excel_1manual_fir: ['P.S.', 'FIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Time of Occurrence', 'Place of Occurrence', 'Time (Alt)', 'Place (Alt)', 'Gist', 'Arrested Name', 'Arrested Father/Husband', 'Arrested Address', 'Accused Name', 'Accused Father Name', 'Accused Address', 'Accused (Extra)'],
+  excel_2eburglary_cases: ['S.N.', 'P.S.', 'eFIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Time of Occurrence', 'Stolen Items', 'Place of Occurrence', 'IO Name', 'IO Mobile No.', 'Beat No.'],
+  excel_3ehouse_theft_cases: ['S.N.', 'P.S.', 'eFIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Place of Occurrence', 'Time of Occurrence', 'Stolen Items', 'Place (Alt)', 'IO Name', 'IO Mobile No.', 'Beat No.'],
+  excel_4eother_theft_cases: ['S.N.', 'P.S.', 'eFIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Time of Occurrence', 'Stolen Items', 'Place of Occurrence', 'IO Name', 'IO Mobile No.', 'Beat No.'],
+  excel_5mvt_cases: ['S.No.', 'P.S.', 'FIR No.', 'U/S', 'Date of Occurrence', 'Time of Occurrence', 'Place of Occurrence', 'Complainant Name', 'Father/Husband Name', 'Address', 'Vehicle No.', 'Vehicle Type', 'IO Name', 'IO Mobile No.', 'Beat No.', 'CD Uploaded in 24hrs?', 'Footage Collected?'],
+  excel_6arrested_all_heads: ['BNS/IPC', 'Total DD 126/170 BNSS', 'Total DD 126/169 BNSS', 'Total DD 109 BNSS', '109(G)', 'Total DD 110 BNSS', '110(G)', '92/93/97 DP Act', 'Total DD 40 Ex.', '40 Ex.', '351(D)', 'A-Act', 'G-Act', '33 Ex.', 'NDPS', 'Others Act', 'Others BNSS', 'PO'],
+  excel_7arrested_east_district: ['S.N.', 'FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Name of IO', 'PC/JC/Bail', 'Prev. Involvement (Cases)', 'Recovery', 'BC?', 'Integrated Patrolling', 'Group Patrolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
+  excel_8arrested_kalandara: ['S.N.', 'FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Place of Occurrence', 'IO', 'PC/JC/Bail', 'Prev. Involvement', 'Recovery', 'BC?', 'Integrated Pick', 'Group Patrolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
+  excel_9arrested_efir_theft: ['S.N.', 'FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Name of IO', 'PC/JC/Bail', 'Prev. Involvement (Cases) Head', 'Recovery', 'BC?', 'Group Rolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
+  excel_10arrested_efir_mv_theft: ['FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Name of IO', 'PC/JC/Bail', 'Prev. Involvement (Cases)', 'Recovery', 'BC?', 'Integrated Rate Picked', 'Group Patrolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
+  excel_11proclaimed_offenders: ['S.N.', 'P.S.', 'DD No./FIR No.', 'U/S', 'PO – Name', 'PO – Parental', 'PO – Address', 'Case Declared PO In', 'Court Which Declared PO'],
+  excel_13arrested_24_hrs_list: ['S.No.', 'Name/Nick Name', 'Father/Husband Name', 'Address', 'Age', 'FIR/DD No.', 'U/S', 'Police Station', 'Name of IO', 'Rank of IO', 'Mobile No. of IO', 'Remarks (PC/Remand/Bail)'],
+  excel_14pi_disposal_manual: ['S.No.', 'FIR No.', 'Date', 'U/S', 'RC', 'Challan/Untrace/Cancel'],
+  excel_15pi_disposal_eproperty: ['S.No.', 'FIR No.', 'Date', 'U/S', 'RC', 'Challan/Untrace/Cancel'],
+  excel_16pi_disposal_emvt: ['S.No.', 'FIR No.', 'Date', 'U/S', 'RC', 'Challan/Untrace/Cancel'],
+  excel_18missing_persons: ['S.No.', 'DD No.', 'DD Date', 'Name of Operator', 'Name of Missing Person', 'Address', 'Missing Date', 'Age', 'Height', 'Built', 'Complexion', 'Face', 'Hair', 'Beard', 'Mustaches', 'Upper Dress Color', 'Lower Dress Color', 'Name of IO'],
+  excel_19uidb: ['S.No.', 'DD No.', 'DD Date', 'Found Place', 'Found Date', 'Sex', 'Age', 'Height', 'Built', 'Complexion', 'Face', 'Hair', 'Beard', 'Mustaches', 'Upper Dress Color', 'Lower Dress Color', 'Name of IO'],
+  excel_20abandoned_persons: ['S.No.', 'DD No.', 'Found Place', 'Found Date', 'Sex', 'Age', 'Height', 'Built', 'Complexion', 'Face', 'Hair', 'Beard', 'Mustaches', 'Upper Dress Color', 'Lower Dress Color', 'Name of IO'],
+  excel_21traced_persons: ['S.No.', 'DD No.', 'DD Date', 'Name of Operator', 'Name of Traced Person', 'Father/Husband Name', 'Address', 'Name of IO'],
+  excel_22women_missing: ['PCR Call', 'DD Entry/Complaint', 'Total', 'Traced', 'Case Registered', 'Pending'],
+  excel_23children_missing: ['PCR Call (Male)', 'PCR Call (Female)', 'DD Entry (Male)', 'DD Entry (Female)', 'Total (Male)', 'Total (Female)', 'Traced (Male)', 'Traced (Female)', 'Case Registered (Male)', 'Case Registered (Female)'],
+  excel_25inquest_registered: ['S.N.', 'DD No.', 'Date', 'U/S', 'Name of Deceased', 'Father/Husband Name', 'Address', 'Sex', 'Age', 'Cause of Death', 'Place of Occurrence', 'IO'],
+  excel_26inquest_acpsdm_disposal: ['S.No.', 'DD No.', 'Date', 'U/S', 'Name of Deceased', 'Father/Husband Name', 'Address', 'Sex', 'Age', 'Cause of Death', 'Date Filed by ACP/SDM'],
+  excel_28fir_goswara_summary: ['District', 'Manual FIR', 'Theft eFIR', 'House Theft eFIR', 'Burglary eFIR', 'MVT (Motor Vehicle Theft)', 'Total'],
+};
+
+// Export to XLSX (export) — builds a fresh workbook from scratch (no template read/modify to avoid corruption)
 export const exportDailyDiaryExcel = async (user, date, psId, districtId, subDivId, tableNamesFilter = null) => {
   const records = await getRawRecords(date, psId, districtId, subDivId);
   const mapped = mapRecordsToSheets(records, date);
 
-  const templatePath = path.resolve(__dirname, 'templates', 'Daily dairy all tables NO MULTIVALUED (1).xlsx');
-  
+  // Determine which tables to include
+  const activeTables = tableNamesFilter
+    ? REPORTS.filter(r => tableNamesFilter.includes(r.tableName))
+    : REPORTS;
+
+  if (tableNamesFilter && activeTables.length === 0) {
+    const err = new Error('None of the requested report names are recognised. Pass valid tableName values from the REPORTS list.');
+    err.status = 400;
+    err.code = 'BAD_REQUEST';
+    throw err;
+  }
+
+  // Build a completely fresh workbook — no template corruption risk
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(templatePath);
+  workbook.creator = 'PHAROS';
+  workbook.created = new Date();
 
-  // Determine which tables to populate
-  const activeTables = tableNamesFilter || REPORTS.map(r => r.tableName);
+  // Header style helpers
+  const titleFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A3C5E' } }; // dark blue
+  const titleFont = { name: 'Arial', bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+  const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4AC0D' } }; // gold
+  const headerFont = { name: 'Arial', bold: true, size: 10, color: { argb: 'FF000000' } };
+  const headerAlignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  const dataFont = { name: 'Arial', size: 10 };
+  const dataAlignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+  const thinBorder = { style: 'thin', color: { argb: 'FF999999' } };
+  const cellBorder = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
 
-  workbook.worksheets.forEach((ws) => {
-    if (ws.name === 'Sheet1') return;
-
-    // Resolve which report this sheet maps to
-    const match = ws.name.match(/^(\d+)\./);
-    if (!match) return;
-    const num = parseInt(match[1], 10);
-    const report = REPORTS.find(r => r.num === num);
-    if (!report) return;
-
-    const tableName = report.tableName;
+  for (const report of activeTables) {
+    const { tableName, label, num } = report;
     const columns = REPORT_COLUMNS[tableName];
-    
-    // Determine data starting row
-    // Sheets 27, 28, 30 have 3 rows of headers. Others have 2 rows.
-    const headerRowsCount = [27, 28, 30].includes(num) ? 3 : 2;
-    const dataStartRow = headerRowsCount + 1;
-
-    // Clear all rows from dataStartRow onwards
-    const totalRows = ws.rowCount;
-    if (totalRows >= dataStartRow) {
-      ws.spliceRows(dataStartRow, totalRows - dataStartRow + 1);
-    }
-
-    // If not selected in filter, leave it empty (only headers remain)
-    if (!activeTables.includes(tableName)) {
-      return;
-    }
-
-    // Populate data rows
+    const displayHeaders = COLUMN_LABELS[tableName] || columns;
     const rowsData = mapped[tableName] || [];
-    rowsData.forEach((rowObj) => {
-      // Map object to array of columns in exact order
-      const rowValues = columns.map(col => rowObj[col] ?? '');
-      
-      const addedRow = ws.addRow(rowValues);
-      
-      // Inherit styles (borders, alignments, fonts)
-      addedRow.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-          left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-          bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-          right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-        cell.font = { name: 'Arial', size: 10 };
-      });
-    });
-  });
 
-  // Compile binary workbook buffer
+    // Safe sheet name (max 31 chars)
+    const sheetName = `${num}.${label}`.substring(0, 31);
+    const ws = workbook.addWorksheet(sheetName);
+
+    // Set column widths
+    ws.columns = displayHeaders.map((_, i) => ({ width: 18 }));
+
+    // Row 1: Title row (merged across all columns)
+    const numCols = columns.length;
+    const titleRow = ws.addRow([`${num}. ${label}  |  Date: ${date}  |  Records: ${rowsData.length}`]);
+    ws.mergeCells(1, 1, 1, numCols);
+    const titleCell = ws.getCell('A1');
+    titleCell.fill = titleFill;
+    titleCell.font = titleFont;
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    titleRow.height = 24;
+
+    // Row 2: Header row
+    const headerRow = ws.addRow(displayHeaders);
+    headerRow.height = 40;
+    headerRow.eachCell((cell) => {
+      cell.fill = headerFill;
+      cell.font = headerFont;
+      cell.alignment = headerAlignment;
+      cell.border = cellBorder;
+    });
+
+    // Data rows
+    if (rowsData.length === 0) {
+      const emptyRow = ws.addRow(['No data for this date.']);
+      ws.mergeCells(3, 1, 3, numCols);
+      const emptyCell = ws.getCell(`A3`);
+      emptyCell.font = { name: 'Arial', italic: true, size: 10, color: { argb: 'FF888888' } };
+      emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    } else {
+      rowsData.forEach((rowObj) => {
+        const rowValues = columns.map(col => rowObj[col] ?? '');
+        const dataRow = ws.addRow(rowValues);
+        dataRow.height = 18;
+        dataRow.eachCell({ includeEmpty: true }, (cell) => {
+          cell.font = dataFont;
+          cell.alignment = dataAlignment;
+          cell.border = cellBorder;
+        });
+      });
+    }
+
+    // Freeze header rows
+    ws.views = [{ state: 'frozen', ySplit: 2, xSplit: 0 }];
+  }
+
+  // Write to buffer
   const buffer = await workbook.xlsx.writeBuffer();
-  
   const filename = `Daily_Diary_${date}.xlsx`;
   return { buffer, filename };
 };
+

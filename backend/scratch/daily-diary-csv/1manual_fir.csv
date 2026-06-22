@@ -1,6 +1,1 @@
-ps,fir_no,us,name_of_complainant,father_husband_name_of_complainant,address_of_complainant,time_of_occurrence,place_of_occurrence,time_of_occurrence_1,place_of_occurrence_1,gist,arrested_person,name_of_accused
-PS Parliament Street,FIR/2026/0125,BNS 103 (Murder),Sunil Dutt,Late Sh. K. C. Dutt,"A-21, Gazipur, Delhi",21:00 Hrs,"Main Road near Gazipur Flyover, Delhi",21:00 Hrs,"Main Road near Gazipur Flyover, Delhi",Information received regarding a fight. Police reached the spot and found one person dead. FIR registered.,John Doe,John Doe
-PS Parliament Street,FIR/2026/0126,BNS 309(4) (Robbery),Manish Rawat,Pratap Rawat,"B-45, Mayur Vihar, Delhi",22:30 Hrs,"Pocket-1 Park, Mayur Vihar, Delhi",22:30 Hrs,"Pocket-1 Park, Mayur Vihar, Delhi",Complainant was robbed of his mobile phone and wallet at knife point.,Sohan Lal,Sohan Lal
-PS Parliament Street,,BNSS 194,,,,,"Sanjay Park Bench, Delhi",,"Sanjay Park Bench, Delhi",,None,Unknown
-PS Parliament Street,FIR/NDPS/2026/0008,Sec. 20 NDPS,,,,,,,,,None,Unknown
-PS Parliament Street,FIR/MOB/2026/0009,,,,,,,,,,None,Unknown
+ps,fir_no,us,name_of_complainant,father_husband_name_of_complainant,address_of_complainant,time_of_occurrence,place_of_occurrence,time_of_occurrence_1,place_of_occurrence_1,gist,arrested_name,arrested_father_husband_name,arrested_address,accused_name,accused_father_name,accused_address,accused_extra
