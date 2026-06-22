@@ -26,7 +26,9 @@ const templates = [
   { id: "beat-incidents",       name_en: "Beat Incident Summary",       name_hi: "बीट घटना सारांश",               format: ["pdf","excel"], applicable_record_types: ["CASE", "PCR_CALL"] },
   { id: "legacy-summary",       name_en: "Legacy Data Summary",         name_hi: "विरासत डेटा सारांश",            format: ["pdf","excel"], applicable_record_types: ["CASE", "ARREST"] },
   { id: "sla-breaches",         name_en: "SLA Breaches Audit Log",      name_hi: "समय सीमा उल्लंघन ऑडिट लॉग",      format: ["pdf","csv","excel"], applicable_record_types: ["CASE", "ARREST", "PCR_CALL"] },
-  { id: "ops-compilation",      name_en: "Ops Chain Compilation",       name_hi: "संचालन श्रृंखला संकलन",          format: ["pdf","excel"], applicable_record_types: ["COMPILATION"] }
+  { id: "ops-compilation",      name_en: "Ops Chain Compilation",       name_hi: "संचालन श्रृंखला संकलन",          format: ["pdf","excel"], applicable_record_types: ["COMPILATION"] },
+  { id: "arrested-24hr-list",  name_en: "Arrested 24 Hour List",      name_hi: "पिछले 24 घंटों की गिरफ्तारी सूची", format: ["excel","pdf"], applicable_record_types: ["ARREST"],  template_type: "LINKED" },
+  { id: "manual-fir",          name_en: "Manual FIR Register",        name_hi: "मैनुअल एफआईआर रजिस्टर",          format: ["excel","pdf"], applicable_record_types: ["CASE"],    template_type: "LINKED" }
 ];
 
 export const getTemplates = async (req, res) => {
@@ -45,6 +47,8 @@ export const getTemplates = async (req, res) => {
     }
 
     const dbTemplates = await query;
+    const dbIds = new Set(dbTemplates.map(t => t.id));
+
     let formatted = dbTemplates.map(t => {
       let formats = [];
       try {
@@ -52,7 +56,7 @@ export const getTemplates = async (req, res) => {
       } catch (e) {
         formats = ["PDF", "CSV", "EXCEL"];
       }
-      
+
       let recTypes = [];
       try {
         recTypes = typeof t.applicable_record_types === 'string' ? JSON.parse(t.applicable_record_types) : t.applicable_record_types;
@@ -71,9 +75,24 @@ export const getTemplates = async (req, res) => {
       };
     });
 
+    // Merge in-memory fallback templates not already in DB
+    const memFormatted = templates
+      .filter(t => !dbIds.has(t.id))
+      .map(t => ({
+        id: t.id,
+        name_en: t.name_en,
+        name_hi: t.name_hi,
+        template_type: t.template_type || 'PROFORMA',
+        applicable_record_types: t.applicable_record_types,
+        output_formats: t.format.map(f => f.toUpperCase()),
+        template_definition: null
+      }));
+
+    formatted = [...formatted, ...memFormatted];
+
     if (record_type) {
       const filterTypes = record_type.split(',').map(s => s.trim().toUpperCase());
-      formatted = formatted.filter(t => 
+      formatted = formatted.filter(t =>
         t.applicable_record_types.some(rt => filterTypes.includes(rt.toUpperCase()))
       );
     }
@@ -119,11 +138,10 @@ const getRecordsForReport = async (templateId, filters) => {
 
   // Dynamic user data filters from request parameters
   const systemKeys = new Set([
-    'psId', 'station_id', 'districtId', 'district_id', 
-    'from', 'dateFrom', 'from_date', 'to', 'dateTo', 'to_date', 
+    'psId', 'station_id', 'districtId', 'district_id',
+    'from', 'dateFrom', 'from_date', 'to', 'dateTo', 'to_date',
     'selected_sub_templates', 'page', 'limit'
   ]);
-  const isPostgres = db.client.config.client !== 'sqlite3';
 
   for (const [key, val] of Object.entries(filters)) {
     if (systemKeys.has(key) || val === undefined || val === null || val === '') {
@@ -133,11 +151,7 @@ const getRecordsForReport = async (templateId, filters) => {
     if (coreColumns.includes(key)) {
       query = query.where(`records.${key}`, val);
     } else {
-      if (isPostgres) {
-        query = query.whereRaw("records.data @> ?::jsonb", [JSON.stringify({ [key]: val })]);
-      } else {
-        query = query.whereRaw("json_extract(records.data, ?) = ?", [`$.${key}`, String(val)]);
-      }
+      query = query.whereRaw("records.data @> ?::jsonb", [JSON.stringify({ [key]: val })]);
     }
   }
 
