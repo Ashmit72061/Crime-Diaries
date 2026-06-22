@@ -137,6 +137,44 @@ export const DynamicForm = ({ recordType, initialValues, onSubmit, onCancel, loa
               // Special styles for full width items like textarea
               const isFullWidth = field.field_type.toUpperCase() === 'TEXTAREA' || field.field_key === 'brief_facts';
 
+              if (field.show_when && field.show_when.field) {
+                const targetField = field.show_when.field;
+                const targetValue = field.show_when.value;
+
+                return (
+                  <Form.Item
+                    noStyle
+                    key={field.id}
+                    dependencies={[targetField]}
+                  >
+                    {({ getFieldValue }) => {
+                      const val = getFieldValue(targetField);
+                      const isMatch = Array.isArray(targetValue)
+                        ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(val || '').toLowerCase())
+                        : String(val || '').toLowerCase() === String(targetValue || '').toLowerCase();
+
+                      if (!isMatch) {
+                        return null;
+                      }
+
+                      return (
+                        <div style={{ gridColumn: isFullWidth ? '1 / -1' : 'auto' }}>
+                          <Form.Item
+                            name={field.field_key}
+                            label={<span style={{ color: '#c3cbd6' }}>{label}</span>}
+                            rules={rules}
+                            valuePropName={field.field_type.toUpperCase() === 'BOOLEAN' ? 'checked' : 'value'}
+                            preserve={false}
+                          >
+                            {renderFieldInput(field)}
+                          </Form.Item>
+                        </div>
+                      );
+                    }}
+                  </Form.Item>
+                );
+              }
+
               return (
                 <div key={field.id} style={{ gridColumn: isFullWidth ? '1 / -1' : 'auto' }}>
                   <Form.Item

@@ -940,6 +940,11 @@ api.interceptors.request.use(
       return config;
     }
 
+    // Bypass mock interception for binary downloads/exports
+    if (config.responseType === 'blob' || config.responseType === 'arraybuffer') {
+      return config;
+    }
+
     // Return custom mock responses
     const method = config.method.toUpperCase();
     const url = config.url;
