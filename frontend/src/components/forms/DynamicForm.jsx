@@ -700,7 +700,7 @@ export default function DynamicForm({
     );
   }
 
-  const activeSection = finalSchema[currentStep];
+  const activeSection = finalSchema[currentStep] || finalSchema[0];
   const isLastStep    = currentStep === finalSchema.length - 1;
 
   const stepHasError = (idx) => {
