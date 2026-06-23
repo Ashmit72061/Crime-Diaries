@@ -104,10 +104,21 @@ def query_records(definition, user_filters, engine):
     selects = []
     
     for k in field_keys:
-        if db_type == 'sqlite':
-            selects.append(f"json_extract(records.data, '$.{k}') as [{k}]")
+        if k == '_record_date':
+            selects.append("records.record_date as [_record_date]" if db_type == 'sqlite' else "records.record_date as _record_date")
+        elif k == '_status':
+            selects.append("records.current_status as [_status]" if db_type == 'sqlite' else "records.current_status as _status")
+        elif k == '_created_at':
+            selects.append("records.created_at as [_created_at]" if db_type == 'sqlite' else "records.created_at as _created_at")
+        elif k == '_ps_id':
+            selects.append("hn.name_en as [_ps_id]" if db_type == 'sqlite' else "hn.name_en as _ps_id")
+        elif k == '_district_id':
+            selects.append("records.district_id as [_district_id]" if db_type == 'sqlite' else "records.district_id as _district_id")
         else:
-            selects.append(f"cast(records.data as jsonb)->>'{k}' as {k}")
+            if db_type == 'sqlite':
+                selects.append(f"json_extract(records.data, '$.{k}') as [{k}]")
+            else:
+                selects.append(f"cast(records.data as jsonb)->>'{k}' as {k}")
             
     # Include record date and ps name in raw queries
     select_expr = ", ".join(selects) if selects else "records.id"
@@ -134,6 +145,14 @@ def query_records(definition, user_filters, engine):
     elif user_filters.get('psId'):
         sql += " AND records.ps_id = :psId"
         params['psId'] = user_filters['psId']
+        
+    # District filter
+    if user_filters.get('district_id'):
+        sql += " AND records.district_id = :district_id"
+        params['district_id'] = user_filters['district_id']
+    elif user_filters.get('districtId'):
+        sql += " AND records.district_id = :districtId"
+        params['districtId'] = user_filters['districtId']
         
     # Apply data filters
     if data_filter:
@@ -180,7 +199,19 @@ def query_records(definition, user_filters, engine):
         df.insert(0, 'Sr. No.', range(1, len(df) + 1))
         
         # Rename columns to label_en from registry
-        rename_map = {k: fields_meta.get(k, {}).get('label_en', k.replace('_', ' ').title()) for k in field_keys}
+        system_labels = {
+            '_record_date': 'Record Date',
+            '_status': 'Workflow Status',
+            '_created_at': 'Created At',
+            '_ps_id': 'Police Station',
+            '_district_id': 'District'
+        }
+        rename_map = {}
+        for k in field_keys:
+            if k in system_labels:
+                rename_map[k] = system_labels[k]
+            else:
+                rename_map[k] = fields_meta.get(k, {}).get('label_en', k.replace('_', ' ').title())
         df.rename(columns=rename_map, inplace=True)
         
         # Drop raw fields like ps_name and record_date if they are not explicitly asked in fixed_fields
@@ -501,35 +532,15 @@ def generate_report(job_id):
     elif format_type in ['EXCEL', 'XLSX']:
         if template_id == 'daily-status':
             import subprocess
-            date_str = filters.get('from') or filters.get('dateFrom') or datetime.now().strftime('%Y-%m-%d')
-            template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Master/Daily_Diary_ProperHeaders.xlsx'))
-            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Master/files/export_daily_report.py'))
-            
-            db_host = os.environ.get('PGHOST', 'localhost')
-            db_port = os.environ.get('PGPORT', '5435')
-            db_name = os.environ.get('PGDATABASE', 'pharos_db')
-            db_user = os.environ.get('PGUSER', 'postgres')
-            db_password = os.environ.get('PGPASSWORD', 'postgres')
-            
-            if engine and hasattr(engine, 'url') and engine.url:
-                db_host = engine.url.host or db_host
-                db_port = str(engine.url.port) if engine.url.port else db_port
-                db_name = engine.url.database or db_name
-                db_user = engine.url.username or db_user
-                db_password = engine.url.password or db_password
-                
+            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend/scripts/generate_parallel_report_cli.js'))
+            filters_json = json.dumps(filters)
             cmd = [
-                'python', script_path,
-                '--date', date_str,
-                '--template', template_path,
-                '--out', file_path,
-                '--host', db_host,
-                '--port', db_port,
-                '--dbname', db_name,
-                '--user', db_user,
-                '--password', db_password
+                'node', script_path,
+                job_id,
+                filters_json,
+                file_path
             ]
-            print(f"[Worker] Invoking custom daily report script: {' '.join(cmd)}")
+            print(f"[Worker] Invoking custom daily report Node CLI script: {' '.join(cmd)}")
             subprocess.run(cmd, check=True)
         else:
             if template and template.get('template_type') == 'COMPOSITE':
@@ -539,6 +550,7 @@ def generate_report(job_id):
             else:
                 wb = generate_single_sheet_workbook(definition, filters, engine)
             wb.save(file_path)
+            wb.close()
         
     elif format_type == 'PDF':
         df = query_records(definition, filters, engine)

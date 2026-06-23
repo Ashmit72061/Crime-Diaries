@@ -435,10 +435,11 @@ export const getExportStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Export file not found on disk' });
     }
 
-    const ext = (job.format || 'CSV').toLowerCase();
+    const rawExt = (job.format || 'CSV').toLowerCase();
+    const ext = rawExt === 'excel' ? 'xlsx' : rawExt;
     const mimeMap = { csv: 'text/csv', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pdf: 'application/pdf' };
     const mime = mimeMap[ext] || 'application/octet-stream';
-    const filename = `PHAROS_Report_${jobId}.${ext === 'xlsx' ? 'xlsx' : ext}`;
+    const filename = `PHAROS_Report_${jobId}.${ext}`;
 
     res.setHeader('Content-Type', mime);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

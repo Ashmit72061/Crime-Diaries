@@ -140,7 +140,8 @@ export default function ReportBuilder() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Pharos_Report_${item.id}.${item.format === 'xlsx' ? 'xlsx' : item.format}`;
+        const fmt = (item.format || 'xlsx').toLowerCase();
+        link.download = `Pharos_Report_${item.id}.${fmt === 'excel' || fmt === 'xlsx' ? 'xlsx' : fmt}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

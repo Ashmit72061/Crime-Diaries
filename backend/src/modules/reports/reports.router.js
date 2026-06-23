@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as reportsController from './reports.controller.js';
+import { generateParallelReportController } from './reports.parallel.controller.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 import { allow } from '../../middleware/rbac.middleware.js';
 import reportBuilderRouter from '../report-builder/reportBuilder.router.js';
@@ -14,6 +15,7 @@ router.use('/builder', reportBuilderRouter);
 
 router.get('/templates', authMiddleware, reportsController.getTemplates);
 router.post('/generate', authMiddleware, reportsController.generateReport);
+router.post('/generate-parallel', authMiddleware, generateParallelReportController);
 router.get('/status/:id', authMiddleware, reportsController.getJobStatus);
 router.get('/download/:id', reportsController.downloadReport);
 router.get('/history', authMiddleware, reportsController.getReportsHistory);

@@ -16,6 +16,7 @@ const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 
 import ReportBuilder from './ReportBuilder';
+import MultiSheetReportBuilder from './MultiSheetReportBuilder';
 
 export const ReportsPage = () => {
   const { t } = useTranslation();
@@ -300,6 +301,11 @@ export const ReportsPage = () => {
             key: '2',
             label: 'Customize Report',
             children: <ReportBuilder />
+          },
+          {
+            key: '3',
+            label: 'Custom Workbook Builder',
+            children: <MultiSheetReportBuilder />
           }
         ]}
       />

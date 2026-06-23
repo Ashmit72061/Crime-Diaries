@@ -79,7 +79,7 @@ export const MultiSheetReportBuilder = () => {
 
     try {
       const filters = {};
-      if (dateRange && dateRange.length === 2) {
+      if (dateRange && dateRange[0] && dateRange[1]) {
         filters.date_from = dateRange[0].format('YYYY-MM-DD');
         filters.date_to = dateRange[1].format('YYYY-MM-DD');
       }
@@ -99,7 +99,7 @@ export const MultiSheetReportBuilder = () => {
         format: 'EXCEL'
       };
 
-      const initRes = await axios.post('/api/v1/reports/generate', payload);
+      const initRes = await api.post('/reports/generate', payload);
       const jobId = initRes.data.data?.job?.id || initRes.data.data?.job_id;
       
       if (!jobId) throw new Error('Job ID missing from server response');
@@ -121,7 +121,7 @@ export const MultiSheetReportBuilder = () => {
         }
 
         try {
-          const checkRes = await axios.get(`/api/v1/reports/status/${jobId}`);
+          const checkRes = await api.get(`/reports/status/${jobId}`);
           const job = checkRes.data.data.job;
 
           if (job.status === 'FAILED') {
@@ -132,8 +132,18 @@ export const MultiSheetReportBuilder = () => {
             clearInterval(interval);
             setExportProgress(100);
             
-            // Download
-            window.open(`/api/v1/reports/download/${jobId}`, '_blank');
+            // Download using secure blob method
+            const downloadRes = await api.get(`/reports/download/${jobId}`, { responseType: 'blob' });
+            const blob = new Blob([downloadRes.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Pharos_Report_${jobId}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
             message.success('Excel Workbook compiled successfully!');
             
             setTimeout(() => {
@@ -279,8 +289,9 @@ export const MultiSheetReportBuilder = () => {
                           value={sheet.record_type}
                           onChange={val => updateSheet(sheet.id, { record_type: val, field_keys: [] })}
                           style={{ width: '100%' }}
+                          dropdownStyle={{ background: '#181f2a', color: '#fff' }}
                         >
-                          <Option value="CASE">FIR Master (CASE)</option>
+                          <Option value="CASE">FIR Master (CASE)</Option>
                           <Option value="ARREST">Arrest Master (ARREST)</Option>
                           <Option value="PCR_CALL">PCR Calls (PCR_CALL)</Option>
                         </Select>

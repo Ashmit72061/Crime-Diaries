@@ -1,4 +1,8 @@
 import * as dailyDiaryService from './daily-diary.service.js';
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
+import { generateParallelReport } from '../reports/reports.parallel.service.js';
 
 // Helper to validate and default date
 const getValidatedDate = (req) => {
@@ -89,18 +93,33 @@ export const exportExcel = async (req, res, next) => {
     const scope = resolveScope(req.user, req.query);
     const tableNames = req.query.tableNames ? req.query.tableNames.split(',') : null;
 
-    const { buffer, filename } = await dailyDiaryService.exportDailyDiaryExcel(
-      req.user,
+    const jobId = uuidv4();
+    const reportsDir = process.env.REPORTS_DIR || './generated-reports';
+    if (!fs.existsSync(reportsDir)) {
+      fs.mkdirSync(reportsDir, { recursive: true });
+    }
+    const filePath = path.join(reportsDir, `${jobId}.xlsx`);
+
+    const filters = {
       date,
-      scope.psId,
-      scope.districtId,
-      scope.subDivId,
-      tableNames
-    );
+      psId: scope.psId,
+      districtId: scope.districtId
+    };
+
+    await generateParallelReport(jobId, filters, filePath, tableNames);
+
+    const buffer = fs.readFileSync(filePath);
+
+    // Cleanup temp file asynchronously
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('[daily-diary.controller] Failed to delete temp file:', err);
+    });
+
+    const filename = `Daily_Diary_${date}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-    return res.end(buffer);
+    return res.send(buffer);
   } catch (error) {
     if (error.status) {
       return res.status(error.status).json({

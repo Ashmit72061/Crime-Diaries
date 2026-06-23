@@ -26,10 +26,15 @@ call node scripts/verify_p2_filters_contracts.js
 call node scripts/migrations.js
 @REM call node scripts/verify_reports.js
 call node scripts/seed-dummy-data.js
+call node scripts/seed-report-test-data.js
 echo.
 
 echo [5/6] Starting frontend in a new terminal...
 start "PHAROS Frontend" cmd /k "cd ../frontend && npm run dev"
+echo.
+
+echo [5b/6] Starting Python worker in a new terminal...
+start "PHAROS Python Worker" cmd /k "cd ../python_worker && python main.py"
 echo.
 
 echo [6/6] Launching local backend server...

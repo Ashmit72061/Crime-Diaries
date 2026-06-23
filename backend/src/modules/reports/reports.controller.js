@@ -259,12 +259,22 @@ const validateCustomDefinition = async (custom_definition) => {
       throw new Error(`Invalid record type '${record_type}'. Allowed types: ${validTypes.join(', ')}`);
     }
 
+    const systemFields = ['_record_date', '_status', '_created_at', '_ps_id', '_district_id'];
+    const nonSystemKeys = field_keys.filter(k => !k.startsWith('_'));
+    const systemKeys = field_keys.filter(k => k.startsWith('_'));
+
+    for (const key of systemKeys) {
+      if (!systemFields.includes(key)) {
+        throw new Error(`Invalid system field key '${key}'`);
+      }
+    }
+
     const registered = await db('field_registry')
-      .whereIn('field_key', field_keys)
+      .whereIn('field_key', nonSystemKeys)
       .andWhere('is_active', true);
     
     const registeredKeys = registered.map(r => r.field_key);
-    for (const key of field_keys) {
+    for (const key of nonSystemKeys) {
       if (!registeredKeys.includes(key)) {
         throw new Error(`Field key '${key}' does not exist or is inactive in the field registry`);
       }
@@ -273,7 +283,7 @@ const validateCustomDefinition = async (custom_definition) => {
 };
 
 export const generateReport = async (req, res) => {
-  const { template_id, custom_definition, filters, format, selected_sub_templates } = req.body;
+  let { template_id, custom_definition, filters, format, selected_sub_templates } = req.body;
 
   if (!template_id && !custom_definition) {
     return res.status(400).json({
@@ -348,27 +358,40 @@ export const generateReport = async (req, res) => {
   const ext = (fmt === 'EXCEL' || fmt === 'XLSX') ? 'xlsx' : fmt.toLowerCase();
 
   // RBAC scope checks
-  const userPsId = req.user?.psId || req.user?.station_id;
-  const userDistrictId = req.user?.districtId || req.user?.district_id;
-  const filterPsId = filters?.ps_id || filters?.psId || filters?.station_id;
-  const filterDistrictId = filters?.district_id || filters?.districtId;
+  filters = filters || {};
+  const userPsId = req.user?.ps_id || req.user?.psId || req.user?.station_id;
+  const userDistrictId = req.user?.district_id || req.user?.districtId;
+  const filterPsId = filters.ps_id || filters.psId || filters.station_id;
+  const filterDistrictId = filters.district_id || filters.districtId;
 
-  if (req.user?.role === 'HC' && filterPsId && filterPsId !== userPsId) {
-    return res.status(403).json({
-      status: 'error',
-      success: false,
-      code: 'FORBIDDEN',
-      message: 'Cannot generate reports outside your PS'
-    });
-  }
+  if (req.user?.role === 'HC' || req.user?.role === 'SHO') {
+    filters.ps_id = userPsId;
+    if (filters.psId) filters.psId = userPsId;
+    if (filters.station_id) filters.station_id = userPsId;
+  } else if (req.user?.role === 'DISTRICT_OFFICER') {
+    if (!filterPsId) {
+      filters.district_id = userDistrictId;
+      filters.districtId = userDistrictId;
+    } else {
+      const psNode = await db('hierarchy_nodes').where({ id: filterPsId }).first();
+      if (!psNode || psNode.parent_id !== userDistrictId) {
+        return res.status(403).json({
+          status: 'error',
+          success: false,
+          code: 'FORBIDDEN',
+          message: 'Cannot generate reports outside your district'
+        });
+      }
+    }
 
-  if (req.user?.role === 'DISTRICT_OFFICER' && filterDistrictId && filterDistrictId !== userDistrictId) {
-    return res.status(403).json({
-      status: 'error',
-      success: false,
-      code: 'FORBIDDEN',
-      message: 'Cannot generate reports outside your district'
-    });
+    if (filterDistrictId && filterDistrictId !== userDistrictId) {
+      return res.status(403).json({
+        status: 'error',
+        success: false,
+        code: 'FORBIDDEN',
+        message: 'Cannot generate reports outside your district'
+      });
+    }
   }
 
   try {
@@ -648,34 +671,9 @@ export const generateReportInternal = async (jobId, template_id, parsedFilters, 
 
   } else if (fmt === 'EXCEL' || fmt === 'XLSX') {
     if (template_id === 'daily-status') {
-      const date = parsedFilters.from || parsedFilters.dateFrom || new Date().toISOString().split('T')[0];
-      const templatePath = path.resolve(__dirname, '../../../../Master/Daily_Diary_ProperHeaders.xlsx');
-      const scriptPath = path.resolve(__dirname, '../../../../Master/files/export_daily_report.py');
-      
-      let dbHost = 'localhost';
-      let dbPort = '5435';
-      let dbUser = 'postgres';
-      let dbPass = 'postgres';
-      let dbName = 'pharos_db';
-
-      if (process.env.DATABASE_URL) {
-        try {
-          const url = new URL(process.env.DATABASE_URL);
-          dbHost = url.hostname || dbHost;
-          dbPort = url.port || dbPort;
-          dbUser = url.username || dbUser;
-          dbPass = url.password || dbPass;
-          dbName = url.pathname.replace(/^\//, '') || dbName;
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      const cmd = `python "${scriptPath}" --date "${date}" --template "${templatePath}" --out "${filePath}" --host "${dbHost}" --port "${dbPort}" --dbname "${dbName}" --user "${dbUser}" --password "${dbPass}"`;
-      
-      console.log(`[generateReportInternal] Executing custom daily report script: ${cmd}`);
-      const { execSync } = await import('child_process');
-      execSync(cmd);
+      console.log(`[generateReportInternal] Redirecting daily-status Excel generation to generateParallelReport for jobId: ${jobId}`);
+      const { generateParallelReport } = await import('./reports.parallel.service.js');
+      await generateParallelReport(jobId, parsedFilters, filePath);
     } else {
       if (template_id === 'district-compilation' || template_id === 'ops-compilation') {
         records = await getCompilationsForReport(parsedFilters);
@@ -775,16 +773,17 @@ export const downloadReport = async (req, res) => {
       });
     }
 
-    const ext = job.format.toLowerCase();
+    const rawExt = job.format.toLowerCase();
+    const ext = rawExt === 'excel' ? 'xlsx' : rawExt;
     let contentType = 'text/csv';
     if (ext === 'pdf') {
       contentType = 'application/pdf';
-    } else if (ext === 'excel' || ext === 'xlsx') {
+    } else if (ext === 'xlsx') {
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     }
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename=Pharos_Report_${job.id}.${ext === 'excel' ? 'xlsx' : ext}`);
-    return res.download(job.file_path, `Pharos_Report_${job.id}.${ext === 'excel' ? 'xlsx' : ext}`);
+    res.setHeader('Content-Disposition', `attachment; filename=Pharos_Report_${job.id}.${ext}`);
+    return res.download(job.file_path, `Pharos_Report_${job.id}.${ext}`);
   } catch (error) {
     return res.status(500).json({
       status: 'error',
