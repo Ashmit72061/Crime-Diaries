@@ -6,7 +6,7 @@ import ExcelJS from 'exceljs';
 import { publish } from '../../events/eventBus.js';
 import { computeRowHash } from '../../utils/hash.js';
 import { logger } from '../../utils/logger.js';
-import { generateUID } from '../records/records.service.js';
+import { TYPE_CODES } from '../records/records.service.js';
 import { createLink } from '../record-links/record-links.service.js';
 
 
@@ -35,66 +35,6 @@ const getRecordDate = (recordType, rowData) => {
     return rowData.gd_date;
   }
   return null;
-};
-
-// Helpers for validators
-const isValidDate = (val) => {
-  if (val instanceof Date) return !isNaN(val.getTime());
-  if (typeof val === 'string') {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
-    const d = new Date(val);
-    return !isNaN(d.getTime());
-  }
-  return false;
-};
-
-const isValidTime = (val) => {
-  if (typeof val === 'string') {
-    return /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(val);
-  }
-  if (val instanceof Date) {
-    return true;
-  }
-  return false;
-};
-
-const isValidNumber = (val) => {
-  if (typeof val === 'number') return true;
-  if (typeof val === 'string') {
-    return !isNaN(Number(val.trim()));
-  }
-  return false;
-};
-
-const isValidSelect = (field, val) => {
-  let options = [];
-  try {
-    options = typeof field.options === 'string' ? JSON.parse(field.options) : field.options;
-  } catch (e) {}
-  if (!Array.isArray(options) || options.length === 0) return true;
-  const allowedValues = options.map(o => (o && typeof o === 'object') ? o.value : o);
-  return allowedValues.includes(val);
-};
-
-const checkMaxLength = (field, val) => {
-  try {
-    const rules = typeof field.validation_rules === 'string' ? JSON.parse(field.validation_rules) : field.validation_rules;
-    if (rules && rules.maxLength && String(val).length > rules.maxLength) {
-      return false;
-    }
-  } catch (e) {}
-  return true;
-};
-
-const checkRegex = (field, val) => {
-  try {
-    const rules = typeof field.validation_rules === 'string' ? JSON.parse(field.validation_rules) : field.validation_rules;
-    if (rules && rules.regex) {
-      const regex = new RegExp(rules.regex);
-      return regex.test(String(val));
-    }
-  } catch (e) {}
-  return true;
 };
 
 // Generate template hints row
@@ -145,6 +85,8 @@ const CASE_CUSTOM_MAPPINGS = {
   'complainant address': 'complainant_address',
   'name of io name': 'io_name',
   'name of io': 'io_name',
+  'name of io rank': 'io_rank',
+  'io rank': 'io_rank',
 };
 
 const ARREST_CUSTOM_MAPPINGS = {
@@ -152,6 +94,11 @@ const ARREST_CUSTOM_MAPPINGS = {
   'crime head': 'crime_head',
   'fir no. (legacy only)': 'linked_fir_dd_no',
   'linked fir / dd no.': 'linked_fir_dd_no',
+  // On an arrest sheet the FIR number IS the linked case, so accept the plain headers too.
+  'fir no.': 'linked_fir_dd_no',
+  'fir no': 'linked_fir_dd_no',
+  'fir number': 'linked_fir_dd_no',
+  'fir date': 'fir_date',
   'under section': 'sections',
   'sections': 'sections',
   'date of arrest': 'arrest_date',
@@ -159,6 +106,9 @@ const ARREST_CUSTOM_MAPPINGS = {
   'name of io': 'io_name',
   'property (recovered)': 'recovery',
   'recovery': 'recovery',
+  'property (stolen)': 'stolen_property',
+  'name of io rank': 'io_rank',
+  'io rank': 'io_rank',
   'name of arrested person': 'arrested_name',
   'address of arrested': 'arrested_address',
   'name & address of accused': 'name_and_address_of_accused'
@@ -202,13 +152,18 @@ const buildColumnMap = (worksheet, recordType, registryFields) => {
 
     const mappings = recordType === 'CASE' ? CASE_CUSTOM_MAPPINGS : ARREST_CUSTOM_MAPPINGS;
 
+    // Normalise a header for matching: lowercase, collapse runs of whitespace to a single
+    // space, and trim. Real sheets often have stray double spaces (e.g. "Name Of IO  Name")
+    // that would otherwise silently fail to map and drop the whole column.
+    const normHeader = (v) => String(v ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+
     row1Values.forEach(val => {
-      const normVal = String(val).toLowerCase().trim();
+      const normVal = normHeader(val);
       if (mappings[normVal] || registryKeysSet.has(normVal)) row1Matches++;
     });
 
     row2Values.forEach(val => {
-      const normVal = String(val).toLowerCase().trim();
+      const normVal = normHeader(val);
       if (mappings[normVal] || registryKeysSet.has(normVal)) row2Matches++;
     });
 
@@ -224,7 +179,7 @@ const buildColumnMap = (worksheet, recordType, registryFields) => {
       const colIdx = idx + 1;
       if (!val) return;
       const cleanVal = String(val).trim();
-      const normVal = cleanVal.toLowerCase();
+      const normVal = normHeader(cleanVal);
 
       if (mappings[normVal]) {
         colMap[colIdx] = mappings[normVal];
@@ -236,9 +191,9 @@ const buildColumnMap = (worksheet, recordType, registryFields) => {
         return;
       }
 
-      const fieldByLabel = registryFields.find(f => 
-        String(f.label_en || '').toLowerCase().trim() === normVal ||
-        String(f.label_hi || '').toLowerCase().trim() === normVal
+      const fieldByLabel = registryFields.find(f =>
+        normHeader(f.label_en) === normVal ||
+        normHeader(f.label_hi) === normVal
       );
       if (fieldByLabel) {
         colMap[colIdx] = fieldByLabel.field_key;
@@ -252,23 +207,148 @@ const buildColumnMap = (worksheet, recordType, registryFields) => {
   return { colMap, dataStartRow, hasHiddenKeys };
 };
 
+// Robustly extract the FIR sequence number and year from a free-form reference.
+// Handles "FIR/2026/1013", "0001/2025", "FIR-104/2026", "201/26", "FIR No. 55/2025", "201".
+// The 4-digit token in a plausible year range is treated as the year; the other numeric
+// token is the sequence number (returned normalised, leading zeros stripped) so that
+// "0001" and "1" compare equal during linkage.
 const parseFirAndYear = (str) => {
   if (!str) return { firNo: '', year: null };
   const clean = String(str).trim();
-  const match = clean.match(/(?:FIR[- ]*)?(\d+)\/(\d+)/i);
-  if (match) {
-    let seq = match[1];
-    let yr = match[2];
-    if (yr.length === 2) {
-      yr = '20' + yr;
+  const nums = clean.match(/\d+/g);
+  if (!nums || nums.length === 0) return { firNo: clean, year: null };
+  if (nums.length === 1) return { firNo: String(parseInt(nums[0], 10)), year: null };
+
+  let yearIdx = -1;
+  for (let i = 0; i < nums.length; i++) {
+    const n = parseInt(nums[i], 10);
+    if (nums[i].length === 4 && n >= 1900 && n <= 2200) { yearIdx = i; break; }
+  }
+
+  let year = null;
+  let seqToken = null;
+  if (yearIdx >= 0) {
+    year = parseInt(nums[yearIdx], 10);
+    seqToken = nums.find((_, i) => i !== yearIdx);
+  } else {
+    seqToken = nums[0];
+    if (nums[1]) {
+      let y = parseInt(nums[1], 10);
+      if (nums[1].length === 2) y = 2000 + y;
+      year = y;
     }
-    return { firNo: seq, year: parseInt(yr, 10) };
   }
-  const simpleMatch = clean.match(/^(\d+)$/);
-  if (simpleMatch) {
-    return { firNo: simpleMatch[1], year: null };
+  return { firNo: seqToken != null ? String(parseInt(seqToken, 10)) : '', year };
+};
+
+// Coerce a wide variety of legacy date representations into a clean YYYY-MM-DD string.
+// Accepts JS Date objects, ISO datetimes, DD/MM/YYYY (and . or - separators), 2-digit years,
+// and date ranges like "04/01/2025 TO 04/01/2025" (takes the first date). Indian police
+// legacy sheets are day-first, so DD/MM/YYYY is assumed. Returns null when uncoercible.
+const coerceDate = (val) => {
+  if (val === null || val === undefined || val === '') return null;
+  if (val instanceof Date) {
+    return isNaN(val.getTime()) ? null : val.toISOString().split('T')[0];
   }
-  return { firNo: clean, year: null };
+  let s = String(val).trim();
+  if (!s) return null;
+
+  // Date range "X TO Y" → keep the start date
+  const range = s.split(/\s+TO\s+/i);
+  if (range.length > 1) s = range[0].trim();
+
+  // ISO date / datetime
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+  // DD/MM/YYYY (day-first), separators / - .
+  m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) {
+    let d = m[1], mo = m[2], y = m[3];
+    if (y.length === 2) y = '20' + y;
+    d = d.padStart(2, '0');
+    mo = mo.padStart(2, '0');
+    if (+mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) return `${y}-${mo}-${d}`;
+  }
+
+  // Last resort: let the engine try
+  const dt = new Date(s);
+  if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
+  return null;
+};
+
+// Coerce a value into HH:MM. Keeps the raw trimmed string if it can't be parsed
+// (legacy data is imported as-is rather than rejected).
+const coerceTime = (val) => {
+  if (val === null || val === undefined || val === '') return null;
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return null;
+    return `${String(val.getUTCHours()).padStart(2, '0')}:${String(val.getUTCMinutes()).padStart(2, '0')}`;
+  }
+  const s = String(val).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m && +m[1] <= 23 && +m[2] <= 59) {
+    return `${m[1].padStart(2, '0')}:${m[2]}`;
+  }
+  return s;
+};
+
+// Split the combined "Name & Address Of Accused" column into name + address.
+// Prefers a newline boundary, falls back to the first comma.
+const splitAccused = (raw) => {
+  const splitVal = String(raw || '');
+  const lines = splitVal.split('\n');
+  if (lines.length > 1) {
+    return { arrested_name: lines[0].trim(), arrested_address: lines.slice(1).join('\n').trim() };
+  }
+  const commas = splitVal.split(',');
+  if (commas.length > 1) {
+    return { arrested_name: commas[0].trim(), arrested_address: commas.slice(1).join(',').trim() };
+  }
+  return { arrested_name: splitVal.trim(), arrested_address: '' };
+};
+
+// Read a worksheet row into a normalised { field_key: value } object using the column map.
+// Dates/times are coerced; the combined accused column is split. Shared by validate + confirm
+// so the data that is validated is exactly the data that gets stored.
+const extractRowData = (row, colMap, registryFieldsMap, recordType) => {
+  const rowData = {};
+  for (const key of Object.keys(registryFieldsMap)) rowData[key] = null;
+
+  row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
+    const key = colMap[colIdx];
+    if (!key) return;
+    const isAccusedCombo = key === 'name_and_address_of_accused';
+    if (!registryFieldsMap[key] && !isAccusedCombo) return;
+
+    let cellVal = cell.value;
+    if (cellVal && typeof cellVal === 'object' && 'result' in cellVal) cellVal = cellVal.result;
+    if (cellVal && typeof cellVal === 'object' && 'text' in cellVal) cellVal = cellVal.text;
+    if (cellVal && typeof cellVal === 'object' && Array.isArray(cellVal.richText)) {
+      cellVal = cellVal.richText.map(rt => rt.text).join('');
+    }
+    if (typeof cellVal === 'string') cellVal = cellVal.trim();
+
+    if (isAccusedCombo) {
+      const { arrested_name, arrested_address } = splitAccused(cellVal);
+      rowData.arrested_name = arrested_name;
+      rowData.arrested_address = arrested_address;
+      return;
+    }
+
+    const field = registryFieldsMap[key];
+    if (field) {
+      if (field.field_type === 'DATE') cellVal = coerceDate(cellVal);
+      else if (field.field_type === 'TIME') cellVal = coerceTime(cellVal);
+    }
+    rowData[key] = cellVal;
+  });
+
+  if (recordType === 'CASE' && (rowData.status === null || rowData.status === undefined || rowData.status === '')) {
+    rowData.status = 'Open';
+  }
+
+  return rowData;
 };
 
 const runAutoLinkageForArrests = async (trx, arrestRecords, psId, userId) => {
@@ -653,69 +733,17 @@ export const validateImportBatch = async (req, res) => {
 
     for (const { row, rowIdx } of rowsToProcess) {
       let rowHasErrors = false;
-      const rowData = {};
+      const rowData = extractRowData(row, colMap, registryFieldsMap, recordType);
 
-      for (const f of registryFields) {
-        rowData[f.field_key] = null;
-      }
-
-      row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
-        const key = colMap[colIdx];
-        if (key && (registryFieldsMap[key] || key === 'name_and_address_of_accused')) {
-          let cellVal = cell.value;
-          if (cellVal && typeof cellVal === 'object' && 'result' in cellVal) {
-            cellVal = cellVal.result;
-          }
-          if (cellVal && typeof cellVal === 'object' && 'text' in cellVal) {
-            cellVal = cellVal.text;
-          }
-          if (typeof cellVal === 'string') {
-            cellVal = cellVal.trim();
-          }
-          if (cellVal instanceof Date) {
-            const field = registryFieldsMap[key];
-            if (field) {
-              if (field.field_type === 'DATE') {
-                cellVal = cellVal.toISOString().split('T')[0];
-              } else if (field.field_type === 'TIME') {
-                const hours = String(cellVal.getUTCHours()).padStart(2, '0');
-                const minutes = String(cellVal.getUTCMinutes()).padStart(2, '0');
-                cellVal = `${hours}:${minutes}`;
-              }
-            }
-          }
-          if (key === 'name_and_address_of_accused') {
-            const splitVal = String(cellVal || '');
-            let arrested_name = '';
-            let arrested_address = '';
-            const lines = splitVal.split('\n');
-            if (lines.length > 1) {
-              arrested_name = lines[0].trim();
-              arrested_address = lines.slice(1).join('\n').trim();
-            } else {
-              const commas = splitVal.split(',');
-              if (commas.length > 1) {
-                arrested_name = commas[0].trim();
-                arrested_address = commas.slice(1).join(',').trim();
-              } else {
-                arrested_name = splitVal.trim();
-                arrested_address = '';
-              }
-            }
-            rowData['arrested_name'] = arrested_name;
-            rowData['arrested_address'] = arrested_address;
-          } else {
-            rowData[key] = cellVal;
-          }
-        }
-      });
-
+      // Bulk legacy import is intentionally lenient: dates/times are coerced in
+      // extractRowData and free-form / out-of-enum values are stored as-is so that
+      // real-world legacy sheets (30k+ rows with inconsistent formats) import cleanly.
+      // Only genuinely required fields block a row.
       for (const field of registryFields) {
         const key = field.field_key;
         const val = rowData[key];
-        const isReq = isRequired(field);
 
-        if (isReq && (val === null || val === undefined || val === '')) {
+        if (isRequired(field) && (val === null || val === undefined || val === '')) {
           errors.push({
             row: rowIdx,
             field_key: key,
@@ -723,88 +751,6 @@ export const validateImportBatch = async (req, res) => {
             message: `${field.label_en} is required`
           });
           rowHasErrors = true;
-          continue;
-        }
-
-        if (val === null || val === undefined || val === '') {
-          continue;
-        }
-
-        if (field.field_type === 'DATE') {
-          if (!isValidDate(val)) {
-            errors.push({
-              row: rowIdx,
-              field_key: key,
-              code: 'INVALID_TYPE',
-              message: `Must be a valid date (YYYY-MM-DD)`
-            });
-            rowHasErrors = true;
-            continue;
-          }
-        }
-
-        if (field.field_type === 'TIME') {
-          if (!isValidTime(val)) {
-            errors.push({
-              row: rowIdx,
-              field_key: key,
-              code: 'INVALID_TYPE',
-              message: `Must be a valid time (HH:MM)`
-            });
-            rowHasErrors = true;
-            continue;
-          }
-        }
-
-        if (field.field_type === 'NUMBER' && field.field_key !== 'linked_fir_dd_no') {
-          if (!isValidNumber(val)) {
-            errors.push({
-              row: rowIdx,
-              field_key: key,
-              code: 'INVALID_TYPE',
-              message: `Must be a number`
-            });
-            rowHasErrors = true;
-            continue;
-          }
-        }
-
-        if (field.field_type === 'SELECT') {
-          if (!isValidSelect(field, val)) {
-            let options = [];
-            try { options = typeof field.options === 'string' ? JSON.parse(field.options) : field.options; } catch(e){}
-            const optList = options.map(o => (o && typeof o === 'object') ? o.value : o).join(', ');
-            errors.push({
-              row: rowIdx,
-              field_key: key,
-              code: 'INVALID_VALUE',
-              message: `'${val}' is not valid. Valid options: ${optList}`
-            });
-            rowHasErrors = true;
-            continue;
-          }
-        }
-
-        if (!checkMaxLength(field, val)) {
-          errors.push({
-            row: rowIdx,
-            field_key: key,
-            code: 'TOO_LONG',
-            message: `Must be ${JSON.parse(field.validation_rules).maxLength} characters or less`
-          });
-          rowHasErrors = true;
-          continue;
-        }
-
-        if (!checkRegex(field, val)) {
-          errors.push({
-            row: rowIdx,
-            field_key: key,
-            code: 'INVALID_FORMAT',
-            message: `Value format is invalid`
-          });
-          rowHasErrors = true;
-          continue;
         }
       }
 
@@ -846,11 +792,14 @@ export const validateImportBatch = async (req, res) => {
         error_message: err.message
       }));
       
-      for (let i = 0; i < errorPayloads.length; i += 100) {
-        await db('import_batch_errors').insert(errorPayloads.slice(i, i + 100));
+      for (let i = 0; i < errorPayloads.length; i += 500) {
+        await db('import_batch_errors').insert(errorPayloads.slice(i, i + 500));
       }
     }
 
+    // Cap inline errors so the response stays small even for very large sheets.
+    // The full set is persisted to import_batch_errors and available via GET /batches/:id.
+    const MAX_INLINE_ERRORS = 500;
     return res.status(200).json({
       success: true,
       data: {
@@ -859,7 +808,9 @@ export const validateImportBatch = async (req, res) => {
         valid_rows: validRowsCount,
         invalid_rows: invalidRowsCount,
         expires_at: expiresAt.toISOString(),
-        errors: errors
+        errors: errors.slice(0, MAX_INLINE_ERRORS),
+        errors_truncated: errors.length > MAX_INLINE_ERRORS,
+        total_errors: errors.length
       }
     });
   } catch (error) {
@@ -879,21 +830,41 @@ export const confirmImportBatch = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Batch not found' });
     }
 
-    if (batch.status === 'COMPLETED') {
-      return res.status(400).json({ success: false, message: 'Batch has already been confirmed and imported' });
-    }
-
-    if (batch.status !== 'VALIDATION_DONE') {
-      return res.status(400).json({ success: false, message: 'Batch is not ready for confirmation (status must be VALIDATION_DONE)' });
-    }
-
     const userId = req.user.id || req.user.userId;
     if (batch.uploaded_by !== userId) {
       return res.status(403).json({ success: false, message: 'Only the user who uploaded the batch can confirm it' });
     }
 
+    // Clear, early messages for the common double-submit cases (a completed import has
+    // already deleted its temp file, so these must come before the file-existence check).
+    if (batch.status === 'COMPLETED') {
+      return res.status(409).json({ success: false, message: 'This batch has already been imported.' });
+    }
+    if (batch.status === 'PROCESSING') {
+      return res.status(409).json({ success: false, message: 'This batch is already being imported. Please wait for it to finish.' });
+    }
+
     if (!fs.existsSync(batch.file_path)) {
       return res.status(410).json({ success: false, message: 'Physical temp file has expired or was removed' });
+    }
+
+    // Atomically claim the batch so concurrent requests can never import twice.
+    // A large import can run longer than the client's HTTP timeout; if the browser
+    // aborts and the user clicks again, the second request is rejected here instead
+    // of inserting duplicate records.
+    const claimed = await db('import_batches')
+      .where({ id: batchId, status: 'VALIDATION_DONE' })
+      .update({ status: 'PROCESSING' });
+
+    if (claimed === 0) {
+      const current = await db('import_batches').where({ id: batchId }).first();
+      if (current?.status === 'COMPLETED') {
+        return res.status(409).json({ success: false, message: 'This batch has already been imported.' });
+      }
+      if (current?.status === 'PROCESSING') {
+        return res.status(409).json({ success: false, message: 'This batch is already being imported. Please wait for it to finish.' });
+      }
+      return res.status(400).json({ success: false, message: 'Batch is not ready for confirmation (status must be VALIDATION_DONE)' });
     }
 
     const errorRows = await db('import_batch_errors')
@@ -934,62 +905,7 @@ export const confirmImportBatch = async (req, res) => {
       });
       if (isEmpty) return;
 
-      const rowData = {};
-      for (const key of Object.keys(registryFieldsMap)) {
-        rowData[key] = null;
-      }
-
-      row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
-        const key = colMap[colIdx];
-        if (key && (registryFieldsMap[key] || key === 'name_and_address_of_accused')) {
-          let cellVal = cell.value;
-          if (cellVal && typeof cellVal === 'object' && 'result' in cellVal) {
-            cellVal = cellVal.result;
-          }
-          if (cellVal && typeof cellVal === 'object' && 'text' in cellVal) {
-            cellVal = cellVal.text;
-          }
-          if (typeof cellVal === 'string') {
-            cellVal = cellVal.trim();
-          }
-          if (cellVal instanceof Date) {
-            const field = registryFieldsMap[key];
-            if (field) {
-              if (field.field_type === 'DATE') {
-                cellVal = cellVal.toISOString().split('T')[0];
-              } else if (field.field_type === 'TIME') {
-                const hours = String(cellVal.getUTCHours()).padStart(2, '0');
-                const minutes = String(cellVal.getUTCMinutes()).padStart(2, '0');
-                cellVal = `${hours}:${minutes}`;
-              }
-            }
-          }
-          if (key === 'name_and_address_of_accused') {
-            const splitVal = String(cellVal || '');
-            let arrested_name = '';
-            let arrested_address = '';
-            const lines = splitVal.split('\n');
-            if (lines.length > 1) {
-              arrested_name = lines[0].trim();
-              arrested_address = lines.slice(1).join('\n').trim();
-            } else {
-              const commas = splitVal.split(',');
-              if (commas.length > 1) {
-                arrested_name = commas[0].trim();
-                arrested_address = commas.slice(1).join(',').trim();
-              } else {
-                arrested_name = splitVal.trim();
-                arrested_address = '';
-              }
-            }
-            rowData['arrested_name'] = arrested_name;
-            rowData['arrested_address'] = arrested_address;
-          } else {
-            rowData[key] = cellVal;
-          }
-        }
-      });
-      rowsToInsert.push(rowData);
+      rowsToInsert.push(extractRowData(row, colMap, registryFieldsMap, batch.record_type));
     });
 
     let sub_div_id = null;
@@ -1007,91 +923,123 @@ export const confirmImportBatch = async (req, res) => {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
     const newlyInsertedRecords = [];
 
-      for (let i = 0; i < rowsToInsert.length; i += 100) {
-        const chunk = rowsToInsert.slice(i, i + 100);
-        await db.transaction(async (trx) => {
-          for (const rowData of chunk) {
-            let recordDate = getRecordDate(batch.record_type, rowData) || new Date().toISOString().split('T')[0];
-            if (recordDate instanceof Date) {
-              recordDate = recordDate.toISOString().split('T')[0];
-            } else if (typeof recordDate === 'string' && recordDate.includes('T')) {
-              recordDate = recordDate.split('T')[0];
-            }
+    // Pre-compute UID sequence counters once instead of running a COUNT query per row.
+    // At 30k+ rows the per-row COUNT was the main bottleneck that made confirm hang.
+    // Sequences are tracked per calendar year (UIDs are year-scoped) and incremented in
+    // memory; this batch is the only writer for this PS during the import.
+    const psNode = await db('hierarchy_nodes').where({ id: batch.ps_id }).first();
+    const psCode = psNode?.code || 'PS000';
+    const typeCode = TYPE_CODES[batch.record_type] || batch.record_type.substring(0, 3).toUpperCase();
+    const seqByYear = {};
+    const existingCounts = await db('records')
+      .where({ ps_id: batch.ps_id, record_type: batch.record_type })
+      .select(db.raw('EXTRACT(YEAR FROM record_date::date) as yr'))
+      .count('* as c')
+      .groupBy('yr');
+    for (const rc of existingCounts) {
+      seqByYear[parseInt(rc.yr, 10)] = parseInt(rc.c, 10);
+    }
+    const nextUid = (recordDate) => {
+      const yr = parseInt(String(recordDate).slice(0, 4), 10);
+      seqByYear[yr] = (seqByYear[yr] || 0) + 1;
+      const seq = String(seqByYear[yr]).padStart(6, '0');
+      return `${typeCode}/${yr}/${psCode}/${seq}`;
+    };
 
-            const recordId = uuidv4();
-            const uid = await generateUID(batch.record_type, batch.ps_id, recordDate, trx);
-            const finalData = { ...rowData, uid };
-            delete finalData.name_and_address_of_accused;
+    const status = batch.is_legacy ? 'LEGACY_IMPORTED' : 'DRAFT';
+    const level = batch.is_legacy ? 'HQ' : 'PS';
 
-            const status = batch.is_legacy ? 'LEGACY_IMPORTED' : 'DRAFT';
-            const level = batch.is_legacy ? 'HQ' : 'PS';
+    // Insert in chunks of 500 using array inserts (1 query per table per chunk) rather
+    // than 3 queries per row — keeps 30k+ row imports within request timeout.
+    const INSERT_CHUNK = 500;
+    for (let i = 0; i < rowsToInsert.length; i += INSERT_CHUNK) {
+      const chunk = rowsToInsert.slice(i, i + INSERT_CHUNK);
+      const recordsBatch = [];
+      const revisionsBatch = [];
+      const auditBatch = [];
 
-            await trx('records').insert({
-              id: recordId,
-              record_type: batch.record_type,
-              ps_id: batch.ps_id,
-              district_id: batch.district_id,
-              sub_div_id: sub_div_id,
-              data: JSON.stringify(finalData),
-              current_status: status,
-              current_level: level,
-              record_date: recordDate,
-              created_by: batch.uploaded_by,
-              updated_by: batch.uploaded_by,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
+      for (const rowData of chunk) {
+        let recordDate = getRecordDate(batch.record_type, rowData) || new Date().toISOString().split('T')[0];
+        if (recordDate instanceof Date) {
+          recordDate = recordDate.toISOString().split('T')[0];
+        } else if (typeof recordDate === 'string' && recordDate.includes('T')) {
+          recordDate = recordDate.split('T')[0];
+        }
 
-            const fieldChanges = Object.keys(finalData).map(key => ({
-              field_key: key,
-              old_value: '',
-              new_value: finalData[key] ?? ''
-            }));
+        const recordId = uuidv4();
+        const uid = nextUid(recordDate);
+        const finalData = { ...rowData, uid };
+        delete finalData.name_and_address_of_accused;
 
-            const revisionId = uuidv4();
-            const revisionPayload = {
-              id: revisionId,
-              record_id: recordId,
-              revision_number: 1,
-              changed_by: batch.uploaded_by,
-              changed_at: new Date().toISOString(),
-              level: level,
-              change_type: 'CREATE',
-              field_changes: JSON.stringify(fieldChanges),
-              ip_address: ipAddress
-            };
+        const now = new Date().toISOString();
 
-            const prev_hash = null;
-            const row_hash = computeRowHash({
-              record_id: recordId,
-              revision_number: 1,
-              changed_by: batch.uploaded_by,
-              changed_at: revisionPayload.changed_at,
-              field_changes: revisionPayload.field_changes
-            }, prev_hash);
-
-            revisionPayload.prev_hash = prev_hash;
-            revisionPayload.row_hash = row_hash;
-
-            await trx('record_revisions').insert(revisionPayload);
-
-            await trx('audit_logs').insert({
-              id: uuidv4(),
-              table_name: 'records',
-              record_id: recordId,
-              action: 'CREATE',
-              changed_by_id: batch.uploaded_by,
-              changed_by_role: req.user.role,
-              changed_at: new Date().toISOString(),
-              new_value: JSON.stringify(finalData),
-              ip_address: ipAddress
-            });
-
-            newlyInsertedRecords.push({ id: recordId, data: finalData });
-            importedRowsCount++;
-          }
+        recordsBatch.push({
+          id: recordId,
+          record_type: batch.record_type,
+          ps_id: batch.ps_id,
+          district_id: batch.district_id,
+          sub_div_id: sub_div_id,
+          data: JSON.stringify(finalData),
+          current_status: status,
+          current_level: level,
+          record_date: recordDate,
+          created_by: batch.uploaded_by,
+          updated_by: batch.uploaded_by,
+          created_at: now,
+          updated_at: now
         });
+
+        const fieldChanges = Object.keys(finalData).map(key => ({
+          field_key: key,
+          old_value: '',
+          new_value: finalData[key] ?? ''
+        }));
+
+        const revisionPayload = {
+          id: uuidv4(),
+          record_id: recordId,
+          revision_number: 1,
+          changed_by: batch.uploaded_by,
+          changed_at: now,
+          level: level,
+          change_type: 'CREATE',
+          field_changes: JSON.stringify(fieldChanges),
+          ip_address: ipAddress
+        };
+
+        const prev_hash = null;
+        revisionPayload.prev_hash = prev_hash;
+        revisionPayload.row_hash = computeRowHash({
+          record_id: recordId,
+          revision_number: 1,
+          changed_by: batch.uploaded_by,
+          changed_at: revisionPayload.changed_at,
+          field_changes: revisionPayload.field_changes
+        }, prev_hash);
+        revisionsBatch.push(revisionPayload);
+
+        auditBatch.push({
+          id: uuidv4(),
+          table_name: 'records',
+          record_id: recordId,
+          action: 'CREATE',
+          changed_by_id: batch.uploaded_by,
+          changed_by_role: req.user.role,
+          changed_at: now,
+          new_value: JSON.stringify(finalData),
+          ip_address: ipAddress
+        });
+
+        newlyInsertedRecords.push({ id: recordId, data: finalData });
+        importedRowsCount++;
       }
+
+      await db.transaction(async (trx) => {
+        await trx('records').insert(recordsBatch);
+        await trx('record_revisions').insert(revisionsBatch);
+        await trx('audit_logs').insert(auditBatch);
+      });
+    }
 
       // Auto-Linkage runner after all insertions are committed
       let autoLinkageResult = {
@@ -1183,6 +1131,12 @@ export const confirmImportBatch = async (req, res) => {
     });
   } catch (error) {
     logger.error('[ConfirmImport] Database transaction confirm error:', error.message);
+    // Release the PROCESSING claim so the batch isn't left stuck and can be retried.
+    try {
+      await db('import_batches')
+        .where({ id: batchId, status: 'PROCESSING' })
+        .update({ status: 'VALIDATION_DONE' });
+    } catch (_) {}
     return res.status(500).json({ success: false, message: error.message });
   }
 };

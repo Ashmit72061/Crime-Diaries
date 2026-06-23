@@ -28,7 +28,7 @@ const parseJsonField = (val) => {
   return val;
 };
 
-const TYPE_CODES = {
+export const TYPE_CODES = {
   CASE: 'CSE', ARREST: 'ARR', PCR_CALL: 'PCR', MISSING: 'MSP', UIDB: 'UDB'
 };
 

@@ -383,13 +383,21 @@ export async function up(knex) {
 
   // Load 03_views.sql
   const viewsPath = path.resolve(__dirname, '../../Master/files/03_views.sql');
-  const viewsSql = fs.readFileSync(viewsPath, 'utf8');
-  await knex.raw(viewsSql);
+  if (fs.existsSync(viewsPath)) {
+    const viewsSql = fs.readFileSync(viewsPath, 'utf8');
+    await knex.raw(viewsSql);
+  } else {
+    console.warn(`[Warning] SQL views file not found: ${viewsPath}`);
+  }
 
   // Load 05_functions.sql
   const functionsPath = path.resolve(__dirname, '../../Master/files/05_functions.sql');
-  const functionsSql = fs.readFileSync(functionsPath, 'utf8');
-  await knex.raw(functionsSql);
+  if (fs.existsSync(functionsPath)) {
+    const functionsSql = fs.readFileSync(functionsPath, 'utf8');
+    await knex.raw(functionsSql);
+  } else {
+    console.warn(`[Warning] SQL functions file not found: ${functionsPath}`);
+  }
 }
 
 export async function down(knex) {

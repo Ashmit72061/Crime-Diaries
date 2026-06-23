@@ -222,6 +222,9 @@ function BulkImporterPanel({ onImported, isHC, user, refetchBatches, setActiveTa
       }
       const res = await api.post('/import/validate', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        // Bulk validation parses the whole sheet (30k+ rows) — override the global
+        // 15s axios timeout so the request isn't aborted mid-parse.
+        timeout: 0,
       });
       return res.data?.data;
     },
@@ -237,7 +240,10 @@ function BulkImporterPanel({ onImported, isHC, user, refetchBatches, setActiveTa
 
   const confirmMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post(`/import/confirm/${validationResult?.batch_id}`);
+      // Importing 30k+ rows can take well over the global 15s axios timeout; disable
+      // the timeout for this request so the browser waits for the import to finish
+      // instead of aborting and leaving the user to retry into an "already imported" error.
+      const res = await api.post(`/import/confirm/${validationResult?.batch_id}`, {}, { timeout: 0 });
       return res.data?.data;
     },
     onSuccess: (data) => {
