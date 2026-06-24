@@ -42,18 +42,9 @@
  */
 
 export async function up(knex) {
-  const isSqlite = knex.client.config.client === 'sqlite3';
-  const isPg     = !isSqlite;
+  await knex.raw(`CREATE SCHEMA IF NOT EXISTS rpt`);
 
-  // ── PostgreSQL: create a dedicated schema ───────────────────────────────────
-  if (isPg) {
-    await knex.raw(`CREATE SCHEMA IF NOT EXISTS rpt`);
-  }
-
-  // Helper: prefixed table name for SQLite, schema-qualified for PG
-  // We use raw CREATE TABLE to keep full control — Knex schema builder
-  // doesn't support cross-schema references on all versions.
-  const t = (name) => isPg ? `rpt.${name}` : `rpt_${name}`;
+  const t = (name) => `rpt.${name}`;
 
   // ── dim_district ─────────────────────────────────────────────────────────
   const hasDimDistrict = await knex.schema.hasTable(t('dim_district'));
@@ -434,9 +425,7 @@ export async function up(knex) {
 }
 
 export async function down(knex) {
-  const isSqlite = knex.client.config.client === 'sqlite3';
-  const isPg     = !isSqlite;
-  const t = (name) => isPg ? `rpt.${name}` : `rpt_${name}`;
+  const t = (name) => `rpt.${name}`;
 
   // Drop in reverse dependency order
   await knex.schema.dropTableIfExists(t('sync_log'));
@@ -454,7 +443,5 @@ export async function down(knex) {
   await knex.schema.dropTableIfExists(t('dim_police_station'));
   await knex.schema.dropTableIfExists(t('dim_district'));
 
-  if (isPg) {
-    await knex.raw(`DROP SCHEMA IF EXISTS rpt CASCADE`);
-  }
+  await knex.raw(`DROP SCHEMA IF EXISTS rpt CASCADE`);
 }

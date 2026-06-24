@@ -494,10 +494,11 @@ export default function DynamicForm({
       // Skip validating if field is hidden by condition
       if (field.show_when) {
         const { field: targetField, value: targetValue } = field.show_when;
-        const currentValue = currentValues[targetField];
-        if (String(currentValue || '').toLowerCase() !== String(targetValue || '').toLowerCase()) {
-          return;
-        }
+        const currentValue = String(currentValues[targetField] || '').toLowerCase();
+        const allowed = Array.isArray(targetValue)
+          ? targetValue.map(v => String(v).toLowerCase())
+          : [String(targetValue || '').toLowerCase()];
+        if (!allowed.includes(currentValue)) return;
       }
 
       const rules = parseRules(field.validation_rules);

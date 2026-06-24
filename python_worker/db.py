@@ -1,21 +1,11 @@
 import os
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
 
 # Load .env from backend folder for developer convenience, fallback to current folder
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../backend/.env'))
 load_dotenv()
 
-db_client = os.getenv('DB_CLIENT', 'sqlite3')
-sqlite_path = None
-engine = None
-
-if db_client == 'sqlite3':
-    # Resolve absolute path to backend's database.sqlite
-    sqlite_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend/database.sqlite'))
-    db_url = f"sqlite:///{sqlite_path}"
-    print(f"[WorkerDB] Connecting to local SQLite database at: {sqlite_path}")
-else:
-    from sqlalchemy import create_engine
-    db_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5435/pharos_db')
-    print(f"[WorkerDB] Connecting to PostgreSQL database...")
-    engine = create_engine(db_url)
+db_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5435/pharos_db')
+print(f"[WorkerDB] Connecting to PostgreSQL database...")
+engine = create_engine(db_url, pool_pre_ping=True)

@@ -26,7 +26,28 @@ const templates = [
   { id: "beat-incidents",       name_en: "Beat Incident Summary",       name_hi: "बीट घटना सारांश",               format: ["pdf","excel"], applicable_record_types: ["CASE", "PCR_CALL"] },
   { id: "legacy-summary",       name_en: "Legacy Data Summary",         name_hi: "विरासत डेटा सारांश",            format: ["pdf","excel"], applicable_record_types: ["CASE", "ARREST"] },
   { id: "sla-breaches",         name_en: "SLA Breaches Audit Log",      name_hi: "समय सीमा उल्लंघन ऑडिट लॉग",      format: ["pdf","csv","excel"], applicable_record_types: ["CASE", "ARREST", "PCR_CALL"] },
-  { id: "ops-compilation",      name_en: "Ops Chain Compilation",       name_hi: "संचालन श्रृंखला संकलन",          format: ["pdf","excel"], applicable_record_types: ["COMPILATION"] }
+  { id: "ops-compilation",      name_en: "Ops Chain Compilation",       name_hi: "संचालन श्रृंखला संकलन",          format: ["pdf","excel"], applicable_record_types: ["COMPILATION"] },
+  { id: "arrested-24hr-list",  name_en: "Arrested 24 Hour List",      name_hi: "पिछले 24 घंटों की गिरफ्तारी सूची", format: ["excel","pdf"], applicable_record_types: ["ARREST"],  template_type: "LINKED" },
+  { id: "manual-fir",          name_en: "Manual FIR Register",        name_hi: "मैनुअल एफआईआर रजिस्टर",          format: ["excel","pdf"], applicable_record_types: ["CASE"],    template_type: "LINKED" },
+  // Daily Diary Parallel Report templates (delegate to Node.js parallel engine)
+  { id: "daily-diary",                    name_en: "Daily Diary Export (All Sheets)",         name_hi: "दैनिक डायरी निर्यात",                    format: ["excel"], applicable_record_types: ["ARREST","CASE","PCR_CALL","MISSING","UIDB"], template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-manual-fir",                  name_en: "Daily Diary: Manual FIR",                name_hi: "मैनुअल एफआईआर",                         format: ["excel"], applicable_record_types: ["CASE"],                               template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-eburglary-ehouse-theft-mvt",  name_en: "Daily Diary: E-Burglary, E-House Theft, MVT", name_hi: "ई-चोरी मामले",                    format: ["excel"], applicable_record_types: ["CASE"],                               template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-arrested-all-heads",          name_en: "Daily Diary: Persons Arrested All Heads", name_hi: "गिरफ्तार व्यक्ति सभी शीर्ष",            format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-arrested-east-district",      name_en: "Daily Diary: Arrested East District",    name_hi: "पूर्वी जिला गिरफ्तार",                  format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-arrested-kalandara",          name_en: "Daily Diary: Arrested Kalandara",        name_hi: "कलंदरा गिरफ्तार",                       format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-arrested-efir-theft",         name_en: "Daily Diary: Arrested E-FIR Theft",      name_hi: "ई-एफआईआर चोरी गिरफ्तार",               format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-arrested-efir-mv-theft",      name_en: "Daily Diary: Arrested E-FIR MV Theft",   name_hi: "ई-एफआईआर एमवीटी गिरफ्तार",             format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-proclaimed-offenders",        name_en: "Daily Diary: Proclaimed Offenders",      name_hi: "उद्घोषित अपराधी",                       format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-arrested-24hrs",              name_en: "Daily Diary: Arrested 24 Hours List",    name_hi: "24 घंटे गिरफ्तारी सूची",                format: ["excel"], applicable_record_types: ["ARREST"],                            template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-missing-uidb",               name_en: "Daily Diary: Missing, UIDB, Abandoned, Traced", name_hi: "लापता, यूआईडीबी",               format: ["excel"], applicable_record_types: ["MISSING","UIDB"],                     template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-women-children-missing",      name_en: "Daily Diary: Women & Children Missing",  name_hi: "महिला व बच्चे लापता",                    format: ["excel"], applicable_record_types: ["MISSING"],                           template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-preventive-action",           name_en: "Daily Diary: Preventive Action",         name_hi: "निवारक कार्रवाई",                        format: ["excel"], applicable_record_types: ["PCR_CALL"],                          template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-inquest-registered",          name_en: "Daily Diary: Inquest Registered",        name_hi: "जांच पंजीकृत",                          format: ["excel"], applicable_record_types: ["CASE"],                               template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-important-cases",             name_en: "Daily Diary: Important Cases",           name_hi: "महत्वपूर्ण मामले",                       format: ["excel"], applicable_record_types: ["CASE"],                               template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-fir-goswara-summary",         name_en: "Daily Diary: FIR Goswara Summary",      name_hi: "एफआईआर गोस्वारा सारांश",                format: ["excel"], applicable_record_types: ["CASE"],                               template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-financial-fraud-arrest",      name_en: "Daily Diary: Financial Fraud Arrest",    name_hi: "वित्तीय धोखाधड़ी गिरफ्तार",             format: ["excel"], applicable_record_types: ["ARREST","CASE"],                    template_type: "DAILY_DIARY_PARALLEL" },
+  { id: "dd-ndps-action",                 name_en: "Daily Diary: NDPS Action",               name_hi: "एनडीपीएस कार्रवाई",                     format: ["excel"], applicable_record_types: ["CASE","ARREST"],                    template_type: "DAILY_DIARY_PARALLEL" }
 ];
 
 export const getTemplates = async (req, res) => {
@@ -45,6 +66,8 @@ export const getTemplates = async (req, res) => {
     }
 
     const dbTemplates = await query;
+    const dbIds = new Set(dbTemplates.map(t => t.id));
+
     let formatted = dbTemplates.map(t => {
       let formats = [];
       try {
@@ -52,7 +75,7 @@ export const getTemplates = async (req, res) => {
       } catch (e) {
         formats = ["PDF", "CSV", "EXCEL"];
       }
-      
+
       let recTypes = [];
       try {
         recTypes = typeof t.applicable_record_types === 'string' ? JSON.parse(t.applicable_record_types) : t.applicable_record_types;
@@ -71,9 +94,24 @@ export const getTemplates = async (req, res) => {
       };
     });
 
+    // Merge in-memory fallback templates not already in DB
+    const memFormatted = templates
+      .filter(t => !dbIds.has(t.id))
+      .map(t => ({
+        id: t.id,
+        name_en: t.name_en,
+        name_hi: t.name_hi,
+        template_type: t.template_type || 'PROFORMA',
+        applicable_record_types: t.applicable_record_types,
+        output_formats: t.format.map(f => f.toUpperCase()),
+        template_definition: null
+      }));
+
+    formatted = [...formatted, ...memFormatted];
+
     if (record_type) {
       const filterTypes = record_type.split(',').map(s => s.trim().toUpperCase());
-      formatted = formatted.filter(t => 
+      formatted = formatted.filter(t =>
         t.applicable_record_types.some(rt => filterTypes.includes(rt.toUpperCase()))
       );
     }
@@ -119,11 +157,10 @@ const getRecordsForReport = async (templateId, filters) => {
 
   // Dynamic user data filters from request parameters
   const systemKeys = new Set([
-    'psId', 'station_id', 'districtId', 'district_id', 
-    'from', 'dateFrom', 'from_date', 'to', 'dateTo', 'to_date', 
+    'psId', 'station_id', 'districtId', 'district_id',
+    'from', 'dateFrom', 'from_date', 'to', 'dateTo', 'to_date',
     'selected_sub_templates', 'page', 'limit'
   ]);
-  const isPostgres = db.client.config.client !== 'sqlite3';
 
   for (const [key, val] of Object.entries(filters)) {
     if (systemKeys.has(key) || val === undefined || val === null || val === '') {
@@ -133,11 +170,7 @@ const getRecordsForReport = async (templateId, filters) => {
     if (coreColumns.includes(key)) {
       query = query.where(`records.${key}`, val);
     } else {
-      if (isPostgres) {
-        query = query.whereRaw("records.data @> ?::jsonb", [JSON.stringify({ [key]: val })]);
-      } else {
-        query = query.whereRaw("json_extract(records.data, ?) = ?", [`$.${key}`, String(val)]);
-      }
+      query = query.whereRaw("records.data @> ?::jsonb", [JSON.stringify({ [key]: val })]);
     }
   }
 

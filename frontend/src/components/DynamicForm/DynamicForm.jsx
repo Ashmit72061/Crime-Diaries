@@ -6,6 +6,22 @@ import dayjs from 'dayjs';
 
 const { Option } = Select;
 
+const ConditionalFormItem = ({ field, children, form, currentLanguage }) => {
+  const label = currentLanguage === 'hi' ? field.label_hi : field.label_en;
+  const triggerValue = Form.useWatch(field.show_when?.field, form);
+
+  if (field.show_when) {
+    const { value: targetValue } = field.show_when;
+    const current = String(triggerValue || '').toLowerCase();
+    const allowed = Array.isArray(targetValue)
+      ? targetValue.map(v => String(v).toLowerCase())
+      : [String(targetValue || '').toLowerCase()];
+    if (!allowed.includes(current)) return null;
+  }
+
+  return children;
+};
+
 export const DynamicForm = ({ recordType, initialValues, onSubmit, onCancel, loadingSubmit }) => {
   const { t, i18n } = useTranslation();
   const [form] = Form.useForm();
@@ -138,16 +154,18 @@ export const DynamicForm = ({ recordType, initialValues, onSubmit, onCancel, loa
               const isFullWidth = field.field_type.toUpperCase() === 'TEXTAREA' || field.field_key === 'brief_facts';
 
               return (
-                <div key={field.id} style={{ gridColumn: isFullWidth ? '1 / -1' : 'auto' }}>
-                  <Form.Item
-                    name={field.field_key}
-                    label={<span style={{ color: '#c3cbd6' }}>{label}</span>}
-                    rules={rules}
-                    valuePropName={field.field_type.toUpperCase() === 'BOOLEAN' ? 'checked' : 'value'}
-                  >
-                    {renderFieldInput(field)}
-                  </Form.Item>
-                </div>
+                <ConditionalFormItem key={field.id} field={field} form={form} currentLanguage={currentLanguage}>
+                  <div style={{ gridColumn: isFullWidth ? '1 / -1' : 'auto' }}>
+                    <Form.Item
+                      name={field.field_key}
+                      label={<span style={{ color: '#c3cbd6' }}>{label}</span>}
+                      rules={rules}
+                      valuePropName={field.field_type.toUpperCase() === 'BOOLEAN' ? 'checked' : 'value'}
+                    >
+                      {renderFieldInput(field)}
+                    </Form.Item>
+                  </div>
+                </ConditionalFormItem>
               );
             })}
           </div>
