@@ -1,10 +1,8 @@
-import db from '../../config/db.js';
-import ExcelJS from 'exceljs';
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import db from '../../config/db.js';
+import { publish } from '../../events/eventBus.js';
 
 export const REPORTS = [
   { tableName: "excel_1manual_fir",                label: "Manual FIR",                        type: "list",    num: 1  },
@@ -643,7 +641,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       dd_date: fmtDate(d.dd_date || r.record_date),
       name_of_operator_to_whom_mps: d.operator_name || 'HC Ramesh',
       name_of_missing_person: d.missing_name || '',
-      address_of_missing_person: d.missing_address || d.address || '',
+      address_of_missing_person: d.missing_address || d.mp_address || d.address || '',
       missing_date: fmtDate(d.missing_date),
       age: d.age || '',
       height: d.height || '165 cm',
@@ -652,7 +650,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       face: d.face || 'Oval',
       hair: d.hair || 'Black',
       beard: d.beard || 'Clean Shaven',
-      mustaches: d.mustaches || 'Clean Shaven',
+      mustaches: d.moustache || d.mustaches || 'Clean Shaven',
       upper_dress_color: d.upper_dress_color || 'White',
       lower_dress_color: d.lower_dress_color || 'Blue',
       name_of_io: d.io_name || ''
@@ -676,7 +674,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       face: d.face || 'Round',
       hair: d.hair || 'Black',
       beard: d.beard || 'Clean Shaven',
-      mustaches: d.mustaches || 'Clean Shaven',
+      mustaches: d.moustache || d.mustaches || 'Clean Shaven',
       upper_dress_color: d.upper_dress_color || 'Grey',
       lower_dress_color: d.lower_dress_color || 'Black',
       name_of_io: d.io_name || ''
@@ -700,7 +698,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       face: d.face || 'Oval',
       hair: d.hair || 'Black',
       beard: d.beard || 'Clean Shaven',
-      mustaches: d.mustaches || 'Clean Shaven',
+      mustaches: d.moustache || d.mustaches || 'Clean Shaven',
       upper_dress_color: d.upper_dress_color || 'Yellow',
       lower_dress_color: d.lower_dress_color || 'Blue',
       name_of_io: d.io_name || ''
@@ -718,7 +716,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       name_of_operator_to_whom_mps: d.operator_name || 'HC Ramesh',
       name_of_traced_person: d.missing_name || '',
       fatherhusband_name_of_traced_person: d.father_husband_name || d.complainant_father_husband_name || '',
-      address_of_traced_person: d.missing_address || d.address || '',
+      address_of_traced_person: d.missing_address || d.mp_address || d.address || '',
       name_of_io: d.io_name || ''
     };
   });
@@ -996,73 +994,62 @@ export const getDailyDiaryData = async (user, date, psId, districtId, subDivId, 
   return mapped;
 };
 
-// Export to XLSX (export)
-export const exportDailyDiaryExcel = async (user, date, psId, districtId, subDivId, tableNamesFilter = null) => {
+// Queue daily diary Excel export through the Python worker job pipeline.
+// Returns { jobId } — caller responds with 202 and a status_url.
+export const queueDailyDiaryExport = async (user, date, psId, districtId, subDivId, tableNamesFilter = null) => {
   const records = await getRawRecords(date, psId, districtId, subDivId);
-  const mapped = mapRecordsToSheets(records, date);
+  const allSheets = mapRecordsToSheets(records, date);
 
-  const templatePath = path.resolve(__dirname, 'templates', 'Daily dairy all tables NO MULTIVALUED (1).xlsx');
-  
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(templatePath);
-
-  // Determine which tables to populate
+  // Restrict to requested tables only
   const activeTables = tableNamesFilter || REPORTS.map(r => r.tableName);
-
-  workbook.worksheets.forEach((ws) => {
-    if (ws.name === 'Sheet1') return;
-
-    // Resolve which report this sheet maps to
-    const match = ws.name.match(/^(\d+)\./);
-    if (!match) return;
-    const num = parseInt(match[1], 10);
-    const report = REPORTS.find(r => r.num === num);
-    if (!report) return;
-
-    const tableName = report.tableName;
-    const columns = REPORT_COLUMNS[tableName];
-    
-    // Determine data starting row
-    // Sheets 27, 28, 30 have 3 rows of headers. Others have 2 rows.
-    const headerRowsCount = [27, 28, 30].includes(num) ? 3 : 2;
-    const dataStartRow = headerRowsCount + 1;
-
-    // Clear all rows from dataStartRow onwards
-    const totalRows = ws.rowCount;
-    if (totalRows >= dataStartRow) {
-      ws.spliceRows(dataStartRow, totalRows - dataStartRow + 1);
+  const sheets = {};
+  for (const tableName of activeTables) {
+    if (allSheets[tableName] !== undefined) {
+      sheets[tableName] = allSheets[tableName];
     }
+  }
 
-    // If not selected in filter, leave it empty (only headers remain)
-    if (!activeTables.includes(tableName)) {
-      return;
-    }
+  const customDefinition = {
+    type: 'DAILY_DIARY',
+    date,
+    reports: REPORTS,
+    report_columns: REPORT_COLUMNS,
+    sheets,
+  };
 
-    // Populate data rows
-    const rowsData = mapped[tableName] || [];
-    rowsData.forEach((rowObj) => {
-      // Map object to array of columns in exact order
-      const rowValues = columns.map(col => rowObj[col] ?? '');
-      
-      const addedRow = ws.addRow(rowValues);
-      
-      // Inherit styles (borders, alignments, fonts)
-      addedRow.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-          left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-          bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
-          right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-        cell.font = { name: 'Arial', size: 10 };
-      });
-    });
+  const jobId = uuidv4();
+  const reportsDir = process.env.REPORTS_DIR || './generated-reports';
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+  const filePath = path.join(reportsDir, `${jobId}.xlsx`);
+  const userId = user?.userId || user?.id || null;
+
+  await db('report_jobs').insert({
+    id: jobId,
+    template_id: null,
+    custom_definition: JSON.stringify(customDefinition),
+    filters: JSON.stringify({ date, ps_id: psId, district_id: districtId }),
+    format: 'EXCEL',
+    status: 'PENDING',
+    file_path: filePath,
+    created_by: userId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   });
 
-  // Compile binary workbook buffer
-  const buffer = await workbook.xlsx.writeBuffer();
-  
-  const filename = `Daily_Diary_${date}.xlsx`;
-  return { buffer, filename };
+  try {
+    await publish('report.requested', {
+      job_id: jobId,
+      template_id: null,
+      custom_definition: customDefinition,
+      filters: { date },
+      format: 'EXCEL',
+      user_id: userId,
+    });
+  } catch (e) {
+    // Non-fatal: worker will pick up via DB polling if event is missed
+  }
+
+  return { jobId };
 };

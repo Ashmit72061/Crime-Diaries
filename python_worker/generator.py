@@ -571,6 +571,105 @@ def render_pdf(df, definition, filters, file_path):
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
+def generate_daily_diary_workbook(custom_definition):
+    """
+    Build the daily diary Excel workbook from pre-classified data.
+    custom_definition must contain: type='DAILY_DIARY', date, reports, report_columns, sheets.
+    Node.js classifies; Python formats — no DB queries needed here.
+    """
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    reports = custom_definition.get('reports', [])
+    report_columns = custom_definition.get('report_columns', {})
+    sheets_data = custom_definition.get('sheets', {})
+    date = custom_definition.get('date', '')
+
+    header_fill = PatternFill(start_color='1F3864', end_color='1F3864', fill_type='solid')
+    header_font = Font(name='Arial', size=9, bold=True, color='FFFFFF')
+    header_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    data_font = Font(name='Arial', size=9)
+    data_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    zebra_fill = PatternFill(start_color='EBF3FA', end_color='EBF3FA', fill_type='solid')
+    thin_border = Border(
+        left=Side(style='thin', color='D9D9D9'),
+        right=Side(style='thin', color='D9D9D9'),
+        top=Side(style='thin', color='D9D9D9'),
+        bottom=Side(style='thin', color='D9D9D9'),
+    )
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+
+    for rep in reports:
+        table_name = rep['tableName']
+        label = rep['label']
+        num = rep['num']
+
+        # Sheet title: "1. Manual FIR"
+        sheet_title = f"{num}. {label}"
+        for bad_char in ':\\/?*[]':
+            sheet_title = sheet_title.replace(bad_char, '')
+        sheet_title = sheet_title[:31]
+
+        ws = wb.create_sheet(title=sheet_title)
+
+        # Title row
+        ws.append([f"PHAROS Daily Diary — {label}"])
+        ws.append([f"Date: {date}"])
+        ws.append([])  # spacer
+
+        col_keys = report_columns.get(table_name, [])
+        col_headers = [k.replace('_', ' ').title() for k in col_keys]
+
+        # Header row
+        ws.append(col_headers if col_headers else ['No Data'])
+        header_row_idx = ws.max_row
+        ws.row_dimensions[header_row_idx].height = 22
+        for ci in range(1, len(col_headers) + 1):
+            cell = ws.cell(row=header_row_idx, column=ci)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_align
+            cell.border = thin_border
+
+        # Title style
+        ws.cell(row=1, column=1).font = Font(name='Arial', size=11, bold=True, color='1F3864')
+        ws.cell(row=2, column=1).font = Font(name='Arial', size=9, italic=True, color='595959')
+
+        # Data rows
+        rows = sheets_data.get(table_name, [])
+        for row_idx_offset, row_obj in enumerate(rows, start=1):
+            row_values = [row_obj.get(k, '') for k in col_keys]
+            ws.append(row_values)
+            actual_row = header_row_idx + row_idx_offset
+            ws.row_dimensions[actual_row].height = 18
+            use_zebra = (row_idx_offset % 2 == 0)
+            for ci, val in enumerate(row_values, start=1):
+                cell = ws.cell(row=actual_row, column=ci)
+                cell.font = data_font
+                cell.alignment = data_align
+                cell.border = thin_border
+                if use_zebra:
+                    cell.fill = zebra_fill
+
+        if not rows:
+            ws.append(['No records for this date.'])
+
+        # Auto-fit column widths (capped at 45)
+        for col_cells in ws.columns:
+            max_len = 10
+            for cell in col_cells:
+                if cell.row < header_row_idx:
+                    continue
+                val_str = str(cell.value or '')
+                if len(val_str) > max_len:
+                    max_len = len(val_str)
+            col_letter = openpyxl.utils.get_column_letter(col_cells[0].column)
+            ws.column_dimensions[col_letter].width = min(max_len + 3, 45)
+
+    return wb
+
+
 def generate_report(job_id):
     print(f"[Worker] Starting report job: {job_id}")
     with engine.connect() as conn:
@@ -639,7 +738,9 @@ def generate_report(job_id):
         df.to_csv(file_path, index=False)
 
     elif format_type in ['EXCEL', 'XLSX']:
-        if template_type == 'LINKED':
+        if not template and custom_definition and custom_definition.get('type') == 'DAILY_DIARY':
+            wb = generate_daily_diary_workbook(custom_definition)
+        elif template_type == 'LINKED':
             wb = generate_linked_workbook(definition, filters, engine)
         elif template_type == 'COMPOSITE' or (template and template.get('template_type') == 'COMPOSITE'):
             wb = generate_composite(definition, filters, engine)

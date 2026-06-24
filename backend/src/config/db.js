@@ -1,7 +1,11 @@
+import pg from 'pg';
 import knex from 'knex';
 import knexConfig from '../../knexfile.js';
 import { env } from './env.js';
 import { logger } from '../utils/logger.js';
+
+// Return DATE columns as ISO strings instead of JS Date objects (avoids timezone shift)
+pg.types.setTypeParser(1082, v => v);
 
 const environment = env.NODE_ENV || 'development';
 const config = knexConfig[environment];
