@@ -131,8 +131,7 @@ const isFinancialFraudArrest = (d) => {
   return head.includes('fraud') || head.includes('cyber') || head.includes('cheating') || sections.includes('420');
 };
 
-// Fetch raw records from DB with scoping
-const getRawRecords = async (date, psId, districtId, subDivId) => {
+const getRawRecords = async (date, psId, districtId, subDivId, fromDate = null, toDate = null) => {
   let recordIds = null;
   if (districtId) {
     const compilation = await db('compilations')
@@ -160,7 +159,12 @@ const getRawRecords = async (date, psId, districtId, subDivId) => {
   if (recordIds && recordIds.length > 0) {
     query = query.whereIn('records.id', recordIds);
   } else {
-    query = query.where('records.record_date', date);
+    if (fromDate && toDate) {
+      query = query.where('records.record_date', '>=', fromDate)
+                   .where('records.record_date', '<=', toDate);
+    } else {
+      query = query.where('records.record_date', date);
+    }
   }
 
   if (psId) {
@@ -1028,8 +1032,8 @@ const COLUMN_LABELS = {
 };
 
 // Export to XLSX (export) — builds a fresh workbook from scratch (no template read/modify to avoid corruption)
-export const exportDailyDiaryExcel = async (user, date, psId, districtId, subDivId, tableNamesFilter = null) => {
-  const records = await getRawRecords(date, psId, districtId, subDivId);
+export const exportDailyDiaryExcel = async (user, date, psId, districtId, subDivId, tableNamesFilter = null, fromDate = null, toDate = null) => {
+  const records = await getRawRecords(date, psId, districtId, subDivId, fromDate, toDate);
   const mapped = mapRecordsToSheets(records, date);
 
   // Determine which tables to include
@@ -1119,7 +1123,7 @@ export const exportDailyDiaryExcel = async (user, date, psId, districtId, subDiv
 
   // Write to buffer
   const buffer = await workbook.xlsx.writeBuffer();
-  const filename = `Daily_Diary_${date}.xlsx`;
+  const filename = fromDate && toDate ? `Daily_Diary_${fromDate}_to_${toDate}.xlsx` : `Daily_Diary_${date}.xlsx`;
   return { buffer, filename };
 };
 

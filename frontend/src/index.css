@@ -1070,12 +1070,17 @@ a:focus-visible {
 }
 
 .page-wrapper {
-  padding: 1.5rem 2rem;
+  padding: 0.75rem 1rem;
   max-width: 100% !important;
   width: 100%;
   margin: 0;
   flex: 1;
   overflow-y: auto;
+}
+
+/* If the page content has a hero banner, remove padding from page-wrapper to allow full-bleed headers */
+.page-wrapper:has(.hero-banner-gradient) {
+  padding: 0 !important;
 }
 
 /* Eliminate nested page wrapper padding / margin issues */
@@ -3030,10 +3035,15 @@ textarea.form-control {
 }
 
 .hologram-crest {
-  height: 96px;
-  width: 96px;
+  height: 76px;
+  width: 76px;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(13, 42, 74, 0.15));
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.prism-hologram:hover .hologram-crest {
+  transform: scale(1.08) rotate(3deg);
 }
 
 .hologram-text-block {
@@ -3041,32 +3051,61 @@ textarea.form-control {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
+  max-width: 320px; /* Constrain width so subtitle wraps nicely and fits in container */
 }
 
 .hologram-title {
   font-family: var(--font-display);
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #0d2a4a; /* Delhi Police Navy Blue */
-  letter-spacing: 0.02em;
-  line-height: 1.15;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  color: #0d2a4a; /* Fallback */
+  transition: all 0.3s ease;
+}
+
+/* Glow effect for PRISM */
+.hologram-title.glow-text {
+  background: linear-gradient(135deg, #0d2a4a 0%, #1e3a8a 35%, #cca43b 65%, #0d2a4a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(204, 164, 59, 0.45)) drop-shadow(0 0 1px rgba(15, 82, 186, 0.3));
+  animation: hologramGlow 6s linear infinite, hologramPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes hologramGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes hologramPulse {
+  0% {
+    filter: drop-shadow(0 1px 2px rgba(15, 82, 186, 0.15)) drop-shadow(0 0 4px rgba(204, 164, 59, 0.3));
+  }
+  100% {
+    filter: drop-shadow(0 2px 6px rgba(15, 82, 186, 0.3)) drop-shadow(0 0 10px rgba(204, 164, 59, 0.65));
+  }
 }
 
 .hologram-line {
   height: 2px;
   width: 100%;
-  background-color: #0d2a4a;
-  margin: 0.25rem 0 0.3rem 0;
+  background: linear-gradient(90deg, #0d2a4a 0%, #cca43b 50%, rgba(204, 164, 59, 0) 100%);
+  margin: 0.25rem 0 0.35rem 0;
   opacity: 0.8;
 }
 
 .hologram-subtitle {
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #cca43b; /* Crest Gold */
-  letter-spacing: 0.08em;
-  line-height: 1;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 /* Glowing high-contrast text for headers */

@@ -46,7 +46,7 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="space-y-6 theme-admin-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm font-sans text-slate-800">
+    <div className="space-y-6 theme-admin-page p-5 rounded-2xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm font-sans text-slate-800">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 font-display">

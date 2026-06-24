@@ -59,8 +59,38 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
   }
 
   if (type === 'BOOLEAN' || type === 'CHECKBOX') {
-    const chkLabel = lang === 'hi' ? 'हाँ' : 'Yes';
-    return <CheckboxField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} label={chkLabel} />;
+    const yesLabel = lang === 'hi' ? 'हाँ' : 'Yes';
+    const noLabel = lang === 'hi' ? 'नहीं' : 'No';
+    return (
+      <div className="flex items-center gap-6 mt-1">
+        <CheckboxField
+          id={`field-${key}-yes`}
+          disabled={readOnly}
+          value={value === true || value === 'true' || value === 1}
+          onChange={(checked) => {
+            if (checked) {
+              handleChange(true);
+            } else {
+              handleChange(null);
+            }
+          }}
+          label={yesLabel}
+        />
+        <CheckboxField
+          id={`field-${key}-no`}
+          disabled={readOnly}
+          value={value === false || value === 'false' || value === 0}
+          onChange={(checked) => {
+            if (checked) {
+              handleChange(false);
+            } else {
+              handleChange(null);
+            }
+          }}
+          label={noLabel}
+        />
+      </div>
+    );
   }
 
   if (type === 'PHONE' || type === 'EMAIL') {

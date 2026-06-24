@@ -179,11 +179,19 @@ export default function DynamicForm({
                 {title}
               </h2>
             </div>
-            {readOnly && (
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
-                {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              <FormAutosave status={saveStatus} lang={lang} />
+              {finalSchema.length > 1 && (
+                <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-2.5 py-1 rounded-lg">
+                  {lang === 'hi' ? `चरण ${currentStep + 1} / ${finalSchema.length}` : `Step ${currentStep + 1} / ${finalSchema.length}`}
+                </span>
+              )}
+              {readOnly && (
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
+                  {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
+                </span>
+              )}
+            </div>
           </div>
           
           <div className="p-6 space-y-4">
@@ -402,6 +410,10 @@ export default function DynamicForm({
 
   const formRef = useRef(null);
 
+  const prevRecordTypeRef = useRef(recordType);
+  const prevCaseTypeRef = useRef(caseType);
+  const prevInitialIdRef = useRef(initialValues?.id);
+
   /* ── Sync saved record ID ─────────────────────────────────────────────── */
   useEffect(() => {
     if (savedRecord?.id) {
@@ -418,6 +430,27 @@ export default function DynamicForm({
     stationName: user.stationName,
     districtKey: user.districtKey
   }) : '';
+
+  /* ── Reset wizard progress and errors when navigating to a different record/form ── */
+  useEffect(() => {
+    const typeChanged = prevRecordTypeRef.current !== recordType;
+    const caseTypeChanged = prevCaseTypeRef.current !== caseType;
+    const recordIdChanged = prevInitialIdRef.current !== initialValues?.id;
+
+    // Avoid resetting state if we are just receiving the ID of the new draft we saved ourselves
+    const isAutosaveInit = !prevInitialIdRef.current && initialValues?.id && (initialValues.id === activeRecordIdRef.current);
+
+    if (typeChanged || caseTypeChanged || (recordIdChanged && !isAutosaveInit)) {
+      setCurrentStep(0);
+      setCompletedSteps(new Set());
+      setErrors({});
+      setTouched({});
+    }
+
+    prevRecordTypeRef.current = recordType;
+    prevCaseTypeRef.current = caseType;
+    prevInitialIdRef.current = initialValues?.id;
+  }, [recordType, caseType, initialValues?.id]);
 
   /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
@@ -481,8 +514,10 @@ export default function DynamicForm({
     setValues(updatedSeed);
     if (initialValues?.id) {
       activeRecordIdRef.current = initialValues.id;
+    } else {
+      activeRecordIdRef.current = null;
     }
-  }, [initialValuesStr, userStr]);
+  }, [initialValuesStr, userStr, recordType, caseType]);
 
   /* ── Validate a single section (step) ─────────────────────────────────── */
   const validateSection = useCallback((stepIdx, currentValues = values) => {
@@ -714,44 +749,7 @@ export default function DynamicForm({
   return (
     <div className="space-y-6" ref={formRef}>
 
-      {/* ── Step Navigator ── */}
-      {finalSchema.length > 1 && (
-        <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Active Step Indicator */}
-            <div className="flex items-center gap-3">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-color)] text-white text-xs font-bold shadow-md shadow-[var(--accent-glow)] scale-110 flex-shrink-0">
-                {currentStep + 1}
-              </span>
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">
-                  {lang === 'hi' ? 'सक्रिय चरण' : 'Active Step'}
-                </span>
-                <span className="text-sm font-extrabold text-slate-800 font-display">
-                  {lang === 'hi'
-                    ? (activeSection.title_hi || activeSection.title_en)
-                    : activeSection.title_en}
-                </span>
-              </div>
-            </div>
 
-            {/* Right: step counter + autosave */}
-            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end sm:pl-5 sm:border-l border-slate-100">
-              <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                {lang === 'hi' ? `चरण ${currentStep + 1} / ${finalSchema.length}` : `Step ${currentStep + 1} / ${finalSchema.length}`}
-              </span>
-              <FormAutosave status={saveStatus} lang={lang} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Single-step save indicator (when no step nav) ─────────────── */}
-      {finalSchema.length === 1 && (
-        <div className="flex justify-end">
-          <FormAutosave status={saveStatus} lang={lang} />
-        </div>
-      )}
 
       {/* ── Validation summary (top — shown after first submit attempt) ── */}
       {Object.keys(errors).length > 0 && Object.values(touched).some(Boolean) && (
@@ -789,6 +787,7 @@ export default function DynamicForm({
               <FormSection
                 section={activeSection}
                 currentStep={currentStep}
+                totalSteps={finalSchema.length}
                 values={values}
                 errors={errors}
                 touched={touched}
@@ -796,6 +795,7 @@ export default function DynamicForm({
                 readOnly={readOnly}
                 targetFields={targetFields}
                 lang={lang}
+                saveStatus={saveStatus}
               />
             )}
           </form>

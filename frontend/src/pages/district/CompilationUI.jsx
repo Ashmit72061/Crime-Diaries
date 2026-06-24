@@ -56,7 +56,8 @@ export default function CompilationUI() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
-  const [compileDate, setCompileDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [fromDate, setFromDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [toDate, setToDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Dropdown UI states
   const [selectedPSIds, setSelectedPSIds] = useState(new Set());
@@ -116,8 +117,8 @@ export default function CompilationUI() {
 
   // Create Compilation Mutation
   const createCompMutation = useMutation({
-    mutationFn: async (date) => {
-      const res = await api.post('/compilations', { period: date });
+    mutationFn: async ({ period, fromDate, toDate }) => {
+      const res = await api.post('/compilations', { period, fromDate, toDate });
       return res.data.data;
     },
     onSuccess: (data) => {
@@ -146,19 +147,22 @@ export default function CompilationUI() {
 
   const handleCompileTrigger = async () => {
     // 1. Persist compilation first so record_ids are in the DB before the export fetch runs.
-    // mutateAsync propagates errors; catch here so a failed compilation (e.g. no
-    // DISTRICT_REVIEW records) still falls through to date-based export rather than
-    // aborting silently. The onError handler already shows the toast.
     try {
-      await createCompMutation.mutateAsync(compileDate);
+      await createCompMutation.mutateAsync({
+        period: toDate,
+        fromDate,
+        toDate
+      });
     } catch {
       // onError toast already shown; continue to export with date-based fallback
     }
 
-    // 2. Perform Excel report export & download using native fetch (avoids axios interceptor issues with binary blobs)
+    // 2. Perform Excel report export & download using native fetch
     try {
       const params = new URLSearchParams();
-      params.set('date', compileDate);
+      params.set('date', toDate);
+      params.set('fromDate', fromDate);
+      params.set('toDate', toDate);
       if (selectedPSIds.size > 0) {
         params.set('psId', Array.from(selectedPSIds).join(','));
       }
@@ -194,7 +198,7 @@ export default function CompilationUI() {
             ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}` 
             : '_Multiple_Stations') 
         : '_All_Stations';
-      link.setAttribute('download', `Daily_Diary_${compileDate}${psSuffix}.xlsx`);
+      link.setAttribute('download', `Daily_Diary_${fromDate}_to_${toDate}${psSuffix}.xlsx`);
       document.body.appendChild(link);
       link.click();
       setTimeout(() => {
@@ -225,7 +229,7 @@ export default function CompilationUI() {
   };
 
   return (
-    <div className="space-y-6 w-full theme-district-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
+    <div className="space-y-6 w-full theme-district-page p-5 rounded-2xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* Back Header */}
       <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
         <button
@@ -251,29 +255,52 @@ export default function CompilationUI() {
  
       {/* Date trigger card */}
       <div className="border border-slate-200 bg-white rounded-xl p-5 shadow-sm space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 font-display">
           <Calendar size={14} className="text-[var(--accent-color)]" />
-          <span>Select Target Compilation Date</span>
+          <span>Select Compilation Date Range</span>
         </h3>
  
         <p className="text-xs text-slate-500 font-medium">
           This will bundle all records currently at <span className="text-[var(--accent-color)] font-semibold">DISTRICT_REVIEW</span> status in your district into a single compilation packet.
         </p>
  
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
-          <input
-            type="date"
-            value={compileDate}
-            onChange={(e) => setCompileDate(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all shrink-0 font-semibold"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 items-end relative">
+          <div className="flex flex-col gap-1 shrink-0 w-full sm:w-auto">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar size={10} className="text-slate-400" />
+              <span>From Date</span>
+            </span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1 shrink-0 w-full sm:w-auto">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar size={10} className="text-slate-400" />
+              <span>To Date</span>
+            </span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
+            />
+          </div>
  
           {/* POLICE STATION DROPDOWN */}
-          <div ref={psDropRef} className="relative flex-1 min-w-[200px]">
+          <div ref={psDropRef} className="relative flex-1 min-w-[200px] w-full flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <Shield size={10} className="text-slate-400" />
+              <span>Police Station</span>
+            </span>
             <button
               type="button"
               onClick={() => setPsDropOpen(!psDropOpen)}
-              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer h-full font-semibold"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold"
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <Shield size={14} className="text-[var(--accent-color)] shrink-0" />
@@ -361,11 +388,15 @@ export default function CompilationUI() {
           </div>
  
           {/* REPORTS DROPDOWN */}
-          <div ref={reportsDropRef} className="relative flex-1 min-w-[200px]">
+          <div ref={reportsDropRef} className="relative flex-1 min-w-[200px] w-full flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <FileText size={10} className="text-slate-400" />
+              <span>Select Reports</span>
+            </span>
             <button
               type="button"
               onClick={() => setReportsDropOpen(!reportsDropOpen)}
-              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer h-full font-semibold"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold"
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText size={14} className="text-[var(--accent-color)] shrink-0" />
@@ -450,14 +481,15 @@ export default function CompilationUI() {
               )}
             </div>
   
+          <div className="w-full sm:w-auto shrink-0 flex flex-col justify-end">
             <button
               onClick={handleCompileTrigger}
               disabled={createCompMutation.isPending || selectedFields.size === 0}
-              className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0 shadow-md shadow-red-500/20"
+              className="w-full sm:w-auto bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0 shadow-md shadow-red-500/20"
             >
               {createCompMutation.isPending ? (
                 <>
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white animate-pulse" />
                   <span>Aggregating Data...</span>
                 </>
               ) : (
@@ -469,6 +501,7 @@ export default function CompilationUI() {
             </button>
           </div>
         </div>
+      </div>
   
         {/* Compiled Records List */}
         <div className="space-y-4">

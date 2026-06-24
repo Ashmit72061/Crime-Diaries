@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertCircle, AlertTriangle } from 'lucide-react';
 import FieldRenderer from './FieldRenderer.jsx';
+import FormAutosave from './FormAutosave.jsx';
 
 function parseRules(rawRules) {
   if (!rawRules) return {};
@@ -16,6 +17,7 @@ function isFullWidth(field) {
 export default function FormSection({
   section,
   currentStep,
+  totalSteps = 1,
   values,
   errors,
   touched,
@@ -23,6 +25,7 @@ export default function FormSection({
   readOnly,
   targetFields = [],
   lang = 'en',
+  saveStatus = null,
 }) {
   if (!section) return null;
 
@@ -40,11 +43,19 @@ export default function FormSection({
               : section.title_en}
           </h2>
         </div>
-        {readOnly && (
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
-            {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          <FormAutosave status={saveStatus} lang={lang} />
+          {totalSteps > 1 && (
+            <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-2.5 py-1 rounded-lg">
+              {lang === 'hi' ? `चरण ${currentStep + 1} / ${totalSteps}` : `Step ${currentStep + 1} / ${totalSteps}`}
+            </span>
+          )}
+          {readOnly && (
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
+              {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Fields grid */}

@@ -45,7 +45,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
         { id: "records",      label: t('nav.records',         'My Records'),               icon: ClipboardList, to: "/records" },
         { id: "new-case",     label: t('recordTypes.CASE',    'Cases (FIR) Master'),       icon: FileText,      to: "/records/new/CASE" },
         { id: "new-arrest",   label: t('recordTypes.ARREST',  'Arrest Person Master'),     icon: UserX,         to: "/records/new/ARREST" },
-        { id: "new-pcr",      label: t('recordTypes.PCR_CALL','PCR / Kalandra Call'),      icon: PhoneCall,     to: "/records/new/PCR_CALL" },
+        { id: "new-pcr",      label: t('recordTypes.PCR_CALL','PCR'),      icon: PhoneCall,     to: "/records/new/PCR_CALL" },
         { id: "new-missing",  label: t('recordTypes.MISSING', 'Missing Persons Register'), icon: Search,        to: "/records/new/MISSING" },
         { id: "new-uidb",     label: t('recordTypes.UIDB',    'UIDB Unidentified Bodies'), icon: Fingerprint,   to: "/records/new/UIDB" },
         { id: "bulk-import",  label: t('nav.bulkImport',      'Bulk Import'),              icon: Upload,        to: "/admin/legacy" },
@@ -159,7 +159,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
           />
           {!isCollapsed && (
             <div className="brand-text">
-              <span className="brand-main">PHAROS</span>
+              <span className="brand-main">PRISM</span>
               <span className="brand-sub" style={{ fontSize: "0.6rem" }}>DELHI POLICE</span>
             </div>
           )}

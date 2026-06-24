@@ -10,6 +10,7 @@ import UnifiedFilterStrip from '../../components/common/UnifiedFilterStrip.jsx';
 import FilterPresetsPanel from '../../components/common/FilterPresetsPanel.jsx';
 import useAuthStore from '../../store/authStore.js';
 
+
 const pageVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -90,8 +91,14 @@ export default function MyRecords() {
     },
   });
 
-  // Backend handles filtering, so we just use records directly
-  const filteredRecords = records;
+  // Sort 'SENT_BACK' and 'SENT_BACK_HC' records to the very top, maintaining original order for other records
+  const filteredRecords = [...records].sort((a, b) => {
+    const aIsSentBack = a.current_status === 'SENT_BACK_HC' || a.current_status === 'SENT_BACK';
+    const bIsSentBack = b.current_status === 'SENT_BACK_HC' || b.current_status === 'SENT_BACK';
+    if (aIsSentBack && !bIsSentBack) return -1;
+    if (!aIsSentBack && bIsSentBack) return 1;
+    return 0;
+  });
 
   // Render Status Badge
   const renderStatusBadge = (status) => {
@@ -100,6 +107,7 @@ export default function MyRecords() {
       PENDING_SHO: 'bg-amber-50 text-amber-700 border-amber-200/60',
       ACP_REVIEW: 'bg-purple-50 text-purple-700 border-purple-200/60',
       DISTRICT_REVIEW: 'bg-blue-50 text-blue-700 border-blue-200/60',
+      SENT_BACK: 'bg-rose-50 text-rose-700 border-rose-200/60',
       SENT_BACK_HC: 'bg-rose-50 text-rose-700 border-rose-200/60',
       COMPILED: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
     };
@@ -108,6 +116,7 @@ export default function MyRecords() {
       PENDING_SHO: 'bg-amber-500',
       ACP_REVIEW: 'bg-purple-500',
       DISTRICT_REVIEW: 'bg-blue-500',
+      SENT_BACK: 'bg-rose-500',
       SENT_BACK_HC: 'bg-rose-500',
       COMPILED: 'bg-emerald-500',
     };
@@ -123,7 +132,7 @@ export default function MyRecords() {
     /* ── Full-page background matching Dashboard's deep navy gradient ── */
     <div className="min-h-screen theme-hc-page page-bg">
       <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden shadow-xl">
-        <span className="user-greeting-badge text-4xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+        <span className="user-greeting-badge text-3xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
           Hi, {currentLng === 'hi' ? (user?.name_hi || user?.name_en || user?.username) : (user?.name_en || user?.username || 'User')}
         </span>
         <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
@@ -136,9 +145,9 @@ export default function MyRecords() {
               RECORDS DESK
             </span> */}
             <h1 className="text-3xl font-bold text-white flex items-center gap-3 m-0">
-              <div className="bg-white/10 border border-white/20 rounded-xl p-2 shadow-inner">
+              {/* <div className="bg-white/10 border border-white/20 rounded-xl p-2 shadow-inner">
                 <FileText className="text-white" size={22} />
-              </div>
+              </div> */}
               {t('nav.records', 'My Records Desk')}
             </h1>
             <p className="mt-2 text-sm text-white/60 font-medium m-0">
@@ -219,7 +228,7 @@ export default function MyRecords() {
                   <tr className="bg-gradient-to-r from-[var(--accent-color-hover)] to-[var(--accent-color)] text-white/80 uppercase font-bold text-xs tracking-wider">
                     <th className="p-4 pl-6">{t('common.referenceId', 'Ref ID / Number')}</th>
                     <th className="p-4">{t('common.recordDate', 'Record Date')}</th>
-                    <th className="p-4">{t('common.details', 'Brief Gist')}</th>
+                    <th className="p-4">{t('common.details', 'Gist')}</th>
                     <th className="p-4">{t('common.status', 'Status')}</th>
                     <th className="p-4 pr-6 text-right">{t('common.actions', 'Console Operations')}</th>
                   </tr>
@@ -243,15 +252,20 @@ export default function MyRecords() {
                       rec.data.foundPlace ||
                       'No description text logged';
  
-                    const isEditable = rec.current_status === 'DRAFT' || rec.current_status === 'SENT_BACK_HC';
- 
+                    const isSentBack = rec.current_status === 'SENT_BACK_HC' || rec.current_status === 'SENT_BACK';
+                    const isEditable = rec.current_status === 'DRAFT' || isSentBack;
+
                     return (
                       <motion.tr
                         key={rec.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.02, duration: 0.3 }}
-                        className="hover:bg-[var(--accent-glow)] transition-colors duration-150 group"
+                        className={`transition-colors duration-150 group ${
+                          isSentBack
+                            ? 'bg-rose-50/80 hover:bg-rose-100/70'
+                            : 'hover:bg-[var(--accent-glow)]'
+                        }`}
                       >
                         <td className="p-4 pl-6 font-mono font-bold text-[var(--accent-color)] text-sm group-hover:text-[var(--accent-color-hover)] transition-colors">
                           {refId}

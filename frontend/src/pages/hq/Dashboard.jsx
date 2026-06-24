@@ -9,9 +9,16 @@ import useAuthStore from '../../store/authStore.js';
 export default function HQDashboard() {
   const { t, i18n } = useTranslation();
   const currentLng = i18n.language || 'en';
-  const { user } = useAuthStore();
+  const { user, jurisdiction } = useAuthStore();
   const [filterDistrict, setFilterDistrict] = useState('All');
   const [filterType, setFilterType] = useState('All');
+
+  const getDistrictName = () => {
+    const isHq = user?.role === 'HQ' || user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' || user?.role === 'SYSTEM_ADMIN';
+    if (isHq) return "DELHI POLICE";
+    const rawName = jurisdiction?.district?.name_en || user?.districtKey || "Delhi Police";
+    return rawName.replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+  };
 
   // Fetch global metrics
   const { data: stats = {} } = useQuery({
@@ -94,7 +101,7 @@ export default function HQDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/80 backdrop-blur-sm">
               <Building size={12} className="text-amber-400" />
-              DELHI POLICE · HQ COMMAND CENTER
+              {getDistrictName()} · HQ COMMAND CENTER
             </span>
           </div>
  
@@ -112,31 +119,10 @@ export default function HQDashboard() {
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1">
-                  <MapPin size={11} className="text-white/50" />
-                  <span className="text-xs text-white/60">Delhi, India</span>
-                </div>
-                <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1">
                   <ShieldAlert size={11} className="text-white/50" />
                   <span className="text-xs text-white/60">15 Ranges &amp; Zones</span>
                 </div>
               </div>
-            </div>
- 
-            {/* Hero metric tiles */}
-            <div className="flex flex-wrap gap-3 lg:flex-shrink-0">
-              {[
-                { label: 'FIR Cases',  value: (stats.cases_today   || 0) * 15, color: 'text-amber-300',   bg: 'bg-white/10',   border: 'border-white/10'  },
-                { label: 'PCR Calls',  value: (stats.pcr_today     || 0) * 20, color: 'text-sky-300',     bg: 'bg-white/10',     border: 'border-white/10'    },
-                { label: 'Arrests',    value: (stats.arrests_today || 0) * 12, color: 'text-emerald-300', bg: 'bg-white/10', border: 'border-white/10' },
-              ].map((tile) => (
-                <div
-                  key={tile.label}
-                  className={`min-w-[96px] rounded-2xl border ${tile.border} ${tile.bg} px-5 py-4 text-center backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white/20`}
-                >
-                  <div className={`tabular-nums text-3xl font-bold ${tile.color}`}>{tile.value}</div>
-                  <div className="mt-1 text-xs font-medium text-white/50">{tile.label}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

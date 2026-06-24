@@ -86,6 +86,7 @@ export const getPreview = async (req, res, next) => {
 export const exportExcel = async (req, res, next) => {
   try {
     const date = getValidatedDate(req);
+    const { fromDate, toDate } = req.query;
     const scope = resolveScope(req.user, req.query);
     const tableNames = req.query.tableNames ? req.query.tableNames.split(',') : null;
 
@@ -95,7 +96,9 @@ export const exportExcel = async (req, res, next) => {
       scope.psId,
       scope.districtId,
       scope.subDivId,
-      tableNames
+      tableNames,
+      fromDate,
+      toDate
     );
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

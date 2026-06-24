@@ -148,7 +148,7 @@ export default function Queue() {
 
       {/* Hero Header — mirrors Dashboard's gradient banner */}
       <div className="hero-banner-gradient px-8 py-10 relative overflow-hidden">
-        <span className="user-greeting-badge text-5xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+        <span className="user-greeting-badge text-4xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
           Hi, {currentLng === 'hi' ? (user?.name_hi || user?.name_en || user?.username) : (user?.name_en || user?.username || 'User')}
         </span>
         <div className="pointer-events-none absolute -top-8 -right-8 h-48 w-48 rounded-full border border-white/5" />
@@ -211,7 +211,7 @@ export default function Queue() {
                 disabled={bulkLoading}
                 className="bg-red-55/10 hover:bg-red-500 text-red-650 hover:text-white border border-red-200 hover:border-red-500 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
               >
-                Bulk Decline
+                Decline All
               </button>
               <button
                 type="button"
@@ -219,7 +219,7 @@ export default function Queue() {
                 disabled={bulkLoading}
                 className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none shadow-sm hover:shadow-md disabled:opacity-50"
               >
-                Bulk Approve
+                Approve All
               </button>
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function Queue() {
                       <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">
                         {t('common.referenceId', 'Ref ID / Number')}
                       </th>
-                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Station Location</th>
+                      <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Police Station</th>
                       <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Record Date</th>
                       <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Gist</th>
                       <th className="p-4 text-xs font-semibold uppercase tracking-wider text-[var(--text-main-theme)] font-bold">Current Status</th>

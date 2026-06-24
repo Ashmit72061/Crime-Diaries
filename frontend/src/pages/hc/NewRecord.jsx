@@ -99,7 +99,7 @@ export default function NewRecord() {
 
   if (type === 'ARREST' && !editId && !caseType) {
     return (
-      <div className="min-h-screen theme-hc-page page-bg -mx-8 -my-6 p-8">
+      <div className="min-h-screen theme-hc-page page-bg p-6">
         <motion.div 
           variants={pageVariants}
           initial="hidden"
@@ -205,7 +205,7 @@ export default function NewRecord() {
   }
 
   return (
-    <div className="min-h-screen theme-hc-page page-bg -mx-8 -my-6 p-8">
+    <div className="min-h-screen theme-hc-page page-bg p-6">
       <motion.div 
         variants={pageVariants}
         initial="hidden"

@@ -44,7 +44,7 @@ export default function ReportBuilder() {
   // Simulated reports history registry
   const [history, setHistory] = useState([
     { id: 'rep-5028', template: 'Arrest Master Registers', period: '2026-06-01 to 2026-06-14', format: 'xlsx', status: 'READY', url: '#' },
-    { id: 'rep-4912', template: 'PCR Kalandra Calls Log', period: '2026-06-10 to 2026-06-15', format: 'csv', status: 'READY', url: '#' }
+    { id: 'rep-4912', template: 'PCR Calls Log', period: '2026-06-10 to 2026-06-15', format: 'csv', status: 'READY', url: '#' }
   ]);
 
   // Generate Report Mutation
@@ -115,7 +115,7 @@ export default function ReportBuilder() {
     const templateIdMap = {
       'Cases Daily Diary Summary': 'cases-register',
       'Arrest Master Registers': 'arrest-summary',
-      'PCR Kalandra Calls Log': 'pcr-call-log',
+      'PCR Calls Log': 'pcr-call-log',
       'Missing Persons Register': 'daily-status',
     };
     generateMutation.mutate({
@@ -173,11 +173,11 @@ export default function ReportBuilder() {
   };
 
   return (
-    <div className={`space-y-6 p-6 rounded-3xl bg-[var(--bg-page-main)]/60 border border-[var(--border-card-theme)] backdrop-blur-md shadow-sm font-sans text-[var(--text-main-theme)] ${getThemeClass()}`}>
+    <div className={`space-y-6 p-5 rounded-2xl bg-[var(--bg-page-main)]/60 border border-[var(--border-card-theme)] backdrop-blur-md shadow-sm font-sans text-[var(--text-main-theme)] ${getThemeClass()}`}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-serif font-bold text-[var(--text-main-theme)] flex items-center gap-2.5">
-          <FileSpreadsheet className="text-[var(--accent-color)]" size={26} />
+          <FileSpreadsheet className="text-[var(--accent-color)]" size={20} />
           <span>Excel Export Manager</span>
         </h1>
         <p className="text-[var(--text-main-theme)]/70 text-xs mt-1">
@@ -206,7 +206,7 @@ export default function ReportBuilder() {
                 >
                   <option value="Cases Daily Diary Summary">Cases Daily Diary Summary (Cases Master)</option>
                   <option value="Arrest Master Registers">Arrest Master Registers (Arrests logs)</option>
-                  <option value="PCR Kalandra Calls Log">PCR Kalandra Calls Log (PCR emergency logs)</option>
+                  <option value="PCR Calls Log">PCR Calls Log (PCR emergency logs)</option>
                   <option value="Missing Persons Register">Missing Persons Register (Missing logs)</option>
                 </select>
               </div>
