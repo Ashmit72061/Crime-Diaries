@@ -26,41 +26,60 @@ export default function FormSection({
   targetFields = [],
   lang = 'en',
   saveStatus = null,
+  hideHeader = false,
 }) {
   if (!section) return null;
+
+  if (!section.fields || section.fields.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-16 flex flex-col items-center justify-center text-slate-500 gap-3">
+        <AlertCircle size={32} className="text-slate-400" />
+        <p className="text-sm font-semibold text-slate-700">
+          {lang === 'hi' ? 'कोई इनपुट फ़ील्ड आवश्यक नहीं है' : 'No input fields required'}
+        </p>
+        <p className="text-xs text-slate-400 text-center max-w-sm leading-relaxed">
+          {lang === 'hi'
+            ? 'इस अनुभाग के लिए कोई प्रविष्टि आवश्यक नहीं है।'
+            : 'No form details are configured for this section in the current database registry.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
       {/* Section header */}
-      <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
-            {currentStep + 1}
-          </span>
-          <h2 className="text-base font-bold text-slate-800 tracking-wide">
-            {lang === 'hi'
-              ? (section.title_hi || section.title_en)
-              : section.title_en}
-          </h2>
-        </div>
-        <div className="flex items-center gap-3">
-          <FormAutosave status={saveStatus} lang={lang} />
-          {totalSteps > 1 && (
-            <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-2.5 py-1 rounded-lg">
-              {lang === 'hi' ? `चरण ${currentStep + 1} / ${totalSteps}` : `Step ${currentStep + 1} / ${totalSteps}`}
+      {!hideHeader && (
+        <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
+              {currentStep + 1}
             </span>
-          )}
-          {readOnly && (
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
-              {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
-            </span>
-          )}
+            <h2 className="text-base font-bold text-slate-800 tracking-wide">
+              {lang === 'hi'
+                ? (section.title_hi || section.title_en)
+                : section.title_en}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <FormAutosave status={saveStatus} lang={lang} />
+            {totalSteps > 1 && (
+              <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-2.5 py-1 rounded-lg">
+                {lang === 'hi' ? `चरण ${currentStep + 1} / ${totalSteps}` : `Step ${currentStep + 1} / ${totalSteps}`}
+              </span>
+            )}
+            {readOnly && (
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
+                {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Fields grid */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+      <div className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
           {section.fields.map((field) => {
             const key          = field.field_key;
 

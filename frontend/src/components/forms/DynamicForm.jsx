@@ -15,6 +15,30 @@ import FormSection from './FormSection.jsx';
 import FormToolbar from './FormToolbar.jsx';
 import FormAutosave from './FormAutosave.jsx';
 
+// Mock registry for Acts & Sections to be loaded dynamically from the backend in the future
+const ACTS_SECTIONS_REGISTRY = [
+  {
+    act: "Indian Penal Code (IPC)",
+    sections: ["379", "302", "323", "406", "506", "354", "411"]
+  },
+  {
+    act: "Arms Act",
+    sections: ["25", "27", "30"]
+  },
+  {
+    act: "NDPS Act",
+    sections: ["15", "18", "20", "21", "22"]
+  },
+  {
+    act: "Motor Vehicles Act",
+    sections: ["181", "184", "185"]
+  },
+  {
+    act: "Information Technology Act (IT Act)",
+    sections: ["66", "66C", "66D", "67"]
+  }
+];
+
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 function parseRules(rawRules) {
   if (!rawRules) return {};
@@ -170,29 +194,6 @@ export default function DynamicForm({
       <div className="space-y-6">
         {/* Search Panel Card */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
-                {currentStep + 1}
-              </span>
-              <h2 className="text-base font-bold text-slate-800 tracking-wide font-display">
-                {title}
-              </h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <FormAutosave status={saveStatus} lang={lang} />
-              {finalSchema.length > 1 && (
-                <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-2.5 py-1 rounded-lg">
-                  {lang === 'hi' ? `चरण ${currentStep + 1} / ${finalSchema.length}` : `Step ${currentStep + 1} / ${finalSchema.length}`}
-                </span>
-              )}
-              {readOnly && (
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
-                  {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
-                </span>
-              )}
-            </div>
-          </div>
           
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -350,6 +351,342 @@ export default function DynamicForm({
     );
   };
 
+  const renderActsAndSectionsStep = () => {
+    const isWritten = values.type_of_information !== 'Oral';
+    const acts = values.act_name ? values.act_name.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const secs = values.sections ? values.sections.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const maxLen = Math.max(acts.length, secs.length);
+
+    const chosenActObj = actsSectionsRegistry.find(item => item.act === newAct);
+    const availableSections = chosenActObj ? chosenActObj.sections : [];
+    
+    return (
+      <div className="space-y-3">
+        {/* Main Table for GD and Complaint details */}
+        <div className="bg-[#f0f4f8] border border-[#7a9cc5] rounded overflow-hidden shadow-sm">
+          <table className="w-full border-collapse">
+            <tbody>
+              {/* Row 1: GD/SD/DD Number / Date / Time */}
+              <tr className="border-b border-[#7a9cc5]">
+                <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
+                  GD/SD/DD Number / Date / Time <span className="text-red-500">*</span>
+                </td>
+                <td className="w-2/3 bg-white px-2.5 py-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    disabled={readOnly}
+                    value={values.gd_no || ''}
+                    onChange={(e) => handleChange('gd_no', e.target.value)}
+                    className="w-20 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
+                    placeholder="Number"
+                  />
+                  <input
+                    type="text"
+                    disabled={readOnly}
+                    value={values.gd_date_time || '24/06/2026 15:52:50'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleChange('gd_date_time', val);
+                      const parts = val.split(' ');
+                      if (parts[0]) handleChange('gd_date', parts[0]);
+                      if (parts[1]) handleChange('gd_time', parts[1]);
+                    }}
+                    className="w-40 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
+                  />
+                  <button 
+                    type="button" 
+                    className="p-1 text-[#0f52ba] hover:text-blue-700 bg-transparent border-none cursor-pointer flex items-center justify-center"
+                    title="Search GD Reference"
+                  >
+                    <Search size={14} className="stroke-[2.5]" />
+                  </button>
+                </td>
+              </tr>
+
+              {/* Row 2: Type of Information */}
+              <tr className="border-b border-[#7a9cc5]">
+                <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
+                  Type of Information
+                </td>
+                <td className="w-2/3 bg-white px-2.5 py-1 flex items-center gap-4 text-[11px]">
+                  <label className="flex items-center gap-1 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      disabled={readOnly}
+                      name="type_of_information"
+                      checked={isWritten}
+                      onChange={() => {
+                        handleChange('type_of_information', 'Written');
+                        handleChange('case_type', 'cctns(manual FIR)');
+                      }}
+                      className="accent-[#0f52ba] cursor-pointer"
+                    />
+                    <span>Written</span>
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      disabled={readOnly}
+                      name="type_of_information"
+                      checked={!isWritten}
+                      onChange={() => {
+                        handleChange('type_of_information', 'Oral');
+                        handleChange('case_type', 'Oral');
+                      }}
+                      className="accent-[#0f52ba] cursor-pointer"
+                    />
+                    <span>Oral</span>
+                  </label>
+                </td>
+              </tr>
+
+              {/* Row 3: Complaint No. */}
+              <tr className="border-b border-[#7a9cc5]">
+                <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
+                  Complaint No.
+                </td>
+                <td className="w-2/3 bg-white px-2.5 py-1">
+                  <input
+                    type="text"
+                    disabled={readOnly}
+                    value={values.complaint_no || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleChange('complaint_no', val);
+                      handleChange('fir_no', val);
+                    }}
+                    className="w-64 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
+                  />
+                </td>
+              </tr>
+
+              {/* Row 4: Source / Reference of Complaint */}
+              <tr>
+                <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
+                  Source / Reference of Complaint <span className="text-red-500">*</span>
+                </td>
+                <td className="w-2/3 bg-white px-2.5 py-1">
+                  <select
+                    disabled={readOnly}
+                    value={values.source_reference || ''}
+                    onChange={(e) => handleChange('source_reference', e.target.value)}
+                    className="w-64 h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="">-----Select-----</option>
+                    <option value="PCR Call">PCR Call</option>
+                    <option value="Written Complaint">Written Complaint</option>
+                    <option value="Public Informant">Public Informant</option>
+                    <option value="Police Beat Officer">Police Beat Officer</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Two Containers Below */}
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Left container: Acts & Sections (50% width) */}
+          <fieldset className="flex-1 border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20 min-h-[140px]">
+            <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
+              Acts & Sections
+            </legend>
+
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[#0d2a4a] text-[10px] font-bold opacity-60">Registered List</span>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddRow(true)}
+                  className="bg-[#ea580c] hover:bg-[#c2410c] text-white text-[10px] font-bold px-2 py-0.5 rounded transition shadow-sm flex items-center gap-1 cursor-pointer"
+                >
+                  + Add Acts & Section
+                </button>
+              )}
+            </div>
+
+            <div className="w-full overflow-x-auto">
+              <table className="w-full border-collapse text-[11px]">
+                <thead>
+                  <tr className="bg-[#d0e0f8] text-[#0d2a4a] border-b border-[#7a9cc5]">
+                    <th className="px-2 py-1 text-left font-bold w-12 border-r border-[#7a9cc5]">S.No.</th>
+                    <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Acts</th>
+                    <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Sections</th>
+                    {!readOnly && <th className="px-2 py-1 text-center font-bold w-16">Delete</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {maxLen === 0 ? (
+                    <tr>
+                      <td colSpan={readOnly ? 3 : 4} className="px-2 py-3 text-center text-gray-500 italic">
+                        No Acts & Sections added yet. Click "+ Add Acts & Section" to add.
+                      </td>
+                    </tr>
+                  ) : (
+                    Array.from({ length: maxLen }).map((_, i) => (
+                      <tr key={i} className="border-b border-[#7a9cc5] bg-white">
+                        <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a] font-mono text-center">
+                          {i + 1}
+                        </td>
+                        <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">
+                          {acts[i] || ''}
+                        </td>
+                        <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">
+                          {secs[i] || ''}
+                        </td>
+                        {!readOnly && (
+                          <td className="px-2 py-1 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newActs = acts.filter((_, idx) => idx !== i);
+                                const newSecs = secs.filter((_, idx) => idx !== i);
+                                handleChange('act_name', newActs.join(', '));
+                                handleChange('sections', newSecs.join(', '));
+                              }}
+                              className="text-red-600 hover:text-red-800 text-[10px] font-bold underline cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </fieldset>
+
+          {/* Right container: Major / Minor (50% width) */}
+          <fieldset className="flex-1 border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20">
+            <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
+              Major / Minor
+            </legend>
+            <div className="flex flex-col gap-1 text-[11px]">
+              <label className="text-[#0d2a4a] font-bold">Classification</label>
+              <select
+                disabled={readOnly}
+                value={values.major_minor || ''}
+                onChange={(e) => handleChange('major_minor', e.target.value)}
+                className="w-full h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="">------Select------</option>
+                <option value="Major">Major</option>
+                <option value="Minor">Minor</option>
+              </select>
+            </div>
+          </fieldset>
+        </div>
+
+        {/* Dialogue Box / Modal for adding Act & Section */}
+        {showAddRow && (
+          <>
+            {/* Click-away backdrop overlay (slightly dimmed bg, z-40) */}
+            <div 
+              className="fixed inset-0 z-40 bg-black/40" 
+              onClick={() => {
+                setNewAct('');
+                setNewSection('');
+                setShowAddRow(false);
+              }}
+            />
+            {/* Centered Horizontal Modal dialogue box (z-50) */}
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] bg-white border border-[#7a9cc5] rounded shadow-2xl z-50 p-4 flex flex-col justify-between text-slate-800">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-xs font-bold text-[#0d2a4a] uppercase tracking-wider">
+                    Add Acts & Section
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewAct('');
+                      setNewSection('');
+                      setShowAddRow(false);
+                    }}
+                    className="text-slate-400 hover:text-slate-600 text-sm font-bold bg-transparent border-none cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                {/* Vertical up-and-down selects layout */}
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1 text-[11px] text-left">
+                    <label className="text-[#0d2a4a] font-bold">Act / Law Name</label>
+                    <select
+                      value={newAct}
+                      onChange={(e) => {
+                        setNewAct(e.target.value);
+                        setNewSection('');
+                      }}
+                      className="w-full h-8 px-2 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-[#ea580c] cursor-pointer"
+                      autoFocus
+                    >
+                      <option value="">----select----</option>
+                      {actsSectionsRegistry.map((item) => (
+                        <option key={item.act} value={item.act}>
+                          {item.act}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1 text-[11px] text-left">
+                    <label className="text-[#0d2a4a] font-bold">Section(s)</label>
+                    <select
+                      value={newSection}
+                      onChange={(e) => setNewSection(e.target.value)}
+                      disabled={!newAct}
+                      className="w-full h-8 px-2 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-[#ea580c] cursor-pointer disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">----select----</option>
+                      {availableSections.map((sec) => (
+                        <option key={sec} value={sec}>
+                          {sec}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewAct('');
+                    setNewSection('');
+                    setShowAddRow(false);
+                  }}
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[#0d2a4a] text-[11px] font-bold rounded cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newAct.trim() || newSection.trim()) {
+                      const updatedActs = [...acts, newAct.trim()].join(', ');
+                      const updatedSections = [...secs, newSection.trim()].join(', ');
+                      handleChange('act_name', updatedActs);
+                      handleChange('sections', updatedSections);
+                    }
+                    setNewAct('');
+                    setNewSection('');
+                    setShowAddRow(false);
+                  }}
+                  className="px-3 py-1 bg-[#ea580c] hover:bg-[#c2410c] text-white text-[11px] font-bold rounded cursor-pointer transition-colors shadow-sm"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const firOptions = React.useMemo(() => {
     return (casesData || []).map(c => {
       const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
@@ -374,6 +711,33 @@ export default function DynamicForm({
 
   const finalSchema = React.useMemo(() => {
     if (!schema || schema.length === 0) return [];
+
+    if (recordType === 'CASE') {
+      const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
+      const tabSpecs = [
+        { title_en: 'Acts & Sections', title_hi: 'अधिनियम और धाराएं', keys: ['uid', 'district', 'police_station', 'submission_status', 'case_type', 'fir_no', 'fir_date', 'gd_no', 'gd_date', 'gd_time', 'beat_no', 'act_name', 'sections'] },
+        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_date', 'time_of_occurrence', 'occurrence_place', 'local_head'] },
+        { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: ['complainant_name', 'complainant_address'] },
+        { title_en: 'FIR Contents',    title_hi: 'प्राथमिकी विवरण', keys: ['brief_facts'] },
+        { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [] },
+        { title_en: 'Accused',          title_hi: 'आरोपी', keys: [] },
+        { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: ['property_description', 'property_status'] },
+        { title_en: 'Hurt Case Detail', title_hi: 'चोट का विवरण', keys: [] },
+        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
+      ];
+
+      return tabSpecs.map(spec => {
+        const fields = spec.keys
+          .map(k => allFields.find(f => f.field_key === k))
+          .filter(Boolean);
+        return {
+          title_en: spec.title_en,
+          title_hi: spec.title_hi,
+          fields: fields
+        };
+      });
+    }
+
     if (recordType === 'ARREST' && caseType === 'against_fir') {
       const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
       if (!hasVirtualStep) {
@@ -407,6 +771,26 @@ export default function DynamicForm({
   const [touched,      setTouched     ] = useState({});
   const [currentStep,  setCurrentStep ] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [showAddRow,   setShowAddRow  ] = useState(false);
+  const [newAct,       setNewAct      ] = useState('');
+  const [newSection,   setNewSection  ] = useState('');
+  const [actsSectionsRegistry, setActsSectionsRegistry] = useState(ACTS_SECTIONS_REGISTRY);
+
+  useEffect(() => {
+    let active = true;
+    api.get('/acts-sections')
+      .then(res => {
+        if (active && res.data?.data && Array.isArray(res.data.data)) {
+          setActsSectionsRegistry(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.log('Acts & Sections API not available yet, using dynamic local registry:', err.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const formRef = useRef(null);
 
@@ -598,11 +982,6 @@ export default function DynamicForm({
       const newTouched = {};
       section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
       setTouched((prev) => ({ ...prev, ...newTouched }));
-      
-      toast.error(lang === 'hi'
-        ? 'कृपया सभी आवश्यक फ़ील्ड भरें।'
-        : 'Please fill all required fields before continuing.');
-      return;
     }
 
     // Auto-populate linked_fir_dd_no when moving from Step 1 (Select FIR) to Step 2 (General Information)
@@ -628,37 +1007,34 @@ export default function DynamicForm({
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  /* ── Jump to a specific step (click step dot) ─────────────────────────── */
+  /* ── Jump to a specific step (click step dot / tab) ───────────────────── */
   const handleStepClick = (targetIdx) => {
-    if (targetIdx < currentStep) {
-      setCurrentStep(targetIdx);
-      return;
-    }
     if (targetIdx === currentStep) return;
 
-    let canJump = true;
-    for (let i = currentStep; i < targetIdx; i++) {
-      const errs = validateSection(i);
-      if (Object.keys(errs).length > 0) {
-        setErrors((prev) => ({ ...prev, ...errs }));
-        canJump = false;
-        break;
-      }
-
-      // Auto-populate linked_fir_dd_no if we validate step 0 (Select FIR)
-      if (recordType === 'ARREST' && caseType === 'against_fir' && i === 0) {
-        const selectedFir = values.selected_fir;
-        if (selectedFir) {
-          setValues(prev => ({
-            ...prev,
-            linked_fir_dd_no: selectedFir
-          }));
-        }
-      }
-
-      setCompletedSteps((prev) => new Set([...prev, i]));
+    // Validate the section they are leaving so that invalid fields get warning indicators
+    const stepErrs = validateSection(currentStep);
+    if (Object.keys(stepErrs).length > 0) {
+      setErrors((prev) => ({ ...prev, ...stepErrs }));
+      const section = finalSchema[currentStep];
+      const newTouched = {};
+      section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
+      setTouched((prev) => ({ ...prev, ...newTouched }));
     }
-    if (canJump) setCurrentStep(targetIdx);
+
+    // Auto-populate linked_fir_dd_no if we leave step 0 (Select FIR)
+    if (recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0) {
+      const selectedFir = values.selected_fir;
+      if (selectedFir) {
+        setValues(prev => ({
+          ...prev,
+          linked_fir_dd_no: selectedFir
+        }));
+      }
+    }
+
+    setCompletedSteps((prev) => new Set([...prev, currentStep]));
+    setCurrentStep(targetIdx);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   /* ── Final form submission ─────────────────────────────────────────────── */
@@ -747,9 +1123,48 @@ export default function DynamicForm({
   };
 
   return (
-    <div className="space-y-6" ref={formRef}>
+    <div className="space-y-3" ref={formRef}>
 
-
+      {/* Horizontal Tabs Navigation */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-[#0d2a4a] mb-2 gap-2 pb-0.5 bg-[#f8fafc]">
+        {finalSchema.length > 1 ? (
+          <div className="overflow-x-auto flex scrollbar-none py-1">
+            <div className="flex flex-nowrap border border-[#0d2a4a] rounded-lg overflow-hidden shadow-sm">
+              {finalSchema.map((sec, idx) => {
+                const isSelected = idx === currentStep;
+                const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
+                const hasError = stepHasError(idx);
+                
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleStepClick(idx)}
+                    className={`px-2 py-1 text-[10px] font-bold transition-all border-r border-[#0d2a4a]/20 last:border-r-0 cursor-pointer uppercase tracking-tight whitespace-nowrap flex items-center gap-1 select-none ${
+                      isSelected
+                        ? 'bg-[#ea580c] text-white shadow-[inset_0_-2px_0_rgba(0,0,0,0.2)]'
+                        : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                    }`}
+                  >
+                    {hasError && <AlertCircle size={10} className="text-red-300 animate-pulse" />}
+                    <span>{title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div />
+        )}
+        <div className="flex items-center gap-3 px-2 py-1 self-end md:self-center">
+          <FormAutosave status={saveStatus} lang={lang} />
+          {readOnly && (
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
+              {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* ── Validation summary (top — shown after first submit attempt) ── */}
       {Object.keys(errors).length > 0 && Object.values(touched).some(Boolean) && (
@@ -776,13 +1191,15 @@ export default function DynamicForm({
 
       {/* ── Active Section Form ─────────────────────────────────────────── */}
       {activeSection && (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Wrap ONLY the fields in a form so Enter key doesn't auto-submit
               when navigating between steps. The submit action is wired via
               an explicit onClick on the Submit button in FormToolbar. */}
           <form onSubmit={(e) => e.preventDefault()} noValidate>
             {recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0 ? (
               renderFirSearchStep()
+            ) : recordType === 'CASE' && currentStep === 0 ? (
+              renderActsAndSectionsStep()
             ) : (
               <FormSection
                 section={activeSection}
@@ -796,6 +1213,7 @@ export default function DynamicForm({
                 targetFields={targetFields}
                 lang={lang}
                 saveStatus={saveStatus}
+                hideHeader={true}
               />
             )}
           </form>

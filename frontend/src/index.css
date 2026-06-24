@@ -413,7 +413,7 @@ a:focus-visible {
 }
 
 .sidebar-nav.expanded {
-  width: 260px;
+  width: 220px;
 }
 
 .sidebar-nav.collapsed {
@@ -1070,7 +1070,7 @@ a:focus-visible {
 }
 
 .page-wrapper {
-  padding: 0.75rem 1rem;
+  padding: 0.4rem 0.5rem;
   max-width: 100% !important;
   width: 100%;
   margin: 0;
@@ -2688,10 +2688,41 @@ textarea.form-control {
 
 /* Custom Form Improvements for Delhi Police Command Center */
 .form-label-custom {
-  font-size: 0.95rem !important;
+  font-size: 0.82rem !important;
   font-weight: 600 !important;
   color: var(--text-primary) !important;
-  margin-bottom: 0.45rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
+/* Compact overrides for Head Constable Page (Record Registry Forms) */
+.theme-hc-page input[type="text"],
+.theme-hc-page input[type="number"],
+.theme-hc-page input[type="date"],
+.theme-hc-page input[type="datetime-local"],
+.theme-hc-page input[type="time"],
+.theme-hc-page textarea,
+.theme-hc-page .relative > div.flex.pr-10 {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  font-size: 0.8rem !important;
+  border-width: 1px !important;
+  border-radius: 0.375rem !important;
+}
+
+.theme-hc-page select,
+.theme-hc-page .relative > select {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  font-size: 0.8rem !important;
+  border-width: 1px !important;
+  border-radius: 0.375rem !important;
+  height: auto !important;
+  min-height: 1.8rem !important;
+  line-height: normal !important;
 }
 
 /* Override Ant Design Inputs for Form Controls */
@@ -2775,7 +2806,7 @@ textarea.form-control {
 
 /* ─── Form Labels ─────────────────────────────────────────────── */
 .form-label-custom {
-  font-size: 1rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.1rem;
