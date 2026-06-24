@@ -19,18 +19,36 @@ def load_local_template(template_id):
 def load_template(template_id, engine):
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id, name_en, template_type, template_definition FROM report_templates WHERE id = :id"),
+            text("SELECT id, name_en, template_type, template_definition, applicable_record_types FROM report_templates WHERE id = :id"),
             {'id': template_id}
         ).fetchone()
-            
-    if row:
-        return {
-            'id': row[0],
-            'name_en': row[1],
-            'template_type': row[2],
-            'template_definition': json.loads(row[3]) if isinstance(row[3], str) else row[3]
+
+    if not row:
+        return None
+
+    raw_def = json.loads(row[3]) if isinstance(row[3], str) else (row[3] or {})
+    applicable = json.loads(row[4]) if isinstance(row[4], str) else (row[4] or ['CASE'])
+    record_type = applicable[0] if applicable else 'CASE'
+
+    # DB templates store definition as {layout, header, sections[{fields}]}.
+    # Python expects {filter_spec, fixed_fields, header}.  Normalize here.
+    if 'filter_spec' not in raw_def:
+        fixed_fields = []
+        for section in raw_def.get('sections', []):
+            fixed_fields.extend(section.get('fields', []))
+        raw_def = {
+            'filter_spec': {'record_type': record_type},
+            'fixed_fields': fixed_fields,
+            'header': raw_def.get('header', {'title_en': row[1]}),
+            'template_type': row[2] or 'PROFORMA',
         }
-    return None
+
+    return {
+        'id': row[0],
+        'name_en': row[1],
+        'template_type': row[2] or 'PROFORMA',
+        'template_definition': raw_def,
+    }
 
 def get_predefined_definition(template_id):
     local = load_local_template(template_id)
@@ -571,6 +589,36 @@ def render_pdf(df, definition, filters, file_path):
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
+DAILY_DIARY_PARALLEL_TEMPLATE_IDS = {
+    'daily-diary', 'dd-manual-fir', 'dd-eburglary-ehouse-theft-mvt',
+    'dd-arrested-all-heads', 'dd-arrested-east-district', 'dd-arrested-kalandara',
+    'dd-arrested-efir-theft', 'dd-arrested-efir-mv-theft', 'dd-proclaimed-offenders',
+    'dd-arrested-24hrs', 'dd-missing-uidb', 'dd-women-children-missing',
+    'dd-preventive-action', 'dd-inquest-registered', 'dd-important-cases',
+    'dd-fir-goswara-summary', 'dd-financial-fraud-arrest', 'dd-ndps-action',
+}
+
+TEMPLATE_TO_TABLE_NAMES = {
+    'daily-diary': None,
+    'dd-manual-fir': ['excel_1manual_fir'],
+    'dd-eburglary-ehouse-theft-mvt': ['excel_2eburglary_cases', 'excel_3ehouse_theft_cases', 'excel_4eother_theft_cases', 'excel_5mvt_cases'],
+    'dd-arrested-all-heads': ['excel_6arrested_all_heads'],
+    'dd-arrested-east-district': ['excel_7arrested_east_district'],
+    'dd-arrested-kalandara': ['excel_8arrested_kalandara'],
+    'dd-arrested-efir-theft': ['excel_9arrested_efir_theft'],
+    'dd-arrested-efir-mv-theft': ['excel_10arrested_efir_mv_theft'],
+    'dd-proclaimed-offenders': ['excel_11proclaimed_offenders'],
+    'dd-arrested-24hrs': ['excel_13arrested_24_hrs_list'],
+    'dd-missing-uidb': ['excel_18missing_persons', 'excel_19uidb', 'excel_20abandoned_persons', 'excel_21traced_persons'],
+    'dd-women-children-missing': ['excel_22women_missing', 'excel_23children_missing'],
+    'dd-preventive-action': ['excel_24preventive_action'],
+    'dd-inquest-registered': ['excel_25inquest_registered', 'excel_26inquest_acpsdm_disposal'],
+    'dd-important-cases': ['excel_27important_cases'],
+    'dd-fir-goswara-summary': ['excel_28fir_goswara_summary'],
+    'dd-financial-fraud-arrest': ['excel_29financial_fraud_arrest'],
+    'dd-ndps-action': ['excel_31ndps_action'],
+}
+
 def generate_daily_diary_workbook(custom_definition):
     """
     Build the daily diary Excel workbook from pre-classified data.
@@ -740,15 +788,30 @@ def generate_report(job_id):
     elif format_type in ['EXCEL', 'XLSX']:
         if not template and custom_definition and custom_definition.get('type') == 'DAILY_DIARY':
             wb = generate_daily_diary_workbook(custom_definition)
+            wb.save(file_path)
+        elif template_id in DAILY_DIARY_PARALLEL_TEMPLATE_IDS:
+            import subprocess
+            table_names = TEMPLATE_TO_TABLE_NAMES.get(template_id)
+            cli_filters = dict(filters) if filters else {}
+            if table_names:
+                cli_filters['tableNames'] = table_names
+            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend/scripts/dev/generate_parallel_report_cli.js'))
+            filters_json = json.dumps(cli_filters)
+            cmd = ['node', script_path, job_id, filters_json, file_path]
+            print(f"[Worker] Delegating to Node.js parallel engine for template: {template_id}")
+            subprocess.run(cmd, check=True)
         elif template_type == 'LINKED':
             wb = generate_linked_workbook(definition, filters, engine)
+            wb.save(file_path)
         elif template_type == 'COMPOSITE' or (template and template.get('template_type') == 'COMPOSITE'):
             wb = generate_composite(definition, filters, engine)
+            wb.save(file_path)
         elif not template:
             wb = generate_custom_workbook(definition, filters, engine)
+            wb.save(file_path)
         else:
             wb = generate_single_sheet_workbook(definition, filters, engine)
-        wb.save(file_path)
+            wb.save(file_path)
 
     elif format_type == 'PDF':
         if template_type == 'LINKED':
