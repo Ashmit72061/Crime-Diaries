@@ -25,7 +25,7 @@ export default function CheckboxField({ id, disabled, value, onChange, label }) 
           )}
         </div>
       </div>
-      <span className="text-sm text-slate-700 font-medium">{label}</span>
+      {label && <span className="text-sm text-slate-700 font-medium">{label}</span>}
     </label>
   );
 }

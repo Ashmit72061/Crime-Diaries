@@ -130,7 +130,9 @@ export const getFieldsForForm = async (req, res) => {
         readonly: f.readonly || false,
         full_width: f.full_width || false,
         show_when: parseJsonField(f.show_when) || null,
-        section: f.section || 'general_info',
+        section: (normalizedType === 'ARREST' && (f.field_key === 'act_name' || f.field_key === 'sections'))
+          ? 'offence_info'
+          : (f.section || 'general_info'),
         section_label_en: f.section_label_en || null,
         section_label_hi: f.section_label_hi || null,
         sort_order: f.sort_order,
