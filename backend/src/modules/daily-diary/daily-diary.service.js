@@ -1,10 +1,8 @@
-import db from '../../config/db.js';
-import ExcelJS from 'exceljs';
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import db from '../../config/db.js';
+import { publish } from '../../events/eventBus.js';
 
 export const REPORTS = [
   { tableName: "excel_1manual_fir",                label: "Manual FIR",                        type: "list",    num: 1  },
@@ -645,7 +643,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       dd_date: fmtDate(d.dd_date || r.record_date),
       name_of_operator_to_whom_mps: d.operator_name || 'HC Ramesh',
       name_of_missing_person: d.missing_name || '',
-      address_of_missing_person: d.missing_address || d.address || '',
+      address_of_missing_person: d.missing_address || d.mp_address || d.address || '',
       missing_date: fmtDate(d.missing_date),
       age: d.age || '',
       height: d.height || '165 cm',
@@ -654,7 +652,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       face: d.face || 'Oval',
       hair: d.hair || 'Black',
       beard: d.beard || 'Clean Shaven',
-      mustaches: d.mustaches || 'Clean Shaven',
+      mustaches: d.moustache || d.mustaches || 'Clean Shaven',
       upper_dress_color: d.upper_dress_color || 'White',
       lower_dress_color: d.lower_dress_color || 'Blue',
       name_of_io: d.io_name || ''
@@ -678,7 +676,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       face: d.face || 'Round',
       hair: d.hair || 'Black',
       beard: d.beard || 'Clean Shaven',
-      mustaches: d.mustaches || 'Clean Shaven',
+      mustaches: d.moustache || d.mustaches || 'Clean Shaven',
       upper_dress_color: d.upper_dress_color || 'Grey',
       lower_dress_color: d.lower_dress_color || 'Black',
       name_of_io: d.io_name || ''
@@ -702,7 +700,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       face: d.face || 'Oval',
       hair: d.hair || 'Black',
       beard: d.beard || 'Clean Shaven',
-      mustaches: d.mustaches || 'Clean Shaven',
+      mustaches: d.moustache || d.mustaches || 'Clean Shaven',
       upper_dress_color: d.upper_dress_color || 'Yellow',
       lower_dress_color: d.lower_dress_color || 'Blue',
       name_of_io: d.io_name || ''
@@ -720,7 +718,7 @@ export const mapRecordsToSheets = (records, targetDate) => {
       name_of_operator_to_whom_mps: d.operator_name || 'HC Ramesh',
       name_of_traced_person: d.missing_name || '',
       fatherhusband_name_of_traced_person: d.father_husband_name || d.complainant_father_husband_name || '',
-      address_of_traced_person: d.missing_address || d.address || '',
+      address_of_traced_person: d.missing_address || d.mp_address || d.address || '',
       name_of_io: d.io_name || ''
     };
   });
@@ -998,128 +996,63 @@ export const getDailyDiaryData = async (user, date, psId, districtId, subDivId, 
   return mapped;
 };
 
-
-// Human-readable header labels for each column (maps REPORT_COLUMNS keys -> display names)
-const COLUMN_LABELS = {
-  excel_1manual_fir: ['P.S.', 'FIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Time of Occurrence', 'Place of Occurrence', 'Time (Alt)', 'Place (Alt)', 'Gist', 'Arrested Name', 'Arrested Father/Husband', 'Arrested Address', 'Accused Name', 'Accused Father Name', 'Accused Address', 'Accused (Extra)'],
-  excel_2eburglary_cases: ['S.N.', 'P.S.', 'eFIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Time of Occurrence', 'Stolen Items', 'Place of Occurrence', 'IO Name', 'IO Mobile No.', 'Beat No.'],
-  excel_3ehouse_theft_cases: ['S.N.', 'P.S.', 'eFIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Place of Occurrence', 'Time of Occurrence', 'Stolen Items', 'Place (Alt)', 'IO Name', 'IO Mobile No.', 'Beat No.'],
-  excel_4eother_theft_cases: ['S.N.', 'P.S.', 'eFIR No.', 'U/S', 'Complainant Name', 'Father/Husband Name', 'Address', 'Time of Occurrence', 'Stolen Items', 'Place of Occurrence', 'IO Name', 'IO Mobile No.', 'Beat No.'],
-  excel_5mvt_cases: ['S.No.', 'P.S.', 'FIR No.', 'U/S', 'Date of Occurrence', 'Time of Occurrence', 'Place of Occurrence', 'Complainant Name', 'Father/Husband Name', 'Address', 'Vehicle No.', 'Vehicle Type', 'IO Name', 'IO Mobile No.', 'Beat No.', 'CD Uploaded in 24hrs?', 'Footage Collected?'],
-  excel_6arrested_all_heads: ['BNS/IPC', 'Total DD 126/170 BNSS', 'Total DD 126/169 BNSS', 'Total DD 109 BNSS', '109(G)', 'Total DD 110 BNSS', '110(G)', '92/93/97 DP Act', 'Total DD 40 Ex.', '40 Ex.', '351(D)', 'A-Act', 'G-Act', '33 Ex.', 'NDPS', 'Others Act', 'Others BNSS', 'PO'],
-  excel_7arrested_east_district: ['S.N.', 'FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Name of IO', 'PC/JC/Bail', 'Prev. Involvement (Cases)', 'Recovery', 'BC?', 'Integrated Patrolling', 'Group Patrolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
-  excel_8arrested_kalandara: ['S.N.', 'FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Place of Occurrence', 'IO', 'PC/JC/Bail', 'Prev. Involvement', 'Recovery', 'BC?', 'Integrated Pick', 'Group Patrolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
-  excel_9arrested_efir_theft: ['S.N.', 'FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Name of IO', 'PC/JC/Bail', 'Prev. Involvement (Cases) Head', 'Recovery', 'BC?', 'Group Rolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
-  excel_10arrested_efir_mv_theft: ['FIR No.', 'U/S', 'Name', 'Father/Husband Name', 'Address', 'Age', 'Name of IO', 'PC/JC/Bail', 'Prev. Involvement (Cases)', 'Recovery', 'BC?', 'Integrated Rate Picked', 'Group Patrolling', 'Cycle Patrolling', 'Anti-Snatching Team', 'By PRAHARI', 'Eyes & Ears Scheme'],
-  excel_11proclaimed_offenders: ['S.N.', 'P.S.', 'DD No./FIR No.', 'U/S', 'PO – Name', 'PO – Parental', 'PO – Address', 'Case Declared PO In', 'Court Which Declared PO'],
-  excel_13arrested_24_hrs_list: ['S.No.', 'Name/Nick Name', 'Father/Husband Name', 'Address', 'Age', 'FIR/DD No.', 'U/S', 'Police Station', 'Name of IO', 'Rank of IO', 'Mobile No. of IO', 'Remarks (PC/Remand/Bail)'],
-  excel_14pi_disposal_manual: ['S.No.', 'FIR No.', 'Date', 'U/S', 'RC', 'Challan/Untrace/Cancel'],
-  excel_15pi_disposal_eproperty: ['S.No.', 'FIR No.', 'Date', 'U/S', 'RC', 'Challan/Untrace/Cancel'],
-  excel_16pi_disposal_emvt: ['S.No.', 'FIR No.', 'Date', 'U/S', 'RC', 'Challan/Untrace/Cancel'],
-  excel_18missing_persons: ['S.No.', 'DD No.', 'DD Date', 'Name of Operator', 'Name of Missing Person', 'Address', 'Missing Date', 'Age', 'Height', 'Built', 'Complexion', 'Face', 'Hair', 'Beard', 'Mustaches', 'Upper Dress Color', 'Lower Dress Color', 'Name of IO'],
-  excel_19uidb: ['S.No.', 'DD No.', 'DD Date', 'Found Place', 'Found Date', 'Sex', 'Age', 'Height', 'Built', 'Complexion', 'Face', 'Hair', 'Beard', 'Mustaches', 'Upper Dress Color', 'Lower Dress Color', 'Name of IO'],
-  excel_20abandoned_persons: ['S.No.', 'DD No.', 'Found Place', 'Found Date', 'Sex', 'Age', 'Height', 'Built', 'Complexion', 'Face', 'Hair', 'Beard', 'Mustaches', 'Upper Dress Color', 'Lower Dress Color', 'Name of IO'],
-  excel_21traced_persons: ['S.No.', 'DD No.', 'DD Date', 'Name of Operator', 'Name of Traced Person', 'Father/Husband Name', 'Address', 'Name of IO'],
-  excel_22women_missing: ['PCR Call', 'DD Entry/Complaint', 'Total', 'Traced', 'Case Registered', 'Pending'],
-  excel_23children_missing: ['PCR Call (Male)', 'PCR Call (Female)', 'DD Entry (Male)', 'DD Entry (Female)', 'Total (Male)', 'Total (Female)', 'Traced (Male)', 'Traced (Female)', 'Case Registered (Male)', 'Case Registered (Female)'],
-  excel_25inquest_registered: ['S.N.', 'DD No.', 'Date', 'U/S', 'Name of Deceased', 'Father/Husband Name', 'Address', 'Sex', 'Age', 'Cause of Death', 'Place of Occurrence', 'IO'],
-  excel_26inquest_acpsdm_disposal: ['S.No.', 'DD No.', 'Date', 'U/S', 'Name of Deceased', 'Father/Husband Name', 'Address', 'Sex', 'Age', 'Cause of Death', 'Date Filed by ACP/SDM'],
-  excel_28fir_goswara_summary: ['District', 'Manual FIR', 'Theft eFIR', 'House Theft eFIR', 'Burglary eFIR', 'MVT (Motor Vehicle Theft)', 'Total'],
-};
-
-// Export to XLSX (export) — builds a fresh workbook from scratch (no template read/modify to avoid corruption)
-export const exportDailyDiaryExcel = async (user, date, psId, districtId, subDivId, tableNamesFilter = null) => {
+// Queue daily diary Excel export through the Python worker job pipeline.
+// Returns { jobId } — caller responds with 202 and a status_url.
+export const queueDailyDiaryExport = async (user, date, psId, districtId, subDivId, tableNamesFilter = null) => {
   const records = await getRawRecords(date, psId, districtId, subDivId);
-  const mapped = mapRecordsToSheets(records, date);
+  const allSheets = mapRecordsToSheets(records, date);
 
-  // Determine which tables to include
-  const activeTables = tableNamesFilter
-    ? REPORTS.filter(r => tableNamesFilter.includes(r.tableName))
-    : REPORTS;
-
-  if (tableNamesFilter && activeTables.length === 0) {
-    const err = new Error('None of the requested report names are recognised. Pass valid tableName values from the REPORTS list.');
-    err.status = 400;
-    err.code = 'BAD_REQUEST';
-    throw err;
-  }
-
-  // Build a completely fresh workbook — no template corruption risk
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'PHAROS';
-  workbook.created = new Date();
-
-  // Header style helpers
-  const titleFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A3C5E' } }; // dark blue
-  const titleFont = { name: 'Arial', bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
-  const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4AC0D' } }; // gold
-  const headerFont = { name: 'Arial', bold: true, size: 10, color: { argb: 'FF000000' } };
-  const headerAlignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-  const dataFont = { name: 'Arial', size: 10 };
-  const dataAlignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-  const thinBorder = { style: 'thin', color: { argb: 'FF999999' } };
-  const cellBorder = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
-
-  for (const report of activeTables) {
-    const { tableName, label, num } = report;
-    const columns = REPORT_COLUMNS[tableName];
-    const displayHeaders = COLUMN_LABELS[tableName] || columns;
-    const rowsData = mapped[tableName] || [];
-
-    // Safe sheet name (max 31 chars)
-    const sheetName = `${num}.${label}`.substring(0, 31);
-    const ws = workbook.addWorksheet(sheetName);
-
-    // Set column widths
-    ws.columns = displayHeaders.map((_, i) => ({ width: 18 }));
-
-    // Row 1: Title row (merged across all columns)
-    const numCols = columns.length;
-    const titleRow = ws.addRow([`${num}. ${label}  |  Date: ${date}  |  Records: ${rowsData.length}`]);
-    ws.mergeCells(1, 1, 1, numCols);
-    const titleCell = ws.getCell('A1');
-    titleCell.fill = titleFill;
-    titleCell.font = titleFont;
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    titleRow.height = 24;
-
-    // Row 2: Header row
-    const headerRow = ws.addRow(displayHeaders);
-    headerRow.height = 40;
-    headerRow.eachCell((cell) => {
-      cell.fill = headerFill;
-      cell.font = headerFont;
-      cell.alignment = headerAlignment;
-      cell.border = cellBorder;
-    });
-
-    // Data rows
-    if (rowsData.length === 0) {
-      const emptyRow = ws.addRow(['No data for this date.']);
-      ws.mergeCells(3, 1, 3, numCols);
-      const emptyCell = ws.getCell(`A3`);
-      emptyCell.font = { name: 'Arial', italic: true, size: 10, color: { argb: 'FF888888' } };
-      emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    } else {
-      rowsData.forEach((rowObj) => {
-        const rowValues = columns.map(col => rowObj[col] ?? '');
-        const dataRow = ws.addRow(rowValues);
-        dataRow.height = 18;
-        dataRow.eachCell({ includeEmpty: true }, (cell) => {
-          cell.font = dataFont;
-          cell.alignment = dataAlignment;
-          cell.border = cellBorder;
-        });
-      });
+  // Restrict to requested tables only
+  const activeTables = tableNamesFilter || REPORTS.map(r => r.tableName);
+  const sheets = {};
+  for (const tableName of activeTables) {
+    if (allSheets[tableName] !== undefined) {
+      sheets[tableName] = allSheets[tableName];
     }
-
-    // Freeze header rows
-    ws.views = [{ state: 'frozen', ySplit: 2, xSplit: 0 }];
   }
 
-  // Write to buffer
-  const buffer = await workbook.xlsx.writeBuffer();
-  const filename = `Daily_Diary_${date}.xlsx`;
-  return { buffer, filename };
+  const customDefinition = {
+    type: 'DAILY_DIARY',
+    date,
+    reports: REPORTS,
+    report_columns: REPORT_COLUMNS,
+    sheets,
+  };
+
+  const jobId = uuidv4();
+  const reportsDir = process.env.REPORTS_DIR || './generated-reports';
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+  const filePath = path.join(reportsDir, `${jobId}.xlsx`);
+  const userId = user?.userId || user?.id || null;
+
+  await db('report_jobs').insert({
+    id: jobId,
+    template_id: null,
+    custom_definition: JSON.stringify(customDefinition),
+    filters: JSON.stringify({ date, ps_id: psId, district_id: districtId }),
+    format: 'EXCEL',
+    status: 'PENDING',
+    file_path: filePath,
+    created_by: userId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  try {
+    await publish('report.requested', {
+      job_id: jobId,
+      template_id: null,
+      custom_definition: customDefinition,
+      filters: { date },
+      format: 'EXCEL',
+      user_id: userId,
+    });
+  } catch (e) {
+    // Non-fatal: worker will pick up via DB polling if event is missed
+  }
+
+  return { jobId };
 };
 

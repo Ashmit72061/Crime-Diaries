@@ -1,6 +1,13 @@
 export async function up(knex) {
-  // Update property_description and property_status to only show when local_head is a property-related crime
+  const hasShowWhen = await knex.schema.hasColumn('field_registry', 'show_when');
+  if (!hasShowWhen) {
+    await knex.schema.alterTable('field_registry', (table) => {
+      table.jsonb('show_when').nullable();
+    });
+  }
+
   const propertyCrimes = [
+    'Property',
     'Theft',
     'Robbery',
     'Burglary',
@@ -14,31 +21,26 @@ export async function up(knex) {
     'Snatching'
   ];
 
-  const showWhenRule = JSON.stringify({
-    field: 'local_head',
-    value: propertyCrimes
-  });
-
-  // Update property_description (field_key: 'property_description')
   await knex('field_registry')
-    .where({ field_key: 'property_description' })
+    .whereIn('field_key', ['property_description', 'property_status'])
     .update({
-      show_when: showWhenRule
-    });
-
-  // Update property_status (field_key: 'property_status')
-  await knex('field_registry')
-    .where({ field_key: 'property_status' })
-    .update({
-      show_when: showWhenRule
+      show_when: JSON.stringify({ field: 'local_head', value: propertyCrimes })
     });
 }
 
 export async function down(knex) {
-  // Clear show_when rules for property fields
   await knex('field_registry')
     .whereIn('field_key', ['property_description', 'property_status'])
     .update({
       show_when: null
     });
+
+  try {
+    // If show_when was added by this migration, drop it. Otherwise, ignore.
+    const hasShowWhen = await knex.schema.hasColumn('field_registry', 'show_when');
+    if (hasShowWhen) {
+      // Actually, since show_when is in init_pharos.js, we don't drop it.
+      // But we can let the try-catch run if the user rolls back.
+    }
+  } catch (e) {}
 }

@@ -89,7 +89,7 @@ export const exportExcel = async (req, res, next) => {
     const scope = resolveScope(req.user, req.query);
     const tableNames = req.query.tableNames ? req.query.tableNames.split(',') : null;
 
-    const { buffer, filename } = await dailyDiaryService.exportDailyDiaryExcel(
+    const { jobId } = await dailyDiaryService.queueDailyDiaryExport(
       req.user,
       date,
       scope.psId,
@@ -98,9 +98,15 @@ export const exportExcel = async (req, res, next) => {
       tableNames
     );
 
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-    return res.end(buffer);
+    return res.status(202).json({
+      status: 'accepted',
+      success: true,
+      data: {
+        job_id: jobId,
+        status_url: `/api/reports/status/${jobId}`,
+        message: 'Daily diary export queued. Poll status_url to check progress.',
+      }
+    });
   } catch (error) {
     if (error.status) {
       return res.status(error.status).json({
