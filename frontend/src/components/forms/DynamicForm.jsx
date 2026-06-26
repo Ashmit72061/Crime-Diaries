@@ -368,6 +368,21 @@ export default function DynamicForm({
 
   const finalFirOptions = firOptions.length > 0 ? firOptions : mockOptions;
 
+  const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
+    recordType,
+    initialValues?.id
+  );
+
+  const [values,        setValues       ] = useState({});
+  const [errors,        setErrors       ] = useState({});
+  const [touched,       setTouched      ] = useState({});
+  const [currentStep,   setCurrentStep  ] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(new Set());
+  // repeaterState: { [sectionKey]: [{field_key: value, ...}] }
+  const [repeaterState, setRepeaterState] = useState({});
+
+  const formRef = useRef(null);
+
   const finalSchema = React.useMemo(() => {
     if (!schema || schema.length === 0) return [];
     
@@ -405,21 +420,6 @@ export default function DynamicForm({
     }
     return filteredSchema;
   }, [schema, recordType, caseType, finalFirOptions, values.status]);
-
-  const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
-    recordType,
-    initialValues?.id
-  );
-
-  const [values,        setValues       ] = useState({});
-  const [errors,        setErrors       ] = useState({});
-  const [touched,       setTouched      ] = useState({});
-  const [currentStep,   setCurrentStep  ] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState(new Set());
-  // repeaterState: { [sectionKey]: [{field_key: value, ...}] }
-  const [repeaterState, setRepeaterState] = useState({});
-
-  const formRef = useRef(null);
 
   /* ── Sync saved record ID ─────────────────────────────────────────────── */
   useEffect(() => {
