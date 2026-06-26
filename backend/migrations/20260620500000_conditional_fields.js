@@ -40,4 +40,14 @@ export async function down(knex) {
     .update({
       show_when: null
     });
+
+  const hasShowWhen = await knex.schema.hasColumn('field_registry', 'show_when');
+  if (hasShowWhen) {
+    try {
+      await knex.schema.alterTable('field_registry', (table) => {
+        table.dropColumn('show_when');
+      });
+    } catch (e) {}
+  }
+
 }
