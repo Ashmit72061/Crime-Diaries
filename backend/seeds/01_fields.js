@@ -156,14 +156,15 @@ const fields = [
   { id: 'C_min_oth',   field_key: 'other_minor_head',     field_type: 'TEXT',     applicable_record_types: JSON.stringify(['CASE']), label_en: 'Minor Head (Other)',                  label_hi: 'लघु शीर्ष (अन्य)',              visible_to_levels: L, editable_by_levels: E, section: 'incident_details',        sort_order: 13.9, show_when: JSON.stringify({ field: 'act_name', value: 'Other Act' }) },
 
   // Occurrence timeline fields
-  { id: 'C_occ_type',  field_key: 'occurrence_time_type', field_type: 'SELECT',   applicable_record_types: JSON.stringify(['CASE']),     label_en: 'Occurrence Type',                     label_hi: 'घटना प्रकार',                  visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.0, options: JSON.stringify([{ value: 'Known', label_en: 'Known', label_hi: 'ज्ञात' }, { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }]) },
+  { id: 'C_occ_type',  field_key: 'occurrence_time_type', field_type: 'SELECT',   applicable_record_types: JSON.stringify(['CASE']),     label_en: 'Occurrence Time',                     label_hi: 'घटना प्रकार',                  visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.0, options: JSON.stringify([{ value: 'Known', label_en: 'Known', label_hi: 'ज्ञात' }, { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }]) },
   { id: 'C_occ_from',  field_key: 'occurrence_from_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Occurrence From Date & Time',      label_hi: 'घटना की प्रारंभिक तारीख और समय',visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.1 },
   { id: 'C_occ_to',    field_key: 'occurrence_to_date_time',   field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Occurrence To Date & Time',        label_hi: 'घटना की समाप्ति तारीख और समय',  visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.2 },
   { id: 'C_rec_ps',    field_key: 'info_received_at_ps_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Information Received at PS',        label_hi: 'थाने पर सूचना प्राप्त होने का समय',visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.3 },
+  { id: 'C_org_crime',  field_key: 'organised_crime',      field_type: 'SELECT', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Organised Crime',                   label_hi: 'संगठित अपराध',                 visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.4, options: JSON.stringify([{ value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' }, { value: 'No', label_en: 'No', label_hi: 'नहीं' }]) },
 
   // Occurrence address extra fields (latitude/longitude)
-  { id: 'occ_latitude',  field_key: 'occurrence_latitude',  field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE']), label_en: 'Place of Occurrence Latitude',        label_hi: 'घटनास्थल का अक्षांश',           visible_to_levels: L, editable_by_levels: E, section: 'occurrence_address',     sort_order: 4.1, is_active: true, scope_level: 'global' },
-  { id: 'occ_longitude', field_key: 'occurrence_longitude', field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE']), label_en: 'Place of Occurrence Longitude',       label_hi: 'घटनास्थल का रेखांश',            visible_to_levels: L, editable_by_levels: E, section: 'occurrence_address',     sort_order: 4.2, is_active: true, scope_level: 'global' },
+  { id: 'occ_latitude',  field_key: 'occurrence_latitude',  field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE']), label_en: 'Place of Occurrence Latitude',        label_hi: 'घटनास्थल का अक्षांश',           visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 4.1, is_active: true, scope_level: 'global' },
+  { id: 'occ_longitude', field_key: 'occurrence_longitude', field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE']), label_en: 'Place of Occurrence Longitude',       label_hi: 'घटनास्थल का रेखांश',            visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 4.2, is_active: true, scope_level: 'global' },
 
   // Intimation details fields
   { id: 'intimation_dt', field_key: 'intimation_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify([ 'ARREST']), label_en: 'Date & Time of Intimation',          label_hi: 'सूचना का दिनांक और समय',        visible_to_levels: L, editable_by_levels: E, section: 'intimation_details',     sort_order: 1.0, is_active: true, scope_level: 'global' },
@@ -540,8 +541,9 @@ const DISTRICTS = [
 ];
 const DISTRICT_OPTS = JSON.stringify(DISTRICTS.map(d => ({ value: d, label_en: d, label_hi: d })));
 
-function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes) {
+function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes, sectionOverride = null) {
   const typesStr = JSON.stringify(recordTypes);
+  const targetSection = sectionOverride || `${prefix}_address`;
   return [
     {
       id: `${prefix}_house_no`,
@@ -552,7 +554,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} मकान संख्या`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.0,
       is_active: true,
       scope_level: 'global'
@@ -566,7 +568,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} गली / सड़क`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.1,
       is_active: true,
       scope_level: 'global'
@@ -580,7 +582,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} कॉलोनी`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.2,
       is_active: true,
       scope_level: 'global'
@@ -594,7 +596,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} गांव / शहर / नगर`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.3,
       is_active: true,
       scope_level: 'global'
@@ -608,7 +610,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} तहसील / ब्लॉक / मंडल`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.4,
       is_active: true,
       scope_level: 'global'
@@ -622,7 +624,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} राष्ट्रीयता`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.6,
       is_active: true,
       scope_level: 'global',
@@ -637,7 +639,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} राज्य`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.7,
       is_active: true,
       scope_level: 'global',
@@ -652,7 +654,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} जिला`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.8,
       is_active: true,
       scope_level: 'global',
@@ -667,7 +669,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} पुलिस स्टेशन (PS)`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 3.9,
       is_active: true,
       scope_level: 'global',
@@ -682,7 +684,7 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
       label_hi: `${labelPrefixHi} पिन कोड`,
       visible_to_levels: L,
       editable_by_levels: E,
-      section: `${prefix}_address`,
+      section: targetSection,
       sort_order: 4.0,
       is_active: true,
       scope_level: 'global'
@@ -695,7 +697,7 @@ const generatedFields = [
   ...generatePersonFields('accused',     'Accused',     'अभियुक्त',    ['CASE'], 'PERSON_ACCUSED',      430),
   ...generatePersonFields('victim',      'Victim',      'पीड़ित',       ['CASE'], 'PERSON_VICTIM',        460),
   ...generatePersonFields('arrested',    'Arrested Person', 'गिरफ्तार व्यक्ति', ['ARREST'], 'PERSON_ARRESTED', 400),
-  ...generateAddressFields('occurrence', 'Place of Occurrence', 'घटनास्थल', ['CASE']),
+  ...generateAddressFields('occurrence', 'Place of Occurrence', 'घटनास्थल', ['CASE'], 'occurrence_info'),
   ...generateAddressFields('intimation', 'Intimation', 'सूचना/इत्तिला', ['ARREST'])
 ];
 

@@ -192,7 +192,7 @@ export const getFieldsForForm = async (req, res) => {
           sort_order: f.sort_order,
           scope_level: f.scope_level || 'global',
         };
-      }));
+      });
 
     // Group fields: repeater fields by repeater_entity, flat fields by section.
     // Order is preserved by first-occurrence (fields are already sorted by sort_order).
