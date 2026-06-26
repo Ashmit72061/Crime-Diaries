@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useFormSchema } from '../../hooks/useFormSchema.js';
@@ -363,7 +363,7 @@ export default function DynamicForm({
     return (
       <div className="space-y-3">
         {/* Main Table for GD and Complaint details */}
-        <div className="bg-[#f0f4f8] border border-[#7a9cc5] rounded overflow-hidden shadow-sm">
+        <div className="bg-[#f0f4f8] border border-[#7a9cc5] rounded overflow-visible shadow-sm">
           <table className="w-full border-collapse">
             <tbody>
               {/* Row 1: GD/SD/DD Number / Date / Time */}
@@ -371,7 +371,7 @@ export default function DynamicForm({
                 <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
                   GD/SD/DD Number / Date / Time <span className="text-red-500">*</span>
                 </td>
-                <td className="w-2/3 bg-white px-2.5 py-1 flex items-center gap-2">
+                <td className="w-2/3 bg-white px-2.5 py-1 flex items-center gap-2" style={{ position: 'relative' }}>
                   <input
                     type="text"
                     disabled={readOnly}
@@ -383,7 +383,7 @@ export default function DynamicForm({
                   <input
                     type="text"
                     disabled={readOnly}
-                    value={values.gd_date_time || '24/06/2026 15:52:50'}
+                    value={values.gd_date_time || ''}
                     onChange={(e) => {
                       const val = e.target.value;
                       handleChange('gd_date_time', val);
@@ -392,14 +392,185 @@ export default function DynamicForm({
                       if (parts[1]) handleChange('gd_time', parts[1]);
                     }}
                     className="w-40 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
+                    placeholder="DD/MM/YYYY HH:MM"
                   />
                   <button 
+                    ref={searchBtnRef}
                     type="button" 
                     className="p-1 text-[#0f52ba] hover:text-blue-700 bg-transparent border-none cursor-pointer flex items-center justify-center"
-                    title="Search GD Reference"
+                    title="Pick Date & Time"
+                    onClick={() => {
+                      if (!showDatePicker && values.gd_date_time) {
+                        const parts = values.gd_date_time.split(' ');
+                        if (parts[0]) {
+                          const dateParts = parts[0].split('/');
+                          if (dateParts.length === 3) {
+                            setPickerDay(parseInt(dateParts[0], 10) || new Date().getDate());
+                            setPickerMonth((parseInt(dateParts[1], 10) || 1) - 1);
+                            setPickerYear(parseInt(dateParts[2], 10) || new Date().getFullYear());
+                          }
+                        }
+                        if (parts[1]) {
+                          const timeParts = parts[1].split(':');
+                          setPickerHour(parseInt(timeParts[0], 10) || 0);
+                          setPickerMinute(parseInt(timeParts[1], 10) || 0);
+                        }
+                      } else if (!showDatePicker) {
+                        const now = new Date();
+                        setPickerDay(now.getDate());
+                        setPickerMonth(now.getMonth());
+                        setPickerYear(now.getFullYear());
+                        setPickerHour(now.getHours());
+                        setPickerMinute(now.getMinutes());
+                      }
+                      setShowDatePicker(prev => !prev);
+                    }}
                   >
                     <Search size={14} className="stroke-[2.5]" />
                   </button>
+
+                  {/* ── Custom Date & Time Picker Popup ──────────────────── */}
+                  {showDatePicker && (() => {
+                    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    const DAY_LABELS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+                    const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+                    const firstDayOfWeek = new Date(pickerYear, pickerMonth, 1).getDay();
+                    const blanks = Array.from({ length: firstDayOfWeek }, (_, i) => i);
+                    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+                    const handlePrevMonth = () => {
+                      if (pickerMonth === 0) { setPickerMonth(11); setPickerYear(y => y - 1); }
+                      else setPickerMonth(m => m - 1);
+                    };
+                    const handleNextMonth = () => {
+                      if (pickerMonth === 11) { setPickerMonth(0); setPickerYear(y => y + 1); }
+                      else setPickerMonth(m => m + 1);
+                    };
+                    const handleToday = () => {
+                      const now = new Date();
+                      setPickerDay(now.getDate()); setPickerMonth(now.getMonth()); setPickerYear(now.getFullYear());
+                      setPickerHour(now.getHours()); setPickerMinute(now.getMinutes());
+                    };
+                    const handleDone = () => {
+                      const dd = String(pickerDay).padStart(2, '0');
+                      const mm = String(pickerMonth + 1).padStart(2, '0');
+                      const hh = String(pickerHour).padStart(2, '0');
+                      const mi = String(pickerMinute).padStart(2, '0');
+                      const formatted = `${dd}/${mm}/${pickerYear} ${hh}:${mi}`;
+                      handleChange('gd_date_time', formatted);
+                      handleChange('gd_date', `${dd}/${mm}/${pickerYear}`);
+                      handleChange('gd_time', `${hh}:${mi}`);
+                      setShowDatePicker(false);
+                    };
+
+                    return (
+                      <div
+                        ref={datePickerRef}
+                        className="absolute top-full left-0 mt-1 bg-white border border-[#7a9cc5] shadow-2xl rounded-lg p-3 z-50 flex gap-4 text-slate-800 select-none"
+                        style={{ width: 340 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Left: Calendar Panel */}
+                        <div className="flex-1 min-w-0">
+                          {/* Month / Year header with arrows */}
+                          <div className="flex items-center justify-between mb-2">
+                            <button type="button" onClick={handlePrevMonth} className="p-0.5 rounded hover:bg-slate-100 text-[#0d2a4a] cursor-pointer bg-transparent border-none">
+                              <ChevronLeft size={16} />
+                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                value={pickerMonth}
+                                onChange={(e) => setPickerMonth(Number(e.target.value))}
+                                className="text-[11px] font-bold text-[#0d2a4a] border border-[#7a9cc5] rounded px-1 py-0.5 bg-white cursor-pointer outline-none"
+                              >
+                                {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                              </select>
+                              <select
+                                value={pickerYear}
+                                onChange={(e) => setPickerYear(Number(e.target.value))}
+                                className="text-[11px] font-bold text-[#0d2a4a] border border-[#7a9cc5] rounded px-1 py-0.5 bg-white cursor-pointer outline-none"
+                              >
+                                {Array.from({ length: 21 }, (_, i) => 2015 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                              </select>
+                            </div>
+                            <button type="button" onClick={handleNextMonth} className="p-0.5 rounded hover:bg-slate-100 text-[#0d2a4a] cursor-pointer bg-transparent border-none">
+                              <ChevronRight size={16} />
+                            </button>
+                          </div>
+
+                          {/* Day-of-week headers */}
+                          <div className="grid grid-cols-7 gap-0 text-center mb-1">
+                            {DAY_LABELS.map(d => (
+                              <span key={d} className="text-[10px] font-bold text-slate-500 py-0.5">{d}</span>
+                            ))}
+                          </div>
+
+                          {/* Day grid */}
+                          <div className="grid grid-cols-7 gap-0 text-center">
+                            {blanks.map(b => <span key={`b-${b}`} />)}
+                            {days.map(d => (
+                              <button
+                                key={d}
+                                type="button"
+                                onClick={() => setPickerDay(d)}
+                                className={`text-[11px] py-1 rounded cursor-pointer border-none transition-colors ${
+                                  d === pickerDay
+                                    ? 'bg-[#0f52ba] text-white font-bold'
+                                    : 'bg-transparent text-slate-700 hover:bg-blue-50'
+                                }`}
+                              >
+                                {d}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Today / Done buttons */}
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
+                            <button type="button" onClick={handleToday} className="text-[10px] font-bold text-[#0f52ba] hover:underline cursor-pointer bg-transparent border-none">
+                              Today
+                            </button>
+                            <button type="button" onClick={handleDone} className="text-[10px] font-bold bg-[#ea580c] hover:bg-[#c2410c] text-white px-3 py-1 rounded cursor-pointer border-none transition-colors shadow-sm">
+                              Done
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Right: Time sliders */}
+                        <div className="flex flex-col items-center gap-2 border-l border-slate-200 pl-3" style={{ minWidth: 80 }}>
+                          {/* Time display box */}
+                          <div className="bg-[#f0f4f8] border border-[#7a9cc5] rounded px-2.5 py-1 text-center">
+                            <span className="text-[12px] font-bold text-[#0d2a4a] font-mono">
+                              {String(pickerHour).padStart(2, '0')}:{String(pickerMinute).padStart(2, '0')}
+                            </span>
+                          </div>
+                          <div className="flex gap-3 items-start" style={{ height: 150 }}>
+                            {/* Hour slider */}
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[9px] text-slate-500 font-bold">Hr</span>
+                              <input
+                                type="range"
+                                min={0} max={23}
+                                value={pickerHour}
+                                onChange={(e) => setPickerHour(Number(e.target.value))}
+                                className="datetime-picker-vertical-slider"
+                              />
+                            </div>
+                            {/* Minute slider */}
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[9px] text-slate-500 font-bold">Min</span>
+                              <input
+                                type="range"
+                                min={0} max={59}
+                                value={pickerMinute}
+                                onChange={(e) => setPickerMinute(Number(e.target.value))}
+                                className="datetime-picker-vertical-slider"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </td>
               </tr>
 
@@ -558,8 +729,8 @@ export default function DynamicForm({
             </div>
           </fieldset>
 
-          {/* Right container: Major / Minor (50% width) */}
-          <fieldset className="flex-1 border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20">
+          {/* Right container: Major / Minor (50% width) — reserved for future use */}
+        <fieldset className="flex-1 border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20">
             <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
               Major / Minor
             </legend>
@@ -577,7 +748,7 @@ export default function DynamicForm({
               </select>
             </div>
           </fieldset>
-        </div>
+        </div>        
 
         {/* Dialogue Box / Modal for adding Act & Section */}
         {showAddRow && (
@@ -722,7 +893,6 @@ export default function DynamicForm({
         { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [] },
         { title_en: 'Accused',          title_hi: 'आरोपी', keys: [] },
         { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: ['property_description', 'property_status'] },
-        { title_en: 'Hurt Case Detail', title_hi: 'चोट का विवरण', keys: [] },
         { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
       ];
 
@@ -775,6 +945,31 @@ export default function DynamicForm({
   const [newAct,       setNewAct      ] = useState('');
   const [newSection,   setNewSection  ] = useState('');
   const [actsSectionsRegistry, setActsSectionsRegistry] = useState(ACTS_SECTIONS_REGISTRY);
+
+  /* ── Date-Time Picker state ─────────────────────────────────────────────── */
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(new Date().getMonth());
+  const [pickerYear,  setPickerYear]  = useState(new Date().getFullYear());
+  const [pickerDay,   setPickerDay]   = useState(new Date().getDate());
+  const [pickerHour,  setPickerHour]  = useState(new Date().getHours());
+  const [pickerMinute,setPickerMinute] = useState(new Date().getMinutes());
+  const datePickerRef = useRef(null);
+  const searchBtnRef  = useRef(null);
+
+  /* ── Close date picker on click-outside ────────────────────────────────── */
+  useEffect(() => {
+    if (!showDatePicker) return;
+    const handleClickOutside = (e) => {
+      if (
+        datePickerRef.current && !datePickerRef.current.contains(e.target) &&
+        searchBtnRef.current  && !searchBtnRef.current.contains(e.target)
+      ) {
+        setShowDatePicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDatePicker]);
 
   useEffect(() => {
     let active = true;

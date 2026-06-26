@@ -4079,3 +4079,47 @@ input[type=number] {
   box-shadow: 0 0 0 2px var(--bg-card);
 }
 
+/* ── DateTime Picker Vertical Sliders ──────────────────────────────────── */
+.datetime-picker-vertical-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 24px;
+  height: 130px;
+  cursor: pointer;
+  accent-color: #0f52ba;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+.datetime-picker-vertical-slider::-webkit-slider-runnable-track {
+  width: 5px;
+  background: linear-gradient(to bottom, #93b5e0, #3b7dd8);
+  border-radius: 4px;
+}
+.datetime-picker-vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1a6bce;
+  cursor: pointer;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  margin-left: -7px;
+}
+.datetime-picker-vertical-slider::-moz-range-track {
+  width: 5px;
+  background: linear-gradient(to bottom, #93b5e0, #3b7dd8);
+  border-radius: 4px;
+  border: none;
+}
+.datetime-picker-vertical-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1a6bce;
+  cursor: pointer;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+
