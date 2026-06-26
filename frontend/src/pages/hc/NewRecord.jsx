@@ -64,13 +64,13 @@ export default function NewRecord() {
     },
   });
 
-  const handleFormSubmit = async (formData, activeId) => {
+  const handleFormSubmit = async (formData, persons, properties, activeId) => {
     try {
       let savedRecord;
       if (activeId || editId) {
-        savedRecord = await updateMutation.mutateAsync({ id: activeId || editId, data: formData });
+        savedRecord = await updateMutation.mutateAsync({ id: activeId || editId, data: formData, persons, properties });
       } else {
-        savedRecord = await createMutation.mutateAsync(formData);
+        savedRecord = await createMutation.mutateAsync({ data: formData, persons, properties });
       }
       const finalId = activeId || editId || savedRecord?.id;
       if (!finalId) throw new Error('No valid record ID found for submission.');
@@ -294,6 +294,8 @@ export default function NewRecord() {
           <DynamicForm
             recordType={type || record?.record_type}
             initialValues={record}
+            initialPersons={recordPayload?.persons || []}
+            initialProperties={recordPayload?.properties || []}
             onSubmit={handleFormSubmit}
             targetFields={sbDetails?.target_fields || []}
             readOnly={record && record.current_status !== 'DRAFT' && record.current_status !== 'SENT_BACK_HC'}

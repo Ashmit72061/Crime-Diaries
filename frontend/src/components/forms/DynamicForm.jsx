@@ -66,15 +66,19 @@ const MOCK_FIR_LIST = [
 /**
  * DynamicForm
  *
- * @param {string}   recordType     - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
- * @param {object}   initialValues  - Pre-populated data (from existing record.data)
- * @param {function} onSubmit       - Final submit callback(formValues, activeRecordId)
- * @param {boolean}  readOnly       - Lock all inputs for review
- * @param {string[]} targetFields   - Field keys flagged for correction (send-back)
+ * @param {string}   recordType        - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
+ * @param {object}   initialValues     - Pre-populated data (from existing record.data or record object)
+ * @param {Array}    initialPersons    - Pre-populated person entries [{person_type, data}]
+ * @param {Array}    initialProperties - Pre-populated property entries [{major_category, ...}]
+ * @param {function} onSubmit          - Final submit callback(formValues, persons, properties, activeRecordId)
+ * @param {boolean}  readOnly          - Lock all inputs for review
+ * @param {string[]} targetFields      - Field keys flagged for correction (send-back)
  */
 export default function DynamicForm({
   recordType,
   initialValues = {},
+  initialPersons = [],
+  initialProperties = [],
   onSubmit,
   readOnly = false,
   targetFields = [],
@@ -394,11 +398,13 @@ export default function DynamicForm({
     initialValues?.id
   );
 
-  const [values,       setValues      ] = useState({});
-  const [errors,       setErrors      ] = useState({});
-  const [touched,      setTouched     ] = useState({});
-  const [currentStep,  setCurrentStep ] = useState(0);
+  const [values,        setValues       ] = useState({});
+  const [errors,        setErrors       ] = useState({});
+  const [touched,       setTouched      ] = useState({});
+  const [currentStep,   setCurrentStep  ] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Set());
+  // repeaterState: { [sectionKey]: [{field_key: value, ...}] }
+  const [repeaterState, setRepeaterState] = useState({});
 
   const formRef = useRef(null);
 
@@ -418,6 +424,36 @@ export default function DynamicForm({
     stationName: user.stationName,
     districtKey: user.districtKey
   }) : '';
+
+  /* ── Seed repeater entries from initialPersons / initialProperties ─────── */
+  useEffect(() => {
+    if (!finalSchema.length) return;
+    const initial = {};
+    // Build section-key → entries map for person sections
+    for (const section of finalSchema) {
+      if (!section.is_repeater) continue;
+      if (section.entity_type === 'person' && section.person_type) {
+        const matching = initialPersons.filter(
+          p => p.person_type === section.person_type
+        );
+        if (matching.length > 0) {
+          initial[section.section] = matching.map(p => ({ ...(p.data || {}) }));
+        }
+      } else if (section.entity_type === 'property') {
+        if (initialProperties.length > 0) {
+          initial[section.section] = initialProperties.map(prop => ({
+            property_major_category: prop.major_category || '',
+            property_minor_category: prop.minor_category || '',
+            property_stolen_recovered: prop.status || 'Stolen',
+            property_details: prop.details || '',
+          }));
+        }
+      }
+    }
+    if (Object.keys(initial).length > 0) {
+      setRepeaterState(prev => ({ ...prev, ...initial }));
+    }
+  }, [initialPersons, initialProperties, finalSchema.length]);
 
   /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
@@ -488,6 +524,7 @@ export default function DynamicForm({
   const validateSection = useCallback((stepIdx, currentValues = values) => {
     const section = finalSchema[stepIdx];
     if (!section) return {};
+    if (section.is_repeater) return {}; // repeater sections have no flat-field validation
 
     const errs = {};
     section.fields.forEach((field) => {
@@ -542,8 +579,8 @@ export default function DynamicForm({
   /* ── Validate ALL sections ─────────────────────────────────────────────── */
   const validateAll = useCallback((currentValues = values) => {
     const allErrs = {};
-    finalSchema.forEach((section) => {
-      const errs = validateSection(finalSchema.indexOf(section), currentValues);
+    finalSchema.forEach((section, idx) => {
+      const errs = validateSection(idx, currentValues);
       Object.assign(allErrs, errs);
     });
     return allErrs;
@@ -653,34 +690,18 @@ export default function DynamicForm({
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  /* ── Jump to a specific step (click step dot) ─────────────────────────── */
+  /* ── Jump to a specific step ──────────────────────────────────────────── */
   const handleStepClick = (targetIdx) => {
-    if (targetIdx < currentStep) {
-      setCurrentStep(targetIdx);
-      return;
-    }
+    if (targetIdx < currentStep) { setCurrentStep(targetIdx); return; }
     if (targetIdx === currentStep) return;
-
     let canJump = true;
     for (let i = currentStep; i < targetIdx; i++) {
       const errs = validateSection(i);
-      if (Object.keys(errs).length > 0) {
-        setErrors((prev) => ({ ...prev, ...errs }));
-        canJump = false;
-        break;
-      }
-
-      // Auto-populate linked_fir_dd_no if we validate step 0 (Select FIR)
+      if (Object.keys(errs).length > 0) { setErrors((prev) => ({ ...prev, ...errs })); canJump = false; break; }
       if (recordType === 'ARREST' && caseType === 'against_fir' && i === 0) {
         const selectedFir = values.selected_fir;
-        if (selectedFir) {
-          setValues(prev => ({
-            ...prev,
-            linked_fir_dd_no: selectedFir
-          }));
-        }
+        if (selectedFir) setValues(prev => ({ ...prev, linked_fir_dd_no: selectedFir }));
       }
-
       setCompletedSteps((prev) => new Set([...prev, i]));
     }
     if (canJump) setCurrentStep(targetIdx);
@@ -700,6 +721,7 @@ export default function DynamicForm({
 
       let firstErrStep = 0;
       finalSchema.forEach((sec, idx) => {
+        if (sec.is_repeater) return;
         const hasErr = sec.fields.some((f) => allErrs[f.field_key]);
         if (hasErr && idx < firstErrStep + 1) firstErrStep = idx;
       });
@@ -721,7 +743,25 @@ export default function DynamicForm({
     if (finalValues.time_of_occurrence !== undefined) {
       finalValues.occurrence_time = finalValues.time_of_occurrence;
     }
-    onSubmit?.(finalValues, activeRecordIdRef.current);
+
+    // Build persons and properties from repeater sections
+    const persons = [];
+    const properties = [];
+    for (const section of finalSchema) {
+      if (!section.is_repeater) continue;
+      const entries = repeaterState[section.section] || [];
+      if (section.entity_type === 'person' && section.person_type) {
+        for (const entry of entries) {
+          persons.push({ person_type: section.person_type, data: entry });
+        }
+      } else if (section.entity_type === 'property') {
+        for (const entry of entries) {
+          properties.push(entry);
+        }
+      }
+    }
+
+    onSubmit?.(finalValues, persons, properties, activeRecordIdRef.current);
   };
 
   /* ── Manual save draft (button click) ────────────────────────────────────*/
@@ -778,7 +818,6 @@ export default function DynamicForm({
       {finalSchema.length > 1 && (
         <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Active Step Indicator */}
             <div className="flex items-center gap-3">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-color)] text-white text-xs font-bold shadow-md shadow-[var(--accent-glow)] scale-110 flex-shrink-0">
                 {currentStep + 1}
@@ -794,8 +833,6 @@ export default function DynamicForm({
                 </span>
               </div>
             </div>
-
-            {/* Right: step counter + autosave */}
             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end sm:pl-5 sm:border-l border-slate-100">
               <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
                 {lang === 'hi' ? `चरण ${currentStep + 1} / ${finalSchema.length}` : `Step ${currentStep + 1} / ${finalSchema.length}`}
@@ -806,14 +843,13 @@ export default function DynamicForm({
         </div>
       )}
 
-      {/* ── Single-step save indicator (when no step nav) ─────────────── */}
       {finalSchema.length === 1 && (
         <div className="flex justify-end">
           <FormAutosave status={saveStatus} lang={lang} />
         </div>
       )}
 
-      {/* ── Validation summary (top — shown after first submit attempt) ── */}
+      {/* ── Validation summary ── */}
       {Object.keys(errors).length > 0 && Object.values(touched).some(Boolean) && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 shadow-sm space-y-2">
           <div className="flex items-center gap-2 font-bold text-red-700 mb-1">
@@ -836,12 +872,9 @@ export default function DynamicForm({
         </div>
       )}
 
-      {/* ── Active Section Form ─────────────────────────────────────────── */}
+      {/* ── Active Section (flat field form OR repeater panel) ── */}
       {activeSection && (
         <div className="space-y-6">
-          {/* Wrap ONLY the fields in a form so Enter key doesn't auto-submit
-              when navigating between steps. The submit action is wired via
-              an explicit onClick on the Submit button in FormToolbar. */}
           <form onSubmit={(e) => e.preventDefault()} noValidate>
             {recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0 ? (
               renderFirSearchStep()
@@ -856,11 +889,14 @@ export default function DynamicForm({
                 readOnly={readOnly}
                 targetFields={targetFields}
                 lang={lang}
+                entries={repeaterState[activeSection?.section] || []}
+                onEntriesChange={(entries) =>
+                  setRepeaterState(prev => ({ ...prev, [activeSection.section]: entries }))
+                }
               />
             )}
           </form>
 
-          {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
           <FormToolbar
             currentStep={currentStep}
             totalSteps={finalSchema.length}
