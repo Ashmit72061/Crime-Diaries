@@ -1085,3 +1085,40 @@ export const searchRecordsWithSpec = async (recordType, filterSpec, jurisdiction
     data: parseJsonField(r.data)
   }));
 };
+
+export const deleteRecord = async (id, user) => {
+  await db.transaction(async (trx) => {
+    const record = await trx('records').where({ id }).first();
+    if (!record) {
+      const err = new Error('Record not found');
+      err.status = 404;
+      throw err;
+    }
+
+    if (record.current_status !== 'DRAFT') {
+      const err = new Error('Only DRAFT records can be deleted');
+      err.status = 400;
+      throw err;
+    }
+
+    // Delete records row (cascade deletes associated tables automatically via foreign keys)
+    await trx('records').where({ id }).delete();
+
+    // Write audit log entry
+    await trx('audit_logs').insert({
+      id: uuidv4(),
+      table_name: 'records',
+      record_id: id,
+      action: 'DELETE',
+      changed_by_id: user.id,
+      changed_by_role: user.role,
+      changed_at: new Date().toISOString()
+    });
+  });
+
+  // Publish deleted event
+  await eventBus.publish('record.deleted', {
+    record_id: id,
+    performed_by: user.id
+  });
+};
