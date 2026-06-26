@@ -65,7 +65,7 @@ export function useFormSchema(recordType) {
       return normalized;
     },
     enabled: !!recordType,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     retry: 1,
   });
 

@@ -58,6 +58,19 @@ const SECTION_TITLES = {
   uidb_details:             { en: 'If Filed by ACP/SDM',                    hi: 'यदि एसीपी/एसडीएम द्वारा दायर किया गया' },
   stolen_property:          { en: 'Stolen Property',                        hi: 'चोरी की गई संपत्ति' },
   recovered_property:       { en: 'Recovered Property',                     hi: 'बरामद संपत्ति' },
+  complainant_personal_info: { en: 'Complainant Personal Information',      hi: 'शिकायतकर्ता की व्यक्तिगत जानकारी' },
+  complainant_address:       { en: 'Complainant Address',                   hi: 'शिकायतकर्ता का पता' },
+  accused_personal_info:     { en: 'Accused Personal Information',          hi: 'अभियुक्त की व्यक्तिगत जानकारी' },
+  accused_address:           { en: 'Accused Address',                       hi: 'अभियुक्त का पता' },
+  victim_personal_info:      { en: 'Victim Personal Information',           hi: 'पीड़ित की व्यक्तिगत जानकारी' },
+  victim_address:            { en: 'Victim Address',                        hi: 'पीड़ित का पता' },
+  arrested_personal_info:    { en: 'Arrested Person Personal Information',  hi: 'गिरफ्तार व्यक्ति की व्यक्तिगत जानकारी' },
+  arrested_address:          { en: 'Arrested Person Address',               hi: 'गिरफ्तार व्यक्ति का पता' },
+  occurrence_address:        { en: 'Place of Occurrence Address',           hi: 'घटनास्थल का पता' },
+  property_details:          { en: 'Property Details',                      hi: 'संपत्ति का विवरण' },
+  occurrence_info:           { en: 'Occurrence Information',                 hi: 'घटना की जानकारी' },
+  intimation_details:        { en: 'Intimation Details',                     hi: 'सूचना विवरण' },
+  intimation_address:        { en: 'Intimation Address',                     hi: 'सूचना का पता' },
 };
 
 const VALID_FIELD_TYPES = ['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'DATETIME', 'SELECT', 'BOOLEAN'];
@@ -117,7 +130,9 @@ export const getFieldsForForm = async (req, res) => {
         readonly: f.readonly || false,
         full_width: f.full_width || false,
         show_when: parseJsonField(f.show_when) || null,
-        section: f.section || 'general_info',
+        section: (normalizedType === 'ARREST' && (f.field_key === 'act_name' || f.field_key === 'sections'))
+          ? 'offence_info'
+          : (f.section || 'general_info'),
         section_label_en: f.section_label_en || null,
         section_label_hi: f.section_label_hi || null,
         sort_order: f.sort_order,

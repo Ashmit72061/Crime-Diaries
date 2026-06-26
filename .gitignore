@@ -54,3 +54,6 @@ Thumbs.db
 .idea/
 *.suo
 *.sw?
+
+# Local dev artifacts
+walkthrough.md

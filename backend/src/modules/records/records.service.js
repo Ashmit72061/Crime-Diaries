@@ -91,6 +91,42 @@ const validateSelectFields = async (trx, recordType, data) => {
   }
 };
 
+const mergeConditionalFields = (data) => {
+  if (!data) return data;
+
+  // Merge sections
+  const conditionalSectionKeys = ['ipc_sections', 'excise_sections', 'arms_sections', 'gambling_sections', 'other_sections'];
+  for (const key of conditionalSectionKeys) {
+    if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+      data.sections = data[key];
+      break;
+    }
+  }
+
+  // Merge major_head
+  const conditionalMajorHeadKeys = ['ipc_major_head', 'excise_major_head', 'arms_major_head', 'gambling_major_head', 'other_major_head'];
+  for (const key of conditionalMajorHeadKeys) {
+    if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+      data.major_head = data[key];
+      break;
+    }
+  }
+
+  // Merge minor_head
+  const conditionalMinorHeadKeys = [
+    'theft_minor_head', 'murder_minor_head', 'hurt_minor_head', 'cheating_minor_head', 'robbery_minor_head',
+    'excise_minor_head', 'arms_minor_head', 'gambling_minor_head', 'other_minor_head'
+  ];
+  for (const key of conditionalMinorHeadKeys) {
+    if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+      data.minor_head = data[key];
+      break;
+    }
+  }
+
+  return data;
+};
+
 // Services
 export const listRecords = async (recordType, filters, jurisdictionQuery) => {
   let query = db('records').select(
@@ -234,8 +270,9 @@ export const getRecordDetails = async (id) => {
 };
 
 export const createRecord = async (user, recordType, recordDate, data, ipAddress) => {
+  const mergedData = mergeConditionalFields({ ...data });
   const dbRecord = await db.transaction(async (trx) => {
-    await validateSelectFields(trx, recordType, data);
+    await validateSelectFields(trx, recordType, mergedData);
     const id = uuidv4();
     const uid = await generateUID(recordType, user.ps_id, recordDate, trx);
 
@@ -246,7 +283,7 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
       ps_id: user.ps_id,
       district_id: user.district_id,
       sub_div_id: user.sub_div_id,
-      data: JSON.stringify(data),
+      data: JSON.stringify(mergedData),
       current_status: 'DRAFT',
       current_level: 'PS',
       record_date: recordDate,
@@ -257,7 +294,7 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
     };
 
     // Inject generated UID into records data JSON block for search consistency
-    const hydratedData = { ...data, uid };
+    const hydratedData = { ...mergedData, uid };
     recordPayload.data = JSON.stringify(hydratedData);
 
     await trx('records').insert(recordPayload);
@@ -327,7 +364,7 @@ export const updateRecord = async (id, user, data, ipAddress) => {
     }
 
     const oldData = parseJsonField(record.data);
-    const hydratedData = { ...oldData, ...data };
+    const hydratedData = mergeConditionalFields({ ...oldData, ...data });
 
     await validateSelectFields(trx, record.record_type, hydratedData);
 
