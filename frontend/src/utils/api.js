@@ -410,8 +410,6 @@ const formSchemas = {
         { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number', label_hi: 'प्राथमिकी (FIR) संख्या', validation_rules: { required: true } },
         { field_key: 'fir_date', field_type: 'DATE', label_en: 'FIR Date', label_hi: 'प्राथमिकी की तिथि', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
-        { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: false } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -687,8 +685,6 @@ const formSchemas = {
       title_hi: 'सामान्य डायरी और कॉल लॉग',
       fields: [
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
-        { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },

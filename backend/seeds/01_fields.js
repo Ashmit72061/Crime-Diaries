@@ -80,7 +80,7 @@ const fields = [
   { id: 'C_3',  field_key: 'gd_no',             field_type: 'TEXT',   applicable_record_types: ALL_TYPES,                                             label_en: 'GD Number, Date & Time',      label_hi: 'जीडी नंबर, दिनांक और समय',       visible_to_levels: L, editable_by_levels: E, section: 'general_info',            sort_order: 3,  validation_rules: JSON.stringify({ required: false }) },
 
   // gd_date — GD date, shared globally
-  { id: 'C_4',  field_key: 'gd_date',           field_type: 'DATE',   applicable_record_types: JSON.stringify(['CASE']),                              label_en: 'GD Date',                     label_hi: 'जीडी दिनांक',                   visible_to_levels: L, editable_by_levels: E, section: 'general_info',            sort_order: 4 },
+  { id: 'C_4',  field_key: 'gd_date',           field_type: 'DATE',   applicable_record_types: JSON.stringify([]),                                    label_en: 'GD Date',                     label_hi: 'जीडी दिनांक',                   visible_to_levels: L, editable_by_levels: E, section: 'general_info',            sort_order: 4 },
 
   // gd_time — GD time, shared globally
   //{ id: 'C_5',  field_key: 'gd_time',           field_type: 'TIME',   applicable_record_types: JSON.stringify(['CASE']),                              label_en: 'GD Time',                     label_hi: 'जीडी समय',                      visible_to_levels: L, editable_by_levels: E, section: 'general_info',            sort_order: 5 },
