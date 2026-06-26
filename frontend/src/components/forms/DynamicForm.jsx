@@ -734,18 +734,114 @@ export default function DynamicForm({
             <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
               Major / Minor
             </legend>
-            <div className="flex flex-col gap-1 text-[11px]">
-              <label className="text-[#0d2a4a] font-bold">Classification</label>
-              <select
-                disabled={readOnly}
-                value={values.major_minor || ''}
-                onChange={(e) => handleChange('major_minor', e.target.value)}
-                className="w-full h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
-              >
-                <option value="">------Select------</option>
-                <option value="Major">Major</option>
-                <option value="Minor">Minor</option>
-              </select>
+            <div className="flex flex-col gap-2 text-[11px]">
+              {/* ── Major Head Dropdown ──────────────────────────────────── */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[#0d2a4a] font-bold">Major Head</label>
+                <select
+                  disabled={readOnly}
+                  value={selectedMajorHead}
+                  onChange={(e) => {
+                    setSelectedMajorHead(e.target.value);
+                    setSelectedMinorHead('');
+                  }}
+                  className="w-full h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="">------Select------</option>
+                  {getMajorHeadOptions().map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* ── Minor Head Dropdown + Add Button ─────────────────────── */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[#0d2a4a] font-bold">Minor Head</label>
+                <div className="flex items-center gap-2">
+                  <select
+                    disabled={readOnly || !selectedMajorHead}
+                    value={selectedMinorHead}
+                    onChange={(e) => setSelectedMinorHead(e.target.value)}
+                    className="flex-1 h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="">------Select------</option>
+                    {getMinorHeadOptions().map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en}
+                      </option>
+                    ))}
+                  </select>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={handleAddMajorMinorRow}
+                      disabled={!selectedMajorHead || !selectedMinorHead}
+                      className="bg-[#ea580c] hover:bg-[#c2410c] disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold px-2 py-0.5 rounded transition shadow-sm flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                    >
+                      + Add
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* ── Major/Minor Head Table ───────────────────────────────── */}
+              <div className="w-full overflow-x-auto mt-1">
+                <table className="w-full border-collapse text-[11px]">
+                  <thead>
+                    <tr className="bg-[#d0e0f8] text-[#0d2a4a] border-b border-[#7a9cc5]">
+                      <th className="px-2 py-1 text-left font-bold w-10 border-r border-[#7a9cc5]">S.No.</th>
+                      <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Major Head</th>
+                      <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Minor Head</th>
+                      {!readOnly && <th className="px-2 py-1 text-center font-bold w-14">Delete</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {majorMinorRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={readOnly ? 3 : 4} className="px-2 py-2 text-center text-gray-500 italic">
+                          No entries added yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      majorMinorRows.map((row, idx) => (
+                        <tr key={idx} className="border-b border-[#7a9cc5] bg-white">
+                          <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a] font-mono text-center">{idx + 1}</td>
+                          <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">{row.majorHead}</td>
+                          <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">{row.minorHead}</td>
+                          {!readOnly && (
+                            <td className="px-2 py-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMajorMinorRow(idx)}
+                                className="text-red-600 hover:text-red-800 text-[10px] font-bold underline cursor-pointer"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* ── Local Head Dropdown ──────────────────────────────────── */}
+              <div className="flex flex-col gap-1 mt-1">
+                <label className="text-[#0d2a4a] font-bold">Local Head</label>
+                <select
+                  disabled={readOnly}
+                  value={values.local_head || ''}
+                  onChange={(e) => handleChange('local_head', e.target.value)}
+                  className="w-full h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="">------Select------</option>
+                  {getLocalHeadOptions().map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </fieldset>
         </div>        
@@ -945,6 +1041,63 @@ export default function DynamicForm({
   const [newAct,       setNewAct      ] = useState('');
   const [newSection,   setNewSection  ] = useState('');
   const [actsSectionsRegistry, setActsSectionsRegistry] = useState(ACTS_SECTIONS_REGISTRY);
+
+  /* ── Major / Minor Head state ────────────────────────────────────────────── */
+  const [selectedMajorHead, setSelectedMajorHead] = useState('');
+  const [selectedMinorHead, setSelectedMinorHead] = useState('');
+  const [majorMinorRows, setMajorMinorRows]       = useState([]);
+  /**
+   * Helper: extract all fields from the schema (flat list).
+   * Used to look up field options dynamically — no hardcoding.
+   */
+  const allSchemaFields = React.useMemo(() => {
+    if (!schema || schema.length === 0) return [];
+    return schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
+  }, [schema]);
+  /**
+   * Fetch major-head options from the schema.
+   * Looks for fields whose field_key matches the pattern `*_major_head`
+   * and whose show_when condition matches the currently selected act_name.
+   * Returns the options array from the matching field, or [] if none found.
+   */
+  const getMajorHeadOptions = useCallback(() => {
+    const currentAct = values.act_name || '';
+    if (!currentAct) return [];
+    const majorField = allSchemaFields.find(
+      f => f.field_key?.includes('major_head') && f.show_when?.value === currentAct
+    );
+    if (majorField?.options && Array.isArray(majorField.options)) {
+      return majorField.options;
+    }
+    return [];
+  }, [allSchemaFields, values.act_name]);
+  /**
+   * Fetch minor-head options from the schema.
+   * Looks for fields whose field_key matches `*_minor_head` and whose
+   * show_when condition references the currently selected major head value.
+   * Returns the options array from the matching field, or [] if none found.
+   */
+  const getMinorHeadOptions = useCallback(() => {
+    if (!selectedMajorHead) return [];
+    const minorField = allSchemaFields.find(
+      f => f.field_key?.includes('minor_head') && f.show_when?.value === selectedMajorHead
+    );
+    if (minorField?.options && Array.isArray(minorField.options)) {
+      return minorField.options;
+    }
+    return [];
+  }, [allSchemaFields, selectedMajorHead]);
+  /**
+   * Fetch local-head options from the schema.
+   * Looks for the field with field_key === 'local_head'.
+   */
+  const getLocalHeadOptions = useCallback(() => {
+    const localField = allSchemaFields.find(f => f.field_key === 'local_head');
+    if (localField?.options && Array.isArray(localField.options)) {
+      return localField.options;
+    }
+    return [];
+  }, [allSchemaFields]);
 
   /* ── Date-Time Picker state ─────────────────────────────────────────────── */
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -1224,6 +1377,29 @@ export default function DynamicForm({
 
     setTouched((prev) => ({ ...prev, [key]: true }));
   }, [readOnly, errors, triggerAutosave]);
+
+  /** Add a major/minor head row to the table */
+  const handleAddMajorMinorRow = useCallback(() => {
+    if (!selectedMajorHead || !selectedMinorHead) return;
+    setMajorMinorRows(prev => [
+      ...prev,
+      { majorHead: selectedMajorHead, minorHead: selectedMinorHead }
+    ]);
+    // Persist to form values as comma-separated strings
+    const updatedMajors = [...majorMinorRows.map(r => r.majorHead), selectedMajorHead].join(', ');
+    const updatedMinors = [...majorMinorRows.map(r => r.minorHead), selectedMinorHead].join(', ');
+    handleChange('major_heads', updatedMajors);
+    handleChange('minor_heads', updatedMinors);
+    setSelectedMajorHead('');
+    setSelectedMinorHead('');
+  }, [selectedMajorHead, selectedMinorHead, majorMinorRows, handleChange]);
+  /** Delete a major/minor head row from the table */
+  const handleDeleteMajorMinorRow = useCallback((index) => {
+    const updated = majorMinorRows.filter((_, i) => i !== index);
+    setMajorMinorRows(updated);
+    handleChange('major_heads', updated.map(r => r.majorHead).join(', '));
+    handleChange('minor_heads', updated.map(r => r.minorHead).join(', '));
+  }, [majorMinorRows, handleChange]);
 
   /* ── Navigate forward (with step validation) ──────────────────────────── */
   const handleNext = () => {
