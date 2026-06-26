@@ -123,29 +123,75 @@ export const getFieldsForForm = async (req, res) => {
         const types = (parseJsonField(f.applicable_record_types) || []).map(normalizeRecordType);
         return types.includes(normalizedType);
       })
-      .map((f) => ({
-        id: f.id,
-        field_key: f.field_key,
-        field_type: f.field_type,
-        applicable_record_types: parseJsonField(f.applicable_record_types),
-        label_en: f.label_en,
-        label_hi: f.label_hi || f.label_en,
-        placeholder_en: f.placeholder_en || null,
-        placeholder_hi: f.placeholder_hi || null,
-        options: parseJsonField(f.options),
-        validation_rules: parseJsonField(f.validation_rules),
-        visible_to_levels: parseJsonField(f.visible_to_levels),
-        editable_by_levels: parseJsonField(f.editable_by_levels),
-        introduced_at_level: f.introduced_at_level,
-        readonly: f.readonly || false,
-        full_width: f.full_width || false,
-        show_when: parseJsonField(f.show_when) || null,
-        section: f.section || 'general_info',
-        repeater_entity: f.repeater_entity || null,
-        section_label_en: f.section_label_en || null,
-        section_label_hi: f.section_label_hi || null,
-        sort_order: f.sort_order,
-        scope_level: f.scope_level || 'global',
+      .map((f) => {
+        let field_type = f.field_type;
+        let options = parseJsonField(f.options);
+
+        if (f.field_key === 'status') {
+          field_type = 'SELECT';
+          if (normalizedType === 'CASE') {
+            options = [
+              { value: 'CHARGE SHEET', label_en: 'CHARGE SHEET', label_hi: 'आरोप पत्र (CHARGE SHEET)' },
+              { value: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_en: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_hi: 'पुलिस जांच रिपोर्ट (PIR-JCL)' },
+              { value: 'UNTRACED', label_en: 'UNTRACED', label_hi: 'अनट्रेस (UNTRACED)' },
+              { value: 'PENDING', label_en: 'PENDING', label_hi: 'लंबित (PENDING)' },
+              { value: 'CANCELLATION', label_en: 'CANCELLATION', label_hi: 'रद्दीकरण (CANCELLATION)' },
+              { value: 'QUASHED', label_en: 'QUASHED', label_hi: 'खारिज (QUASHED)' },
+              { value: 'CLOSURE REPORT', label_en: 'CLOSURE REPORT', label_hi: 'क्लोजर रिपोर्ट (CLOSURE REPORT)' },
+              { value: 'RELEASED U/S 189 BNSS', label_en: 'RELEASED U/S 189 BNSS', label_hi: 'धारा 189 BNSS के तहत रिहा (RELEASED U/S 189 BNSS)' }
+            ];
+          } else if (normalizedType === 'ARREST') {
+            options = [
+              { value: 'police_custody', label_en: 'Police Custody', label_hi: 'पुलिस हिरासत' },
+              { value: 'bail', label_en: 'Bail', label_hi: 'जमानत' },
+              { value: 'judicial_custody', label_en: 'Judicial Custody', label_hi: 'न्यायिक हिरासत' },
+              { value: 'released', label_en: 'Released', label_hi: 'रिहा' },
+              { value: 'others', label_en: 'Others', label_hi: 'अन्य' }
+            ];
+          } else if (normalizedType === 'PCR_CALL') {
+            options = [
+              { value: 'no_cognizable', label_en: 'No Cognizable Offence', label_hi: 'गैर-संज्ञेय अपराध' },
+              { value: 'attended', label_en: 'Attended', label_hi: 'अटेंड किया गया' },
+              { value: 'fir_registered', label_en: 'FIR Registered', label_hi: 'प्राथमिकी दर्ज' }
+            ];
+          } else if (normalizedType === 'MISSING') {
+            options = [
+              { value: 'Missing', label_en: 'Missing', label_hi: 'लापता' },
+              { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
+            ];
+          } else if (normalizedType === 'UIDB') {
+            options = [
+              { value: 'Referred to district hospital', label_en: 'Referred to District Hospital', label_hi: 'जिला अस्पताल भेजा गया' },
+              { value: 'Identified, body claimed', label_en: 'Identified, Body Claimed', label_hi: 'पहचान हो गई, शव दावा किया गया' },
+              { value: 'Unidentified, held in mortuary', label_en: 'Unidentified, Held in Mortuary', label_hi: 'अपरिचित, शवगृह में रखा गया' }
+            ];
+          }
+        }
+
+        return {
+          id: f.id,
+          field_key: f.field_key,
+          field_type: field_type,
+          applicable_record_types: parseJsonField(f.applicable_record_types),
+          label_en: f.label_en,
+          label_hi: f.label_hi || f.label_en,
+          placeholder_en: f.placeholder_en || null,
+          placeholder_hi: f.placeholder_hi || null,
+          options,
+          validation_rules: parseJsonField(f.validation_rules),
+          visible_to_levels: parseJsonField(f.visible_to_levels),
+          editable_by_levels: parseJsonField(f.editable_by_levels),
+          introduced_at_level: f.introduced_at_level,
+          readonly: f.readonly || false,
+          full_width: f.full_width || false,
+          show_when: parseJsonField(f.show_when) || null,
+          section: f.section || 'general_info',
+          repeater_entity: f.repeater_entity || null,
+          section_label_en: f.section_label_en || null,
+          section_label_hi: f.section_label_hi || null,
+          sort_order: f.sort_order,
+          scope_level: f.scope_level || 'global',
+        };
       }));
 
     // Group fields: repeater fields by repeater_entity, flat fields by section.
