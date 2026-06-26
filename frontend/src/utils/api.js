@@ -420,8 +420,6 @@ const formSchemas = {
       title_en: 'Incident Details',
       title_hi: 'घटना का विवरण',
       fields: [
-        { field_key: 'occurrence_date', field_type: 'DATE', label_en: 'Date of Occurrence', label_hi: 'घटना की तिथि', validation_rules: { required: true } },
-        { field_key: 'time_of_occurrence', field_type: 'TIME', label_en: 'Time of Occurrence', label_hi: 'घटना का समय', validation_rules: { required: true } },
         { field_key: 'occurrence_place', field_type: 'TEXT', label_en: 'Place of Occurrence', label_hi: 'घटना का स्थान', validation_rules: { required: true } },
         { field_key: 'brief_facts', field_type: 'TEXTAREA', label_en: 'Brief Facts of the Case', label_hi: 'मामले के संक्षिप्त तथ्य', validation_rules: { required: true } },
         {
@@ -446,18 +444,6 @@ const formSchemas = {
       ]
     },
     {
-      section: 'complainant_accused_info',
-      title_en: 'Complainant & Accused Particulars',
-      title_hi: 'शिकायतकर्ता और आरोपी का विवरण',
-      fields: [
-        { field_key: 'complainant_name', field_type: 'TEXT', label_en: 'Complainant Name', label_hi: 'शिकायतकर्ता का नाम', validation_rules: { required: true } },
-        { field_key: 'complainant_address', field_type: 'TEXTAREA', label_en: 'Complainant Address', label_hi: 'शिकायतकर्ता का पता', validation_rules: { required: false } },
-        { field_key: 'accused_name', field_type: 'TEXT', label_en: 'Name of Accused', label_hi: 'आरोपी का नाम', validation_rules: { required: true } },
-        { field_key: 'accused_address', field_type: 'TEXTAREA', label_en: 'Address of Accused', label_hi: 'आरोपी का पता', validation_rules: { required: false } },
-        { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Arrest Date (If arrest made)', label_hi: 'गिरफ्तारी की तिथि (यदि लागू हो)', validation_rules: { required: false } },
-      ]
-    },
-    {
       section: 'investigation_officer',
       title_en: 'Investigating Officer Details',
       title_hi: 'जांच अधिकारी का विवरण',
@@ -468,68 +454,56 @@ const formSchemas = {
       ]
     },
     {
-      section: 'stolen_property',
-      title_en: 'Stolen Property',
-      title_hi: 'चोरी की गई संपत्ति',
+      section: 'property_details',
+      title_en: 'Properties Involved',
+      title_hi: 'शामिल संपत्ति',
+      is_repeater: true,
+      entity_type: 'property',
       fields: [
-        { field_key: 'stolen_property', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
         {
-          field_key: 'property_status',
+          field_key: 'property_major_category',
           field_type: 'SELECT',
-          label_en: 'Property Status',
-          label_hi: 'संपत्ति की स्थिति',
+          label_en: 'Property Major Category',
+          label_hi: 'संपत्ति मुख्य श्रेणी',
+          options: [
+            { value: 'Vehicle', label_en: 'Vehicle', label_hi: 'वाहन' },
+            { value: 'Mobile Phone', label_en: 'Mobile Phone', label_hi: 'मोबाइल फोन' },
+            { value: 'Cash', label_en: 'Cash', label_hi: 'नकद' },
+            { value: 'Jewellery', label_en: 'Gold/Jewellery', label_hi: 'सोना/आभूषण' },
+            { value: 'Electronics', label_en: 'Electronics/Gadgets', label_hi: 'इलेक्ट्रॉनिक्स' },
+            { value: 'Documents', label_en: 'Official/Personal Documents', label_hi: 'दस्तावेज़' },
+            { value: 'Drugs', label_en: 'Drugs/Narcotics', label_hi: 'नशीले पदार्थ' },
+            { value: 'Arms', label_en: 'Arms/Ammunition', label_hi: 'हथियार' },
+            { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'property_minor_category',
+          field_type: 'TEXT',
+          label_en: 'Property Minor Category',
+          label_hi: 'संपत्ति उप श्रेणी',
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'property_details',
+          field_type: 'TEXTAREA',
+          label_en: 'Property Details / Description',
+          label_hi: 'संपत्ति का विवरण',
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'property_stolen_recovered',
+          field_type: 'SELECT',
+          label_en: 'Property Stolen / Recovered',
+          label_hi: 'संपत्ति चोरी / बरामद स्थिति',
           options: [
             { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' },
-            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
-          ],
-          validation_rules: { required: true }
-        },
-        {
-          field_key: 'status',
-          field_type: 'SELECT',
-          label_en: 'Case Status',
-          label_hi: 'मामले की स्थिति',
-          options: [
-            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
-            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
-            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
-          ],
-          validation_rules: { required: true }
-        },
-        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
-      ]
-    },
-    {
-      section: 'recovered_property',
-      title_en: 'Recovered Property',
-      title_hi: 'बरामद संपत्ति',
-      fields: [
-        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
-        { field_key: 'recovered_property', field_type: 'TEXTAREA', label_en: 'Recovery Property', label_hi: 'बरामद की गई संपत्ति', validation_rules: { required: false } },
-        {
-          field_key: 'recovered_property_status',
-          field_type: 'SELECT',
-          label_en: 'Property Status',
-          label_hi: 'संपत्ति की स्थिति',
-          options: [
             { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
-            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+            { value: 'Involved', label_en: 'Involved', label_hi: 'शामिल' }
           ],
           validation_rules: { required: true }
-        },
-        {
-          field_key: 'recovered_case_status',
-          field_type: 'SELECT',
-          label_en: 'Case Status',
-          label_hi: 'मामले की स्थिति',
-          options: [
-            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
-            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
-            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
-          ],
-          validation_rules: { required: true }
-        },
-        { field_key: 'recovered_remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
+        }
       ]
     },
     {
@@ -917,6 +891,34 @@ const formSchemas = {
         { field_key: 'complexion', field_type: 'TEXT', label_en: 'Complexion', label_hi: 'रंग', validation_rules: { required: false } },
         { field_key: 'identificationMarks', field_type: 'TEXT', label_en: 'Identification Marks', label_hi: 'पहचान चिन्ह', validation_rules: { required: false } },
         { field_key: 'description', field_type: 'TEXTAREA', label_en: 'Detailed Description of Apparel & Condition', label_hi: 'परिधान और स्थिति का विस्तृत विवरण', validation_rules: { required: false } },
+      ]
+    },
+    {
+      section: 'inquest_details',
+      title_en: 'Inquest Details',
+      title_hi: 'इन्क्वेस्ट विवरण',
+      fields: [
+        {
+          field_key: 'cause_of_death',
+          field_type: 'SELECT',
+          label_en: 'Cause of Death',
+          label_hi: 'मृत्यु का कारण',
+          options: [
+            { value: 'Accidental', label_en: 'Accidental', label_hi: 'दुर्घटना' },
+            { value: 'Natural', label_en: 'Natural', label_hi: 'प्राकृतिक' },
+            { value: 'Suicide', label_en: 'Suicide', label_hi: 'आत्महत्या' },
+            { value: 'Murder', label_en: 'Murder', label_hi: 'हत्या' },
+            { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'deceased_father_husband_name',
+          field_type: 'TEXT',
+          label_en: "Deceased's Father / Husband Name",
+          label_hi: 'मृतक के पिता / पति का नाम',
+          validation_rules: { required: false }
+        }
       ]
     },
     {
