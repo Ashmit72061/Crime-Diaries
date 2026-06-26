@@ -1,13 +1,13 @@
 import pika
 import json
 import os
+import time
 from dotenv import load_dotenv
 from generator import generate_report
 from sqlalchemy import text
 from db import engine
 from datetime import datetime
 
-# Load .env from backend folder for developer convenience, fallback to current folder
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../backend/.env'))
 load_dotenv()
 
@@ -46,25 +46,48 @@ def on_message(channel, method, properties, body):
         mark_job_failed(job_id, str(e))
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
+def connect_with_retry(rabbitmq_url, max_retries=10, delay=5):
+    for attempt in range(1, max_retries + 1):
+        try:
+            params = pika.URLParameters(rabbitmq_url)
+            params.heartbeat = 30
+            params.blocked_connection_timeout = 300
+            conn = pika.BlockingConnection(params)
+            ch = conn.channel()
+            ch.exchange_declare(exchange='pharos', exchange_type='topic', durable=True)
+            ch.queue_declare(queue='report-generation-queue', durable=True)
+            ch.queue_bind(exchange='pharos', queue='report-generation-queue', routing_key='report.requested')
+            ch.basic_qos(prefetch_count=1)
+            print(f"[Worker] RabbitMQ connected on attempt {attempt}.")
+            return conn, ch
+        except Exception as e:
+            print(f"[Worker] RabbitMQ connection attempt {attempt}/{max_retries} failed: {e}")
+            if attempt < max_retries:
+                print(f"[Worker] Retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                raise
+
 def start():
     rabbitmq_url = os.getenv('RABBITMQ_URL', 'amqp://pharos:pharos123@localhost:5672')
     print(f"[Worker] Connecting to RabbitMQ at: {rabbitmq_url}")
-    
-    try:
-        conn = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
-        ch = conn.channel()
-        
-        ch.exchange_declare(exchange='pharos', exchange_type='topic', durable=True)
-        ch.queue_declare(queue='report-generation-queue', durable=True)
-        ch.queue_bind(exchange='pharos', queue='report-generation-queue', routing_key='report.requested')
-        
-        ch.basic_qos(prefetch_count=1)
-        ch.basic_consume(queue='report-generation-queue', on_message_callback=on_message)
-        
-        print("[INFO] Python worker waiting for report jobs...")
-        ch.start_consuming()
-    except Exception as conn_err:
-        print(f"[Fatal] Worker RabbitMQ consumer crash: {conn_err}")
+
+    while True:
+        try:
+            conn, ch = connect_with_retry(rabbitmq_url)
+            ch.basic_consume(queue='report-generation-queue', on_message_callback=on_message)
+            print("[INFO] Python worker waiting for report jobs...")
+            ch.start_consuming()
+        except KeyboardInterrupt:
+            print("[Worker] Shutting down gracefully.")
+            try:
+                conn.close()
+            except Exception:
+                pass
+            break
+        except Exception as e:
+            print(f"[Worker] Connection lost ({e}). Reconnecting in 5s...")
+            time.sleep(5)
 
 if __name__ == '__main__':
     start()

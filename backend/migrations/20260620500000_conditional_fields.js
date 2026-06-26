@@ -1,4 +1,11 @@
 export async function up(knex) {
+  const hasShowWhen = await knex.schema.hasColumn('field_registry', 'show_when');
+  if (!hasShowWhen) {
+    await knex.schema.alterTable('field_registry', (table) => {
+      table.jsonb('show_when').nullable();
+    });
+  }
+
   // Update property_description and property_status to only show when local_head is a property-related crime
   const propertyCrimes = [
     'Theft',
@@ -19,26 +26,26 @@ export async function up(knex) {
     value: propertyCrimes
   });
 
-  // Update property_description (field_key: 'property_description')
   await knex('field_registry')
-    .where({ field_key: 'property_description' })
-    .update({
-      show_when: showWhenRule
-    });
-
-  // Update property_status (field_key: 'property_status')
-  await knex('field_registry')
-    .where({ field_key: 'property_status' })
+    .whereIn('field_key', ['property_description', 'property_status'])
     .update({
       show_when: showWhenRule
     });
 }
 
 export async function down(knex) {
-  // Clear show_when rules for property fields
   await knex('field_registry')
     .whereIn('field_key', ['property_description', 'property_status'])
     .update({
       show_when: null
     });
+
+  const hasShowWhen = await knex.schema.hasColumn('field_registry', 'show_when');
+  if (hasShowWhen) {
+    try {
+      await knex.schema.alterTable('field_registry', (table) => {
+        table.dropColumn('show_when');
+      });
+    } catch (e) {}
+  }
 }

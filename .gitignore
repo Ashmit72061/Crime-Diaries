@@ -2,6 +2,25 @@
 node_modules/
 node_modules
 
+# Python — virtual environments
+venv/
+.venv/
+env/
+.env_py/
+
+# Python — bytecode & cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Python — distribution / packaging
+*.egg-info/
+build/
+*.egg
+
 # Environment
 .env
 .env.local
