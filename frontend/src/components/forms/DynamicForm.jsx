@@ -1116,6 +1116,26 @@ export default function DynamicForm({
       }
 
       const rules = parseRules(field.validation_rules);
+
+      if (field.field_key === 'gd_no') {
+        const num = currentValues.gd_no;
+        const dt = currentValues.gd_date;
+        const tm = currentValues.gd_time;
+        const isAnyFilled = !!(num || dt || tm);
+        const isAllFilled = !!(num && dt && tm);
+
+        if (rules.required && !isAllFilled) {
+          errs.gd_no = lang === 'hi'
+            ? 'जीडी नंबर, दिनांक और समय तीनों भरना आवश्यक है।'
+            : 'GD Number, Date and Time are all required.';
+        } else if (isAnyFilled && !isAllFilled) {
+          errs.gd_no = lang === 'hi'
+            ? 'जीडी नंबर, दिनांक और समय तीनों भरें।'
+            : 'Please fill all three: GD Number, Date and Time.';
+        }
+        return;
+      }
+
       if (!rules.required) return;
 
       const val = currentValues[field.field_key];
@@ -1147,6 +1167,46 @@ export default function DynamicForm({
 
     setValues((prev) => {
       const next = { ...prev, [key]: val };
+
+      // DOB, Age (Years) and Year of Birth interlinking
+      if (key.endsWith('_dob')) {
+        const prefix = key.substring(0, key.lastIndexOf('_dob'));
+        if (val) {
+          const dobDate = new Date(val);
+          if (!isNaN(dobDate.getTime())) {
+            const birthYear = dobDate.getFullYear();
+            const currentYear = new Date().getFullYear();
+            next[`${prefix}_birth_year`] = birthYear;
+            next[`${prefix}_age_year`] = Math.max(0, currentYear - birthYear);
+          }
+        } else {
+          next[`${prefix}_birth_year`] = '';
+          next[`${prefix}_age_year`] = '';
+        }
+      } else if (key.endsWith('_birth_year')) {
+        const prefix = key.substring(0, key.lastIndexOf('_birth_year'));
+        if (val) {
+          const birthYear = parseInt(val, 10);
+          if (!isNaN(birthYear)) {
+            const currentYear = new Date().getFullYear();
+            next[`${prefix}_age_year`] = Math.max(0, currentYear - birthYear);
+          }
+        } else {
+          next[`${prefix}_age_year`] = '';
+        }
+      } else if (key.endsWith('_age_year')) {
+        const prefix = key.substring(0, key.lastIndexOf('_age_year'));
+        if (val) {
+          const ageYear = parseInt(val, 10);
+          if (!isNaN(ageYear)) {
+            const currentYear = new Date().getFullYear();
+            next[`${prefix}_birth_year`] = currentYear - ageYear;
+          }
+        } else {
+          next[`${prefix}_birth_year`] = '';
+        }
+      }
+
       if (next.time_of_occurrence !== undefined) {
         next.occurrence_time = next.time_of_occurrence;
       }
@@ -1307,7 +1367,7 @@ export default function DynamicForm({
     );
   }
 
-  const activeSection = finalSchema[currentStep];
+  const activeSection = finalSchema[currentStep] || finalSchema[0];
   const isLastStep    = currentStep === finalSchema.length - 1;
 
   const stepHasError = (idx) => {

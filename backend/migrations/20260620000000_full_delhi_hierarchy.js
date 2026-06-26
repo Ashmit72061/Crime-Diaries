@@ -869,7 +869,7 @@ export async function up(knex) {
     "parent_id": "SUBDIV_DIST_DW_2"
   },
   {
-    "id": "ZONE_SCPLOZ",
+    "id": "ZONE_SCPLOZ1",
     "node_type": "SCP",
     "name_en": "Spl CP / L&O Zone 1",
     "name_hi": "Spl CP / L&O Zone 1",
@@ -880,7 +880,7 @@ export async function up(knex) {
     "node_type": "JCP",
     "name_en": "Northern Range",
     "name_hi": "Northern Range",
-    "parent_id": "ZONE_SCPLOZ"
+    "parent_id": "ZONE_SCPLOZ1"
   },
   {
     "id": "DIST_NWD",
@@ -1188,7 +1188,7 @@ export async function up(knex) {
     "node_type": "JCP",
     "name_en": "Central Range",
     "name_hi": "Central Range",
-    "parent_id": "ZONE_SCPLOZ"
+    "parent_id": "ZONE_SCPLOZ1"
   },
   {
     "id": "DIST_CD",
@@ -1475,7 +1475,7 @@ export async function up(knex) {
     "node_type": "JCP",
     "name_en": "Eastern Range",
     "name_hi": "Eastern Range",
-    "parent_id": "ZONE_SCPLOZ"
+    "parent_id": "ZONE_SCPLOZ1"
   },
   {
     "id": "DIST_ED",

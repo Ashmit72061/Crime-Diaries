@@ -690,7 +690,12 @@ export const confirmImportBatch = async (req, res) => {
             created_by: batch.uploaded_by,
             updated_by: batch.uploaded_by,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            is_legacy: !!batch.is_legacy,
+            source_system: batch.is_legacy ? 'EXCEL_IMPORT' : null,
+            imported_at: batch.is_legacy ? new Date().toISOString() : null,
+            imported_by: batch.is_legacy ? batch.uploaded_by : null,
+            legacy_ref: batch.is_legacy ? (rowData.fir_no || rowData.pcr_gd_no || null) : null
           });
 
           const fieldChanges = Object.keys(finalData).map(key => ({

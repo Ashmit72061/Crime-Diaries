@@ -748,8 +748,8 @@ def generate_report(job_id):
     template = None
     if template_id:
         template = load_template(template_id, engine)
-        if not template or not template.get('template_definition') or 'filter_spec' not in template['template_definition']:
-            print(f"[Worker] Predefined template row {template_id} not found or incomplete in DB. Falling back to predefined structures.")
+        if not template:
+            print(f"[Worker] Predefined template row {template_id} not found in DB. Falling back to predefined structures.")
             template = {
                 'id': template_id,
                 'name_en': template_id.replace('-', ' ').title(),
