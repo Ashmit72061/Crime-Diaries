@@ -138,7 +138,8 @@ export const getFieldsForForm = async (req, res) => {
               { value: 'CANCELLATION', label_en: 'CANCELLATION', label_hi: 'रद्दीकरण (CANCELLATION)' },
               { value: 'QUASHED', label_en: 'QUASHED', label_hi: 'खारिज (QUASHED)' },
               { value: 'CLOSURE REPORT', label_en: 'CLOSURE REPORT', label_hi: 'क्लोजर रिपोर्ट (CLOSURE REPORT)' },
-              { value: 'RELEASED U/S 189 BNSS', label_en: 'RELEASED U/S 189 BNSS', label_hi: 'धारा 189 BNSS के तहत रिहा (RELEASED U/S 189 BNSS)' }
+              { value: 'RELEASED U/S 189 BNSS', label_en: 'RELEASED U/S 189 BNSS', label_hi: 'धारा 189 BNSS के तहत रिहा (RELEASED U/S 189 BNSS)' },
+              { value: 'TRANSFER', label_en: 'TRANSFER', label_hi: 'स्थानांतरण (TRANSFER)' }
             ];
           } else if (normalizedType === 'ARREST') {
             options = [
@@ -209,10 +210,12 @@ export const getFieldsForForm = async (req, res) => {
         }
         repeaterMap.get(key).fields.push(f);
       } else {
-        // ARREST-specific override: act_name and sections live in offence_info
+        // ARREST-specific override: act_name and sections live in offence_info, status lives in custody_status
         const secKey = (normalizedType === 'ARREST' && (f.field_key === 'act_name' || f.field_key === 'sections'))
           ? 'offence_info'
-          : f.section;
+          : (normalizedType === 'ARREST' && f.field_key === 'status')
+            ? 'custody_status'
+            : f.section;
         if (!sectionsMap.has(secKey)) {
           sectionsMap.set(secKey, { fields: [], dbLabelEn: f.section_label_en, dbLabelHi: f.section_label_hi });
           allSectionKeys.push({ key: secKey, type: 'flat' });

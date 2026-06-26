@@ -67,9 +67,17 @@ export const getFormFields = async (record_type) => {
   );
 
   const grouped = {};
+  const normalizedType = record_type.toUpperCase();
 
   for (const field of fields) {
-    const sec = field.section || 'general_info';
+    let sec = field.section || 'general_info';
+    if (normalizedType === 'ARREST') {
+      if (field.field_key === 'act_name' || field.field_key === 'sections') {
+        sec = 'offence_info';
+      } else if (field.field_key === 'status') {
+        sec = 'custody_status';
+      }
+    }
     if (!grouped[sec]) {
       const t = sectionTitle(sec);
       grouped[sec] = { section: sec, title_en: t.en, title_hi: t.hi, fields: [] };

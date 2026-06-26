@@ -370,8 +370,21 @@ export default function DynamicForm({
 
   const finalSchema = React.useMemo(() => {
     if (!schema || schema.length === 0) return [];
+    
+    let filteredSchema = schema;
+
+    if (recordType === 'CASE') {
+      filteredSchema = schema.filter(section => {
+        if (section.section === 'investigation_officer') {
+          const status = values.status;
+          return status === 'CHARGE SHEET' || status === 'TRANSFER';
+        }
+        return true;
+      });
+    }
+
     if (recordType === 'ARREST' && caseType === 'against_fir') {
-      const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
+      const hasVirtualStep = filteredSchema[0]?.fields?.[0]?.field_key === 'selected_fir';
       if (!hasVirtualStep) {
         const virtualSelectFirStep = {
           title_en: 'Select FIR',
@@ -387,11 +400,11 @@ export default function DynamicForm({
             }
           ]
         };
-        return [virtualSelectFirStep, ...schema];
+        return [virtualSelectFirStep, ...filteredSchema];
       }
     }
-    return schema;
-  }, [schema, recordType, caseType, finalFirOptions]);
+    return filteredSchema;
+  }, [schema, recordType, caseType, finalFirOptions, values.status]);
 
   const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
     recordType,
@@ -414,6 +427,13 @@ export default function DynamicForm({
       activeRecordIdRef.current = savedRecord.id;
     }
   }, [savedRecord]);
+
+  /* ── Adjust step bounds if schema changes ───────────────────────────────── */
+  useEffect(() => {
+    if (finalSchema.length > 0 && currentStep >= finalSchema.length) {
+      setCurrentStep(finalSchema.length - 1);
+    }
+  }, [finalSchema.length, currentStep]);
 
   const initialValuesStr = JSON.stringify(initialValues || {});
   const userStr = user ? JSON.stringify({
