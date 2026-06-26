@@ -14,39 +14,9 @@
  */
 
 export async function up(knex) {
-  const isSQLite = knex.client.config.client === 'sqlite3' || knex.client.config.client === 'better-sqlite3';
-
-  if (isSQLite) {
-    // SQLite workaround: rename → recreate → copy → drop old
-    await knex.schema.renameTable('report_jobs', 'report_jobs_old');
-
-    await knex.schema.createTable('report_jobs', (table) => {
-      table.string('id', 36).primary();
-      // Now nullable — no FK violation when template is an in-memory fallback
-      table.string('template_id', 36).nullable().references('id').inTable('report_templates').onDelete('SET NULL');
-      table.text('filters');
-      table.string('format', 10);
-      table.string('status', 20).notNullable().defaultTo('PENDING');
-      table.text('file_path');
-      table.string('created_by', 36).notNullable().references('id').inTable('users');
-      table.timestamp('created_at').defaultTo(knex.fn.now());
-      table.timestamp('updated_at').defaultTo(knex.fn.now());
-    });
-
-    // Copy existing rows
-    await knex.raw(`
-      INSERT INTO report_jobs (id, template_id, filters, format, status, file_path, created_by, created_at, updated_at)
-      SELECT id, template_id, filters, format, status, file_path, created_by, created_at, updated_at
-      FROM report_jobs_old
-    `);
-
-    await knex.schema.dropTable('report_jobs_old');
-  } else {
-    // PostgreSQL / MySQL path
-    await knex.schema.alterTable('report_jobs', (table) => {
-      table.string('template_id', 36).nullable().alter();
-    });
-  }
+  await knex.schema.alterTable('report_jobs', (table) => {
+    table.string('template_id', 36).nullable().alter();
+  });
 }
 
 export async function down(knex) {

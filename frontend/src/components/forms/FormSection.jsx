@@ -86,13 +86,11 @@ export default function FormSection({
             // Conditional field rendering (schema-driven)
             if (field.show_when) {
               const { field: targetField, value: targetValue } = field.show_when;
-              const currentValue = values[targetField];
-              const isMatch = Array.isArray(targetValue)
-                ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
-                : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
-              if (!isMatch) {
-                return null;
-              }
+              const currentValue = String(values[targetField] || '').toLowerCase();
+              const allowed = Array.isArray(targetValue)
+                ? targetValue.map(v => String(v).toLowerCase())
+                : [String(targetValue || '').toLowerCase()];
+              if (!allowed.includes(currentValue)) return null;
             }
 
             const label        = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;

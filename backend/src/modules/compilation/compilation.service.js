@@ -89,10 +89,22 @@ export const createCompilation = async (districtId, period, userId, fromDate, to
     compiled_by: userId,
   };
 
-  // Upsert: refresh an existing DRAFT rather than accumulating duplicate rows.
+  // UPSERT: if a DRAFT already exists for this district+period, refresh it with new records
   const existing = await db('compilations')
     .where({ source_entity_id: districtId, period, status: 'DRAFT' })
     .first();
+
+  if (existing) {
+    await db('compilations').where({ id: existing.id }).update({
+      record_ids: JSON.stringify(recordIds),
+      compiled_summary: JSON.stringify(compiledSummary),
+      submitted_by: userId,
+    });
+    const updated = await db('compilations').where({ id: existing.id }).first();
+    return parseSummary(updated);
+  }
+
+  const compilationId = uuidv4();
 
   let compilationId;
   if (existing) {

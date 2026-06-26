@@ -9,14 +9,7 @@ const parseJsonField = (val) => {
   return val;
 };
 
-// Database-independent JSON extraction
-const getJsonPathSql = (column, path) => {
-  const isSqlite = db.client.config.client === 'sqlite3';
-  if (isSqlite) {
-    return `json_extract(${column}, '$.${path}')`;
-  }
-  return `(${column})::jsonb->>'${path}'`;
-};
+const jsonbPath = (column, path) => `(${column})::jsonb->>'${path}'`;
 
 export const getSummary = async (req, res) => {
   const jq = req.jurisdictionQuery;
@@ -33,10 +26,10 @@ export const getSummary = async (req, res) => {
 
     const counts = await query.groupBy('record_type');
     
-    // Map array to object structure
-    const data = { CASES: 0, ARREST: 0, PCR: 0, MISSING: 0 };
+    const data = { CASE: 0, ARREST: 0, PCR_CALL: 0, MISSING: 0, UIDB: 0 };
     counts.forEach(c => {
-      data[c.record_type.toUpperCase()] = parseInt(c.count, 10) || 0;
+      const key = (c.record_type || '').toUpperCase();
+      if (key in data) data[key] = parseInt(c.count, 10) || 0;
     });
 
     return res.status(200).json({
@@ -58,16 +51,12 @@ export const getTrends = async (req, res) => {
     return res.status(400).json({ success: false, message: 'recordType query parameter is required' });
   }
 
-  let typeUpper = recordType.toUpperCase();
-  if (typeUpper === 'CASES') typeUpper = 'CASE';
-  if (typeUpper === 'PCR') typeUpper = 'PCR_CALL';
-
+  const typeUpper = recordType.toUpperCase();
   const classificationKey = typeUpper === 'CASE' ? 'case_head' : (typeUpper === 'ARREST' ? 'crime_head' : 'pcr_head');
 
   try {
-    const jsonPath = getJsonPathSql('data', classificationKey);
-    const isPg = db.client.config.client === 'pg';
-    const monthExpr = isPg ? `to_char(record_date, 'YYYY-MM')` : `strftime('%Y-%m', record_date)`;
+    const jsonPath = jsonbPath('data', classificationKey);
+    const monthExpr = `to_char(record_date, 'YYYY-MM')`;
 
     let query = db('records')
       .select(
@@ -215,7 +204,7 @@ export const getByPs = async (req, res) => {
 export const getByCrimeHead = async (req, res) => {
   const jq = req.jurisdictionQuery;
   try {
-    const jsonPath = getJsonPathSql('data', 'crime_head');
+    const jsonPath = jsonbPath('data', 'crime_head');
     let query = db('records')
       .select(db.raw(`${jsonPath} as crime_head`))
       .count('* as count')
@@ -239,10 +228,7 @@ export const getByCrimeHead = async (req, res) => {
 export const getCombinedTrends = async (req, res) => {
   const jq = req.jurisdictionQuery;
   try {
-    const isPg = db.client.config.client === 'pg';
-    const dateExpr = isPg
-      ? `to_char(record_date, 'YYYY-MM-DD')`
-      : `strftime('%Y-%m-%d', record_date)`;
+    const dateExpr = `to_char(record_date, 'YYYY-MM-DD')`;
 
     let query = db('records')
       .select(db.raw(`${dateExpr} as day`), 'record_type')
