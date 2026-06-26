@@ -258,11 +258,11 @@ const fields = [
   { id: 'DD_A11', field_key: 'cheated_amount',              field_type: 'TEXT',   applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Amount Cheated / Defrauded',              label_hi: 'धोखाधड़ी की गई राशि',                  visible_to_levels: L, editable_by_levels: E, section: 'financial_fraud', sort_order: 40, is_active: true, scope_level: 'global' },
   { id: 'DD_A12', field_key: 'modus_operandi',              field_type: 'TEXTAREA',applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Modus Operandi',                         label_hi: 'अपराध करने का तरीका',                  visible_to_levels: L, editable_by_levels: E, section: 'financial_fraud', sort_order: 41, is_active: true, scope_level: 'global', full_width: true },
 
-  // ── Simplified Property Section (Statically Rendered) ───────────────────────────────────
-  { id: 'PROP_1', field_key: 'property_major_category',   field_type: 'SELECT',   applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Major Category',       label_hi: 'संपत्ति मुख्य श्रेणी',                   visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 330, is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Vehicle', label_en: 'Vehicle', label_hi: 'वाहन' }, { value: 'Mobile Phone', label_en: 'Mobile Phone', label_hi: 'मोबाइल फोन' }, { value: 'Cash', label_en: 'Cash', label_hi: 'नकद' }, { value: 'Jewellery', label_en: 'Gold/Jewellery', label_hi: 'सोना/आभूषण' }, { value: 'Electronics', label_en: 'Electronics/Gadgets', label_hi: 'इलेक्ट्रॉनिक्स' }, { value: 'Documents', label_en: 'Official/Personal Documents', label_hi: 'दस्तावेज़' }, { value: 'Drugs', label_en: 'Drugs/Narcotics', label_hi: 'नशीले पदार्थ' }, { value: 'Arms', label_en: 'Arms/Ammunition', label_hi: 'हथियार' }, { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }]) },
-  { id: 'PROP_2', field_key: 'property_minor_category',   field_type: 'TEXT',     applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Minor Category',       label_hi: 'संपत्ति उप श्रेणी',                      visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 331, is_active: true, scope_level: 'global' },
-  { id: 'PROP_3', field_key: 'property_details',          field_type: 'TEXTAREA', applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Details / Description',  label_hi: 'संपत्ति का विवरण',                       visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 332, is_active: true, scope_level: 'global', full_width: true },
-  { id: 'PROP_4', field_key: 'property_stolen_recovered', field_type: 'SELECT',   applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Stolen / Recovered',   label_hi: 'संपत्ति चोरी / बरामद स्थिति',            visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 333, is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' }, { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' }]) },
+  // ── Property Section (Repeater) ──────────────────────────────────────────────────────────
+  { id: 'PROP_1', field_key: 'property_major_category',   field_type: 'SELECT', repeater_entity: 'PROPERTY',   applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Major Category',       label_hi: 'संपत्ति मुख्य श्रेणी',                   visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 330, is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Vehicle', label_en: 'Vehicle', label_hi: 'वाहन' }, { value: 'Mobile Phone', label_en: 'Mobile Phone', label_hi: 'मोबाइल फोन' }, { value: 'Cash', label_en: 'Cash', label_hi: 'नकद' }, { value: 'Jewellery', label_en: 'Gold/Jewellery', label_hi: 'सोना/आभूषण' }, { value: 'Electronics', label_en: 'Electronics/Gadgets', label_hi: 'इलेक्ट्रॉनिक्स' }, { value: 'Documents', label_en: 'Official/Personal Documents', label_hi: 'दस्तावेज़' }, { value: 'Drugs', label_en: 'Drugs/Narcotics', label_hi: 'नशीले पदार्थ' }, { value: 'Arms', label_en: 'Arms/Ammunition', label_hi: 'हथियार' }, { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }]) },
+  { id: 'PROP_2', field_key: 'property_minor_category',   field_type: 'TEXT',     repeater_entity: 'PROPERTY', applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Minor Category',       label_hi: 'संपत्ति उप श्रेणी',                      visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 331, is_active: true, scope_level: 'global' },
+  { id: 'PROP_3', field_key: 'property_details',          field_type: 'TEXTAREA', repeater_entity: 'PROPERTY', applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Details / Description',  label_hi: 'संपत्ति का विवरण',                       visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 332, is_active: true, scope_level: 'global', full_width: true },
+  { id: 'PROP_4', field_key: 'property_stolen_recovered', field_type: 'SELECT',   repeater_entity: 'PROPERTY', applicable_record_types: JSON.stringify(['CASE', 'ARREST']), label_en: 'Property Stolen / Recovered',   label_hi: 'संपत्ति चोरी / बरामद स्थिति',            visible_to_levels: L, editable_by_levels: E, section: 'property_details',        sort_order: 333, is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' }, { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' }]) },
   // ─────────────────────────────────────────────────────────────────────────────
   // PCR / KALANDRA MODULE — fields unique to PCR_CALL
   // ─────────────────────────────────────────────────────────────────────────────
@@ -309,8 +309,9 @@ const fields = [
   { id: 'U_28', field_key: 'filed_by_acp_sdm_date',        field_type: 'DATE',     applicable_record_types: JSON.stringify(['UIDB']), label_en: 'Date of Filed by ACP/SDM',       label_hi: 'एसीपी/एसडीएम द्वारा दायर करने की तिथि', visible_to_levels: L, editable_by_levels: E, section: 'uidb_details', sort_order: 13, is_active: true, scope_level: 'global' },
 ];
 
-function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes) {
+function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes, repeaterEntity, baseOrder = 400) {
   const typesStr = JSON.stringify(recordTypes);
+  const rep = repeaterEntity ? { repeater_entity: repeaterEntity } : {};
   return [
     {
       id: `${prefix}_npr`,
@@ -322,66 +323,32 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes)
       visible_to_levels: L,
       editable_by_levels: E,
       section: `${prefix}_personal_info`,
-      sort_order: 1.0,
-      is_active: true,
-      scope_level: 'global'
+      sort_order: baseOrder,      is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_first_name`,
-      field_key: `${prefix}_first_name`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} First Name`,
-      label_hi: `${labelPrefixHi} पहला नाम`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.1,
-      is_active: true,
-      scope_level: 'global',
+      id: `${prefix}_first_name`,      field_key: `${prefix}_first_name`,      field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} First Name`, label_hi: `${labelPrefixHi} पहला नाम`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 1, is_active: true, scope_level: 'global',
       validation_rules: JSON.stringify({ required: false })
     },
     {
-      id: `${prefix}_middle_name`,
-      field_key: `${prefix}_middle_name`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Middle Name`,
-      label_hi: `${labelPrefixHi} मध्यम नाम`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.2,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_middle_name`,     field_key: `${prefix}_middle_name`,     field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Middle Name`, label_hi: `${labelPrefixHi} मध्यम नाम`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 2, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_last_name`,
-      field_key: `${prefix}_last_name`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Last Name`,
-      label_hi: `${labelPrefixHi} अंतिम नाम`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.3,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_last_name`,       field_key: `${prefix}_last_name`,       field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Last Name`, label_hi: `${labelPrefixHi} अंतिम नाम`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 3, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_gender`,
-      field_key: `${prefix}_gender`,
-      field_type: 'SELECT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Gender`,
-      label_hi: `${labelPrefixHi} लिंग`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.4,
-      is_active: true,
-      scope_level: 'global',
+      id: `${prefix}_gender`,          field_key: `${prefix}_gender`,          field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Gender`, label_hi: `${labelPrefixHi} लिंग`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 4, is_active: true, scope_level: 'global',
       validation_rules: JSON.stringify({ required: false }),
       options: JSON.stringify([
         { value: 'Male', label_en: 'Male', label_hi: 'पुरुष' },
@@ -391,18 +358,10 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes)
       ])
     },
     {
-      id: `${prefix}_relation_type`,
-      field_key: `${prefix}_relation_type`,
-      field_type: 'SELECT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Relation Type`,
-      label_hi: `${labelPrefixHi} संबंध का प्रकार`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.5,
-      is_active: true,
-      scope_level: 'global',
+      id: `${prefix}_relation_type`,   field_key: `${prefix}_relation_type`,   field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Relation Type`, label_hi: `${labelPrefixHi} संबंध का प्रकार`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 5, is_active: true, scope_level: 'global',
       validation_rules: JSON.stringify({ required: false }),
       options: JSON.stringify([
         { value: 'Father', label_en: 'Father', label_hi: 'पिता' },
@@ -414,266 +373,115 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes)
       ])
     },
     {
-      id: `${prefix}_relative_name`,
-      field_key: `${prefix}_relative_name`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Relative Name`,
-      label_hi: `${labelPrefixHi} रिश्तेदार का नाम`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.6,
-      is_active: true,
-      scope_level: 'global',
+      id: `${prefix}_relative_name`,   field_key: `${prefix}_relative_name`,   field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Relative Name`, label_hi: `${labelPrefixHi} रिश्तेदार का नाम`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 6, is_active: true, scope_level: 'global',
       validation_rules: JSON.stringify({ required: false })
     },
     {
-      id: `${prefix}_landline`,
-      field_key: `${prefix}_landline`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Landline No.`,
-      label_hi: `${labelPrefixHi} लैंडलाइन नंबर`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.7,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_landline`,        field_key: `${prefix}_landline`,        field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Landline No.`, label_hi: `${labelPrefixHi} लैंडलाइन नंबर`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 7, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_mobile`,
-      field_key: `${prefix}_mobile`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Mobile No.`,
-      label_hi: `${labelPrefixHi} मोबाइल नंबर`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.8,
-      is_active: true,
-      scope_level: 'global'
-    },
-    // Age Panel
-    {
-      id: `${prefix}_dob`,
-      field_key: `${prefix}_dob`,
-      field_type: 'DATE',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Date of Birth`,
-      label_hi: `${labelPrefixHi} जन्म तिथि`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 1.9,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_mobile`,          field_key: `${prefix}_mobile`,          field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Mobile No.`, label_hi: `${labelPrefixHi} मोबाइल नंबर`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 8, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_age_year`,
-      field_key: `${prefix}_age_year`,
-      field_type: 'NUMBER',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Age (Years)`,
-      label_hi: `${labelPrefixHi} आयु (वर्ष)`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 2.0,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_dob`,             field_key: `${prefix}_dob`,             field_type: 'DATE',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Date of Birth`, label_hi: `${labelPrefixHi} जन्म तिथि`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 9, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_age_month`,
-      field_key: `${prefix}_age_month`,
-      field_type: 'NUMBER',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Age (Months)`,
-      label_hi: `${labelPrefixHi} आयु (महीने)`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 2.1,
-      is_active: false,
-      scope_level: 'global'
+      id: `${prefix}_age_year`,        field_key: `${prefix}_age_year`,        field_type: 'NUMBER',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Age (Years)`, label_hi: `${labelPrefixHi} आयु (वर्ष)`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 10, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_birth_year`,
-      field_key: `${prefix}_birth_year`,
-      field_type: 'NUMBER',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Year of Birth`,
-      label_hi: `${labelPrefixHi} जन्म का वर्ष`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_personal_info`,
-      sort_order: 2.2,
-      is_active: true,
-      scope_level: 'global'
-    },
-    // Address fields
-    {
-      id: `${prefix}_house_no`,
-      field_key: `${prefix}_house_no`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} House No.`,
-      label_hi: `${labelPrefixHi} मकान संख्या`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.0,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_age_month`,       field_key: `${prefix}_age_month`,       field_type: 'NUMBER',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Age (Months)`, label_hi: `${labelPrefixHi} आयु (महीने)`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 11, is_active: false, scope_level: 'global'
     },
     {
-      id: `${prefix}_street`,
-      field_key: `${prefix}_street`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Street`,
-      label_hi: `${labelPrefixHi} गली / सड़क`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.1,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_birth_year`,      field_key: `${prefix}_birth_year`,      field_type: 'NUMBER',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Year of Birth`, label_hi: `${labelPrefixHi} जन्म का वर्ष`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 12, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_colony`,
-      field_key: `${prefix}_colony`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Colony`,
-      label_hi: `${labelPrefixHi} कॉलोनी`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.2,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_house_no`,        field_key: `${prefix}_house_no`,        field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} House No.`, label_hi: `${labelPrefixHi} मकान संख्या`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 13, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_city_town_village`,
-      field_key: `${prefix}_city_town_village`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Village / City / Town`,
-      label_hi: `${labelPrefixHi} गांव / शहर / नगर`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.3,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_street`,          field_key: `${prefix}_street`,          field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Street`, label_hi: `${labelPrefixHi} गली / सड़क`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 14, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_tehsil_block_mandal`,
-      field_key: `${prefix}_tehsil_block_mandal`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Tehsil / Block / Mandal`,
-      label_hi: `${labelPrefixHi} तहसील / ब्लॉक / मंडल`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.4,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_colony`,          field_key: `${prefix}_colony`,          field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Colony`, label_hi: `${labelPrefixHi} कॉलोनी`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 15, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_present_address`,
-      field_key: `${prefix}_present_address`,
-      field_type: 'TEXTAREA',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Full Present Address`,
-      label_hi: `${labelPrefixHi} वर्तमान पता`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.5,
-      is_active: true,
-      scope_level: 'global',
-      full_width: true
+      id: `${prefix}_city_town_village`, field_key: `${prefix}_city_town_village`, field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Village / City / Town`, label_hi: `${labelPrefixHi} गांव / शहर / नगर`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 16, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_country`,
-      field_key: `${prefix}_country`,
-      field_type: 'SELECT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Nationality`,
-      label_hi: `${labelPrefixHi} राष्ट्रीयता`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.6,
-      is_active: true,
-      scope_level: 'global',
-      options: COUNTRY_OPTS
+      id: `${prefix}_tehsil_block_mandal`, field_key: `${prefix}_tehsil_block_mandal`, field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Tehsil / Block / Mandal`, label_hi: `${labelPrefixHi} तहसील / ब्लॉक / मंडल`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 17, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_state`,
-      field_key: `${prefix}_state`,
-      field_type: 'SELECT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} State`,
-      label_hi: `${labelPrefixHi} राज्य`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.7,
-      is_active: true,
-      scope_level: 'global',
-      options: STATE_OPTS
+      id: `${prefix}_present_address`, field_key: `${prefix}_present_address`, field_type: 'TEXTAREA',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Full Present Address`, label_hi: `${labelPrefixHi} वर्तमान पता`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 18, is_active: true, scope_level: 'global', full_width: true
     },
     {
-      id: `${prefix}_district`,
-      field_key: `${prefix}_district`,
-      field_type: 'SELECT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} District`,
-      label_hi: `${labelPrefixHi} जिला`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.8,
-      is_active: true,
-      scope_level: 'global',
-      options: DISTRICT_OPTS
+      id: `${prefix}_country`,         field_key: `${prefix}_country`,         field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Nationality`, label_hi: `${labelPrefixHi} राष्ट्रीयता`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 19, is_active: true, scope_level: 'global', options: COUNTRY_OPTS
     },
     {
-      id: `${prefix}_police_station`,
-      field_key: `${prefix}_police_station`,
-      field_type: 'SELECT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Police Station`,
-      label_hi: `${labelPrefixHi} पुलिस स्टेशन (PS)`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 3.9,
-      is_active: true,
-      scope_level: 'global',
-      options: JSON.stringify([])
+      id: `${prefix}_state`,           field_key: `${prefix}_state`,           field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} State`, label_hi: `${labelPrefixHi} राज्य`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 20, is_active: true, scope_level: 'global', options: STATE_OPTS
     },
     {
-      id: `${prefix}_pincode`,
-      field_key: `${prefix}_pincode`,
-      field_type: 'TEXT',
-      applicable_record_types: typesStr,
-      label_en: `${labelPrefixEn} Pin Code`,
-      label_hi: `${labelPrefixHi} पिन कोड`,
-      visible_to_levels: L,
-      editable_by_levels: E,
-      section: `${prefix}_address`,
-      sort_order: 4.0,
-      is_active: true,
-      scope_level: 'global'
+      id: `${prefix}_district`,        field_key: `${prefix}_district`,        field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} District`, label_hi: `${labelPrefixHi} जिला`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 21, is_active: true, scope_level: 'global', options: DISTRICT_OPTS
+    },
+    {
+      id: `${prefix}_police_station`,  field_key: `${prefix}_police_station`,  field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Police Station`, label_hi: `${labelPrefixHi} पुलिस स्टेशन (PS)`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 22, is_active: true, scope_level: 'global', options: JSON.stringify([])
+    },
+    {
+      id: `${prefix}_pincode`,         field_key: `${prefix}_pincode`,         field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Pin Code`, label_hi: `${labelPrefixHi} पिन कोड`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_address`,
+      sort_order: baseOrder + 23, is_active: true, scope_level: 'global'
     }
-  ];
+  ].map(f => ({ ...f, ...rep }));
 }
 
 const COUNTRY_OPTS = JSON.stringify([
@@ -886,10 +694,10 @@ function generateAddressFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes
 }
 
 const generatedFields = [
-  ...generatePersonFields('complainant', 'Complainant', 'शिकायतकर्ता', ['CASE']),
-  ...generatePersonFields('accused', 'Accused', 'अभियुक्त', ['CASE']),
-  ...generatePersonFields('victim', 'Victim', 'पीड़ित', ['CASE']),
-  ...generatePersonFields('arrested', 'Arrested Person', 'गिरफ्तार व्यक्ति', ['ARREST']),
+  ...generatePersonFields('complainant', 'Complainant', 'शिकायतकर्ता', ['CASE'], 'PERSON_COMPLAINANT', 400),
+  ...generatePersonFields('accused',     'Accused',     'अभियुक्त',    ['CASE'], 'PERSON_ACCUSED',      430),
+  ...generatePersonFields('victim',      'Victim',      'पीड़ित',       ['CASE'], 'PERSON_VICTIM',        460),
+  ...generatePersonFields('arrested',    'Arrested Person', 'गिरफ्तार व्यक्ति', ['ARREST'], 'PERSON_ARRESTED', 400),
   ...generateAddressFields('occurrence', 'Place of Occurrence', 'घटनास्थल', ['CASE']),
   ...generateAddressFields('intimation', 'Intimation', 'सूचना/इत्तिला', ['CASE', 'ARREST'])
 ];
@@ -903,6 +711,7 @@ const DEFAULTS = {
   created_by: null,
   section_label_en: null,
   section_label_hi: null,
+  repeater_entity: null,
 };
 
 export async function seed(knex) {
@@ -919,6 +728,7 @@ export async function seed(knex) {
       'label_en', 'label_hi', 'field_type', 'options', 'sort_order',
       'section', 'validation_rules', 'show_when', 'is_active',
       'applicable_record_types', 'visible_to_levels', 'editable_by_levels', 'full_width',
+      'repeater_entity',
     ]);
   console.log(`[01_fields] Upserted ${rows.length} fields into field_registry`);
 }

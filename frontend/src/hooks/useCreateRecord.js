@@ -5,12 +5,14 @@ export function useCreateRecord(module) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (formData) => {
+    mutationFn: async ({ data: formData, persons = [], properties = [] } = {}) => {
       const record_date = formData.record_date || new Date().toISOString().split('T')[0];
       const res = await api.post('/records', {
         record_type: module,
         record_date,
-        data: formData
+        data: formData,
+        persons,
+        properties,
       });
       return res.data.data;
     },

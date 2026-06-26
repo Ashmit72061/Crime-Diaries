@@ -5,9 +5,11 @@ export function useUpdateRecord(module) {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }) => {
+    mutationFn: async ({ id, data, persons, properties }) => {
       const res = await api.put(`/records/${id}`, {
-        data: data
+        data,
+        ...(persons !== undefined && { persons }),
+        ...(properties !== undefined && { properties }),
       });
       return res.data.data;
     },

@@ -73,8 +73,18 @@ const SECTION_TITLES = {
   intimation_address:        { en: 'Intimation Address',                     hi: 'सूचना का पता' },
 };
 
-const VALID_FIELD_TYPES = ['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'DATETIME', 'SELECT', 'BOOLEAN'];
+const VALID_FIELD_TYPES = ['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'DATETIME', 'SELECT', 'BOOLEAN', 'TIME', 'RADIO'];
 const VALID_RECORD_TYPES = ['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB'];
+
+const REPEATER_SECTION_TITLES = {
+  PERSON_ACCUSED:     { en: 'Accused Persons',     hi: 'अभियुक्त व्यक्ति' },
+  PERSON_VICTIM:      { en: 'Victim Persons',       hi: 'पीड़ित व्यक्ति' },
+  PERSON_COMPLAINANT: { en: 'Complainant Persons',  hi: 'शिकायतकर्ता' },
+  PERSON_ARRESTED:    { en: 'Arrested Persons',     hi: 'गिरफ्तार व्यक्ति' },
+  PERSON_MISSING:     { en: 'Missing Persons',      hi: 'लापता व्यक्ति' },
+  PERSON_BODY:        { en: 'Bodies',               hi: 'शव' },
+  PROPERTY:           { en: 'Properties Involved',  hi: 'सम्बंधित संपत्ति' },
+};
 
 function normalizeRecordType(t) {
   const u = t.toUpperCase();
@@ -130,35 +140,67 @@ export const getFieldsForForm = async (req, res) => {
         readonly: f.readonly || false,
         full_width: f.full_width || false,
         show_when: parseJsonField(f.show_when) || null,
-        section: (normalizedType === 'ARREST' && (f.field_key === 'act_name' || f.field_key === 'sections'))
-          ? 'offence_info'
-          : (f.section || 'general_info'),
+        section: f.section || 'general_info',
+        repeater_entity: f.repeater_entity || null,
         section_label_en: f.section_label_en || null,
         section_label_hi: f.section_label_hi || null,
         sort_order: f.sort_order,
         scope_level: f.scope_level || 'global',
       }));
 
-    // Group by section, using DB-stored labels > hardcoded map > toTitleCase fallback
+    // Group fields: repeater fields by repeater_entity, flat fields by section.
+    // Order is preserved by first-occurrence (fields are already sorted by sort_order).
+    const allSectionKeys = [];
     const sectionsMap = new Map();
+    const repeaterMap = new Map();
+
     for (const f of filteredFields) {
-      const secKey = f.section;
-      if (!sectionsMap.has(secKey)) {
-        sectionsMap.set(secKey, { fields: [], dbLabelEn: f.section_label_en, dbLabelHi: f.section_label_hi });
+      if (f.repeater_entity) {
+        const key = f.repeater_entity;
+        if (!repeaterMap.has(key)) {
+          repeaterMap.set(key, { fields: [] });
+          allSectionKeys.push({ key, type: 'repeater' });
+        }
+        repeaterMap.get(key).fields.push(f);
+      } else {
+        // ARREST-specific override: act_name and sections live in offence_info
+        const secKey = (normalizedType === 'ARREST' && (f.field_key === 'act_name' || f.field_key === 'sections'))
+          ? 'offence_info'
+          : f.section;
+        if (!sectionsMap.has(secKey)) {
+          sectionsMap.set(secKey, { fields: [], dbLabelEn: f.section_label_en, dbLabelHi: f.section_label_hi });
+          allSectionKeys.push({ key: secKey, type: 'flat' });
+        }
+        sectionsMap.get(secKey).fields.push(f);
       }
-      sectionsMap.get(secKey).fields.push(f);
     }
 
-    const sections = [];
-    for (const [sectionKey, { fields, dbLabelEn, dbLabelHi }] of sectionsMap.entries()) {
-      const hardcoded = SECTION_TITLES[sectionKey];
-      sections.push({
-        section: sectionKey,
-        title_en: dbLabelEn || hardcoded?.en || toTitleCase(sectionKey),
-        title_hi: dbLabelHi || hardcoded?.hi || toTitleCase(sectionKey),
-        fields,
-      });
-    }
+    const sections = allSectionKeys.map(({ key, type }) => {
+      if (type === 'flat') {
+        const { fields, dbLabelEn, dbLabelHi } = sectionsMap.get(key);
+        const hardcoded = SECTION_TITLES[key];
+        return {
+          section: key,
+          title_en: dbLabelEn || hardcoded?.en || toTitleCase(key),
+          title_hi: dbLabelHi || hardcoded?.hi || toTitleCase(key),
+          is_repeater: false,
+          fields,
+        };
+      } else {
+        const { fields } = repeaterMap.get(key);
+        const titleInfo = REPEATER_SECTION_TITLES[key] || { en: key, hi: key };
+        const isPerson = key.startsWith('PERSON_');
+        return {
+          section: key.toLowerCase().replace(/_/g, '-'),
+          title_en: titleInfo.en,
+          title_hi: titleInfo.hi,
+          is_repeater: true,
+          entity_type: isPerson ? 'person' : 'property',
+          person_type: isPerson ? key.replace('PERSON_', '') : null,
+          fields,
+        };
+      }
+    });
 
     return res.status(200).json({ success: true, data: sections });
   } catch (error) {
