@@ -297,6 +297,33 @@ const extractPersonSearchCols = (personType, data) => {
   };
 };
 
+const MAPPED_PROP_KEYS = new Set([
+  'property_major_category', 'property_minor_category',
+  'property_details', 'property_stolen_recovered',
+]);
+
+const buildPropertyRow = (prop, i, recordId, hydratedData) => {
+  const extraData = Object.fromEntries(
+    Object.entries(prop).filter(([k, v]) =>
+      !MAPPED_PROP_KEYS.has(k) && v !== undefined && v !== null && v !== ''
+    )
+  );
+  return {
+    id: uuidv4(),
+    record_id: recordId,
+    uid: hydratedData.uid || null,
+    fir_no: hydratedData.fir_no || null,
+    major_category: prop.property_major_category || null,
+    minor_category: prop.property_minor_category || null,
+    status: prop.property_stolen_recovered || null,
+    details: prop.property_details || null,
+    extra_data: Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
+    sort_order: i,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+};
+
 export const createRecord = async (user, recordType, recordDate, data, ipAddress, { persons = [], properties = [] } = {}) => {
   const mergedData = mergeConditionalFields({ ...data });
   const dbRecord = await db.transaction(async (trx) => {
@@ -383,16 +410,7 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
 
     // Persist properties
     if (properties.length > 0) {
-      const propertyRows = properties.map((prop, i) => ({
-        id: uuidv4(),
-        record_id: id,
-        major_category: prop.property_major_category || null,
-        minor_category: prop.property_minor_category || null,
-        status: prop.property_stolen_recovered || 'Stolen',
-        details: prop.property_details || null,
-        sort_order: i,
-        created_at: new Date().toISOString(),
-      }));
+      const propertyRows = properties.map((prop, i) => buildPropertyRow(prop, i, id, hydratedData));
       await trx('record_properties').insert(propertyRows);
     }
 
@@ -507,16 +525,7 @@ export const updateRecord = async (id, user, data, ipAddress, { persons, propert
     if (Array.isArray(properties)) {
       await trx('record_properties').where({ record_id: id }).delete();
       if (properties.length > 0) {
-        const propertyRows = properties.map((prop, i) => ({
-          id: uuidv4(),
-          record_id: id,
-          major_category: prop.property_major_category || null,
-          minor_category: prop.property_minor_category || null,
-          status: prop.property_stolen_recovered || 'Stolen',
-          details: prop.property_details || null,
-          sort_order: i,
-          created_at: new Date().toISOString(),
-        }));
+        const propertyRows = properties.map((prop, i) => buildPropertyRow(prop, i, id, hydratedData));
         await trx('record_properties').insert(propertyRows);
       }
     }

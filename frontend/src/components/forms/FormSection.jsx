@@ -304,6 +304,21 @@ function isFullWidth(field) {
   return fw.includes((field.field_type || '').toUpperCase()) || field.full_width === true;
 }
 
+function evaluateShowWhen(condition, values) {
+  if (!condition) return true;
+  if (condition.and) {
+    return condition.and.every(c => evaluateShowWhen(c, values));
+  }
+  const { field: targetField, value: targetValue, operator } = condition;
+  const currentValue = values[targetField];
+  if (operator === 'filled') {
+    return currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== '';
+  }
+  return Array.isArray(targetValue)
+    ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
+    : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
+}
+
 function RepeaterSection({
   section,
   currentStep,
@@ -416,14 +431,7 @@ function RepeaterSection({
                     const key = field.field_key;
 
                     // Evaluate show_when against this row's own values (not top-level form)
-                    if (field.show_when) {
-                      const { field: triggerKey, value: triggerValue } = field.show_when;
-                      const currentValue = entry[triggerKey];
-                      const isMatch = Array.isArray(triggerValue)
-                        ? triggerValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
-                        : String(currentValue || '').toLowerCase() === String(triggerValue || '').toLowerCase();
-                      if (!isMatch) return null;
-                    }
+                    if (!evaluateShowWhen(field.show_when, entry)) return null;
 
                     const rules = parseRules(field.validation_rules);
                     const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
@@ -541,21 +549,7 @@ export default function FormSection({
             }
 
             // Conditional field rendering (schema-driven)
-            if (field.show_when) {
-              const { field: targetField, value: targetValue, operator } = field.show_when;
-              const currentValue = values[targetField];
-              let isVisible = false;
-              if (operator === 'filled') {
-                isVisible = currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== '';
-              } else {
-                isVisible = Array.isArray(targetValue)
-                  ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
-                  : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
-              }
-              if (!isVisible) {
-                return null;
-              }
-            }
+            if (!evaluateShowWhen(field.show_when, values)) return null;
 
             const label        = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
             const rules        = parseRules(field.validation_rules);
