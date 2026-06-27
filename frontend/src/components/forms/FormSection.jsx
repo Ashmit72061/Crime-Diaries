@@ -542,12 +542,17 @@ export default function FormSection({
 
             // Conditional field rendering (schema-driven)
             if (field.show_when) {
-              const { field: targetField, value: targetValue } = field.show_when;
+              const { field: targetField, value: targetValue, operator } = field.show_when;
               const currentValue = values[targetField];
-              const isMatch = Array.isArray(targetValue)
-                ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
-                : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
-              if (!isMatch) {
+              let isVisible = false;
+              if (operator === 'filled') {
+                isVisible = currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== '';
+              } else {
+                isVisible = Array.isArray(targetValue)
+                  ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
+                  : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
+              }
+              if (!isVisible) {
                 return null;
               }
             }

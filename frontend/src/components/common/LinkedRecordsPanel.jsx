@@ -23,7 +23,7 @@ const getKeySummary = (type, data) => {
   if (type === 'CASE') return data.fir_no ? `FIR ${data.fir_no}` : data.local_head || data.localHead || '';
   if (type === 'MISSING') return data.missing_name || data.name || '';
   if (type === 'PCR_CALL') return data.pcr_no || data.call_head || '';
-  if (type === 'UIDB') return data.dd_no || '';
+  if (type === 'UIDB') return data.uidb_no || data.gd_no || '';
   return '';
 };
 
@@ -31,7 +31,7 @@ const getSecondaryInfo = (type, data) => {
   if (!data) return '';
   if (type === 'ARREST') return data.crime_head || data.crimeHead || '';
   if (type === 'CASE') return data.local_head || data.localHead || '';
-  if (type === 'MISSING') return data.dd_no || '';
+  if (type === 'MISSING') return data.gd_no || '';
   return '';
 };
 

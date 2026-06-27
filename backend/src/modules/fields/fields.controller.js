@@ -127,19 +127,40 @@ export const getFieldsForForm = async (req, res) => {
         let field_type = f.field_type;
         let options = parseJsonField(f.options);
 
-        if (f.field_key === 'status') {
+        if (f.field_key === 'act_name' && normalizedType === 'UIDB') {
           field_type = 'SELECT';
+          options = [
+            { value: 'CrPC', label_en: 'CrPC', label_hi: 'सीआरपीसी' },
+            { value: 'BNSS', label_en: 'BNSS', label_hi: 'बीएनएसएस' },
+            { value: 'IPC', label_en: 'IPC', label_hi: 'आईपीसी' },
+            { value: 'BNS', label_en: 'BNS', label_hi: 'बीएनएस' },
+            { value: 'Other Act', label_en: 'Other Act', label_hi: 'अन्य अधिनियम' }
+          ];
+        }
+
+        if (f.field_key === 'sections' && normalizedType === 'UIDB') {
+          field_type = 'SELECT';
+          options = [
+            { value: '174 CrPC', label_en: '174 CrPC', label_hi: '174 सीआरपीसी' },
+            { value: '194 BNSS', label_en: '194 BNSS', label_hi: '194 बीएनएसएस' },
+            { value: '176 CrPC', label_en: '176 CrPC', label_hi: '176 सीआरपीसी' },
+            { value: '196 BNSS', label_en: '196 BNSS', label_hi: '196 बीएनएसएस' },
+            { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }
+          ];
+        }
+
+        if (f.field_key === 'status') {
           if (normalizedType === 'CASE') {
             options = [
-              { value: 'CHARGE SHEET', label_en: 'CHARGE SHEET', label_hi: 'आरोप पत्र (CHARGE SHEET)' },
-              { value: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_en: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_hi: 'पुलिस जांच रिपोर्ट (PIR-JCL)' },
-              { value: 'UNTRACED', label_en: 'UNTRACED', label_hi: 'अनट्रेस (UNTRACED)' },
-              { value: 'PENDING', label_en: 'PENDING', label_hi: 'लंबित (PENDING)' },
-              { value: 'CANCELLATION', label_en: 'CANCELLATION', label_hi: 'रद्दीकरण (CANCELLATION)' },
-              { value: 'QUASHED', label_en: 'QUASHED', label_hi: 'खारिज (QUASHED)' },
-              { value: 'CLOSURE REPORT', label_en: 'CLOSURE REPORT', label_hi: 'क्लोजर रिपोर्ट (CLOSURE REPORT)' },
-              { value: 'RELEASED U/S 189 BNSS', label_en: 'RELEASED U/S 189 BNSS', label_hi: 'धारा 189 BNSS के तहत रिहा (RELEASED U/S 189 BNSS)' },
-              { value: 'TRANSFER', label_en: 'TRANSFER', label_hi: 'स्थानांतरण (TRANSFER)' }
+              { value: 'CHARGE SHEET', label_en: 'Charge Sheet', label_hi: 'आरोप पत्र' },
+              { value: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_en: 'Police Investigation Report (PIR-JCL)', label_hi: 'पुलिस जांच रिपोर्ट (PIR-JCL)' },
+              { value: 'UNTRACED', label_en: 'Untraced', label_hi: 'लापता/सुराग नहीं' },
+              { value: 'PENDING', label_en: 'Pending', label_hi: 'लंबित' },
+              { value: 'CANCELLATION', label_en: 'Cancellation', label_hi: 'रद्दीकरण' },
+              { value: 'QUASHED', label_en: 'Quashed', label_hi: 'रद्द किया गया' },
+              { value: 'CLOSURE REPORT', label_en: 'Closure Report', label_hi: 'क्लोजर रिपोर्ट' },
+              { value: 'RELEASED U/S 189 BNSS', label_en: 'Released U/S 189 BNSS', label_hi: 'धारा 189 बीएनएसएस के तहत रिहा' },
+              { value: 'TRANSFER', label_en: 'Transfer', label_hi: 'स्थानांतरण' }
             ];
           } else if (normalizedType === 'ARREST') {
             options = [
@@ -151,21 +172,118 @@ export const getFieldsForForm = async (req, res) => {
             ];
           } else if (normalizedType === 'PCR_CALL') {
             options = [
-              { value: 'no_cognizable', label_en: 'No Cognizable Offence', label_hi: 'गैर-संज्ञेय अपराध' },
-              { value: 'attended', label_en: 'Attended', label_hi: 'अटेंड किया गया' },
-              { value: 'fir_registered', label_en: 'FIR Registered', label_hi: 'प्राथमिकी दर्ज' }
+              { value: 'Action Taken', label_en: 'Action Taken', label_hi: 'कार्रवाई की गई' },
+              { value: 'Pending', label_en: 'Pending', label_hi: 'लंबित' },
+              { value: 'Referred', label_en: 'Referred', label_hi: 'स संदर्भित' },
+              { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
             ];
           } else if (normalizedType === 'MISSING') {
             options = [
-              { value: 'Missing', label_en: 'Missing', label_hi: 'लापता' },
+              { value: 'Active', label_en: 'Active', label_hi: 'सक्रिय' },
+              { value: 'Traced', label_en: 'Traced', label_hi: 'पता लगाया गया' },
+              { value: 'Referred', label_en: 'Referred', label_hi: 'स संदर्भित' },
               { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
             ];
           } else if (normalizedType === 'UIDB') {
             options = [
-              { value: 'Referred to district hospital', label_en: 'Referred to District Hospital', label_hi: 'जिला अस्पताल भेजा गया' },
-              { value: 'Identified, body claimed', label_en: 'Identified, Body Claimed', label_hi: 'पहचान हो गई, शव दावा किया गया' },
-              { value: 'Unidentified, held in mortuary', label_en: 'Unidentified, Held in Mortuary', label_hi: 'अपरिचित, शवगृह में रखा गया' }
+              { value: 'Referred to district hospital', label_en: 'Referred to district hospital', label_hi: 'जिला अस्पताल को संदर्भित' },
+              { value: 'Identified', label_en: 'Identified', label_hi: 'पहचाना गया' },
+              { value: 'body claimed', label_en: 'Body Claimed', label_hi: 'शव पर दावा किया गया' },
+              { value: 'Unidentified', label_en: 'Unidentified', label_hi: 'अज्ञात' },
+              { value: 'held in mortuary', label_en: 'Held in Mortuary', label_hi: 'मुर्दाघर में रखा गया' }
             ];
+          }
+        }
+
+        let section = f.section || 'general_info';
+        let sort_order = f.sort_order;
+
+        if (normalizedType === 'ARREST') {
+          if (f.field_key === 'act_name' || f.field_key === 'sections') {
+            section = 'offence_info';
+          } else if (f.field_key === 'status') {
+            section = 'custody_status';
+            sort_order = 429;
+          }
+        } else if (normalizedType === 'MISSING') {
+          if (f.section === 'general_info') {
+            section = 'general_info';
+            if (f.field_key === 'source') sort_order = 10.1;
+            else if (f.field_key === 'gd_no') sort_order = 10.2;
+            else if (f.field_key === 'missing_type') sort_order = 10.3;
+            else if (f.field_key === 'pcr_call_flag') sort_order = 10.4;
+            else if (f.field_key === 'operator_name') sort_order = 10.5;
+            else if (f.field_key === 'status') sort_order = 10.6;
+          } else if (f.section === 'person_details') {
+            section = 'person_details';
+            sort_order = 20.0 + f.sort_order * 0.1;
+          } else if (f.section === 'location_particulars') {
+            section = 'location_particulars';
+            sort_order = 30.0 + f.sort_order * 0.1;
+          } else if (f.section === 'physical_description') {
+            section = 'physical_description';
+            sort_order = 40.0 + f.sort_order * 0.1;
+          } else if (f.section === 'contacts_assigned') {
+            section = 'contacts_assigned';
+            sort_order = 50.0 + f.sort_order * 0.1;
+          } else if (f.section === 'investigation_officer') {
+            section = 'investigation_officer';
+            sort_order = 60.0 + f.sort_order * 0.1;
+          }
+        } else if (normalizedType === 'UIDB') {
+          if (f.field_key === 'uidb_no') {
+            section = 'general_info';
+            sort_order = 10.1;
+          } else if (f.field_key === 'gd_no') {
+            section = 'general_info';
+            sort_order = 10.2;
+          } else if (f.field_key === 'act_name') {
+            field_type = 'SELECT';
+            options = [
+              { value: 'CrPC', label_en: 'CrPC', label_hi: 'सीआरपीसी' },
+              { value: 'BNSS', label_en: 'BNSS', label_hi: 'बीएनएसएस' },
+              { value: 'IPC', label_en: 'IPC', label_hi: 'आईपीसी' },
+              { value: 'BNS', label_en: 'BNS', label_hi: 'बीएनएस' },
+              { value: 'Other Act', label_en: 'Other Act', label_hi: 'अन्य अधिनियम' }
+            ];
+            section = 'general_info';
+            sort_order = 10.3;
+          } else if (f.field_key === 'sections') {
+            field_type = 'SELECT';
+            options = [
+              { value: '174 CrPC', label_en: '174 CrPC', label_hi: '174 सीआरपीसी' },
+              { value: '194 BNSS', label_en: '194 BNSS', label_hi: '194 बीएनएसएस' },
+              { value: '176 CrPC', label_en: '176 CrPC', label_hi: '176 सीआरपीसी' },
+              { value: '196 BNSS', label_en: '196 BNSS', label_hi: '196 बीएनएसएस' },
+              { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }
+            ];
+            section = 'general_info';
+            sort_order = 10.4;
+          } else if (f.field_key === 'status') {
+            section = 'general_info';
+            sort_order = 10.5;
+          } else if ([
+            'height', 'built', 'complexion', 'face', 'hair', 'moustache', 'beard',
+            'upper_dress_color', 'lower_dress_color', 'zipnet_no', 'identified', 'gender'
+          ].includes(f.field_key) || f.section === 'corpse_desc') {
+            section = 'corpse_desc';
+            sort_order = 20 + f.sort_order;
+          } else if (['cause_of_death', 'deceased_relative_name', 'deceased_relation_type', 'filed_by_acp_sdm', 'filed_by_acp_sdm_date', 'informant_name', 'informant_relation', 'informant_mobile'].includes(f.field_key)) {
+            section = 'inquest_details';
+            if (f.field_key === 'cause_of_death') sort_order = 40.1;
+            else if (f.field_key === 'deceased_relative_name') sort_order = 40.2;
+            else if (f.field_key === 'deceased_relation_type') sort_order = 40.3;
+            else if (f.field_key === 'filed_by_acp_sdm') sort_order = 40.4;
+            else if (f.field_key === 'filed_by_acp_sdm_date') sort_order = 40.5;
+            else if (f.field_key === 'informant_name') sort_order = 40.6;
+            else if (f.field_key === 'informant_relation') sort_order = 40.7;
+            else if (f.field_key === 'informant_mobile') sort_order = 40.8;
+          } else if (['io_name', 'io_rank', 'io_pis', 'io_mobile'].includes(f.field_key)) {
+            section = 'investigation_officer';
+            if (f.field_key === 'io_name') sort_order = 50.1;
+            else if (f.field_key === 'io_rank') sort_order = 50.2;
+            else if (f.field_key === 'io_pis') sort_order = 50.3;
+            else if (f.field_key === 'io_mobile') sort_order = 50.4;
           }
         }
 
@@ -186,14 +304,17 @@ export const getFieldsForForm = async (req, res) => {
           readonly: f.readonly || false,
           full_width: f.full_width || false,
           show_when: parseJsonField(f.show_when) || null,
-          section: f.section || 'general_info',
+          section,
           repeater_entity: f.repeater_entity || null,
           section_label_en: f.section_label_en || null,
           section_label_hi: f.section_label_hi || null,
-          sort_order: f.sort_order,
+          sort_order,
           scope_level: f.scope_level || 'global',
         };
       });
+
+    // Re-sort to respect overridden sort_orders
+    filteredFields.sort((a, b) => a.sort_order - b.sort_order);
 
     // Group fields: repeater fields by repeater_entity, flat fields by section.
     // Order is preserved by first-occurrence (fields are already sorted by sort_order).
@@ -210,12 +331,7 @@ export const getFieldsForForm = async (req, res) => {
         }
         repeaterMap.get(key).fields.push(f);
       } else {
-        // ARREST-specific override: act_name and sections live in offence_info, status lives in custody_status
-        const secKey = (normalizedType === 'ARREST' && (f.field_key === 'act_name' || f.field_key === 'sections'))
-          ? 'offence_info'
-          : (normalizedType === 'ARREST' && f.field_key === 'status')
-            ? 'custody_status'
-            : f.section;
+        const secKey = f.section;
         if (!sectionsMap.has(secKey)) {
           sectionsMap.set(secKey, { fields: [], dbLabelEn: f.section_label_en, dbLabelHi: f.section_label_hi });
           allSectionKeys.push({ key: secKey, type: 'flat' });
