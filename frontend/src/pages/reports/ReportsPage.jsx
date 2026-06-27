@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Select, Button, Space, Table, Typography, Spin, Alert, message, Progress } from 'antd';
+import { Card, Row, Col, Select, Button, Space, Table, Typography, Spin, Alert, message, Progress, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import api from '../../utils/api.js';
 import {
   FileSpreadsheet,
   FileText,
@@ -14,6 +14,8 @@ import {
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
+
+import CustomExcelBuilder from './CustomExcelBuilder';
 
 export const ReportsPage = () => {
   const { t } = useTranslation();
@@ -30,7 +32,7 @@ export const ReportsPage = () => {
   const fetchTemplates = async () => {
     setLoadingTemplates(true);
     try {
-      const res = await axios.get('/api/v1/reports/templates');
+      const res = await api.get('/reports/templates');
       setTemplates(res.data.data.templates || []);
     } catch (err) {
       console.error('Failed to fetch templates:', err);
@@ -47,20 +49,34 @@ export const ReportsPage = () => {
   const handleExcelExport = async () => {
     setExportLoading(true);
     try {
-      const token = localStorage.getItem('pharos_token');
-      // Request file stream using fetch/axios with responseType blob
-      const res = await axios.get(`/api/v1/analytics/export?recordType=${exportType.toLowerCase()}`, {
-        responseType: 'blob'
+      const token = localStorage.getItem('access_token');
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const fetchUrl = `${BASE_URL}/analytics/export?recordType=${exportType.toLowerCase()}`;
+
+      const response = await fetch(fetchUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        credentials: 'include',
       });
-      
-      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `Pharos_${exportType}_Export.xlsx`);
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      setTimeout(() => {
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }, 500);
       message.success('Excel Sheet exported successfully');
     } catch (err) {
       console.error('Excel export failed:', err);
@@ -74,7 +90,7 @@ export const ReportsPage = () => {
     setGeneratingTemplateId(templateId);
     setGenerationProgress(10);
     try {
-      const res = await axios.post('/api/v1/reports/generate', {
+      const res = await api.post('/reports/generate', {
         template_id: templateId,
         format: 'PDF',
         filters: { recordType: 'CASES' } // standard default filter
@@ -97,7 +113,7 @@ export const ReportsPage = () => {
       setGenerationProgress(progress);
       
       try {
-        const res = await axios.get(`/api/v1/reports/status/${jobId}`);
+        const res = await api.get(`/reports/status/${jobId}`);
         const job = res.data.data.job;
         
         if (job.status === 'READY') {
@@ -106,7 +122,7 @@ export const ReportsPage = () => {
           message.success('PDF document compiled successfully');
           
           // Trigger file download
-          window.open(`/api/v1/reports/download/${jobId}`, '_blank');
+          window.open(`${api.defaults.baseURL}/reports/download/${jobId}`, '_blank');
           
           setTimeout(() => {
             setGeneratingTemplateId(null);
@@ -191,85 +207,102 @@ export const ReportsPage = () => {
         </Paragraph>
       </div>
 
-      <Row gutter={[24, 24]}>
-        {/* Spreadsheet Export Card */}
-        <Col xs={24} md={8}>
-          <Card
-            title={
-              <Space>
-                <FileSpreadsheet size={18} style={{ color: '#10b981' }} />
-                <span>Operational Sheets Export</span>
-              </Space>
-            }
-            style={{ background: '#10141d', border: '1px solid #1c2430', height: '100%' }}
-          >
-            <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 10 }}>
-              <div>
-                <span style={{ color: '#a0aec0', display: 'block', marginBottom: 8 }}>Select category spreadsheet:</span>
-                <Select
-                  value={exportType}
-                  onChange={(val) => setExportType(val)}
-                  style={{ width: '100%' }}
-                >
-                  <Option value="CASES">{t('dashboard.cases')}</Option>
-                  <Option value="ARREST">{t('dashboard.arrests')}</Option>
-                  <Option value="PCR">{t('dashboard.pcr')}</Option>
-                </Select>
-              </div>
+      <Tabs 
+        defaultActiveKey="1"
+        style={{ color: '#fff' }}
+        items={[
+          {
+            key: '1',
+            label: 'Defined Templates',
+            children: (
+              <Row gutter={[24, 24]}>
+                {/* Spreadsheet Export Card */}
+                <Col xs={24} md={8}>
+                  <Card
+                    title={
+                      <Space>
+                        <FileSpreadsheet size={18} style={{ color: '#10b981' }} />
+                        <span>Operational Sheets Export</span>
+                      </Space>
+                    }
+                    style={{ background: '#10141d', border: '1px solid #1c2430', height: '100%' }}
+                  >
+                    <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 10 }}>
+                      <div>
+                        <span style={{ color: '#a0aec0', display: 'block', marginBottom: 8 }}>Select category spreadsheet:</span>
+                        <Select
+                          value={exportType}
+                          onChange={(val) => setExportType(val)}
+                          style={{ width: '100%' }}
+                        >
+                          <Option value="CASES">{t('dashboard.cases')}</Option>
+                          <Option value="ARREST">{t('dashboard.arrests')}</Option>
+                          <Option value="PCR">{t('dashboard.pcr')}</Option>
+                        </Select>
+                      </div>
 
-              <Alert
-                message="Comprehensive Sheet Output"
-                description="Contains all fields including full case briefs, dates, names, locations, and audit numbers."
-                type="info"
-                showIcon
-                style={{ background: '#0c1a30', border: '1px solid #1c3d5a', color: '#93c5fd' }}
-              />
+                      <Alert
+                        message="Comprehensive Sheet Output"
+                        description="Contains all fields including full case briefs, dates, names, locations, and audit numbers."
+                        type="info"
+                        showIcon
+                        style={{ background: '#0c1a30', border: '1px solid #1c3d5a', color: '#93c5fd' }}
+                      />
 
-              <Button
-                type="primary"
-                onClick={handleExcelExport}
-                loading={exportLoading}
-                block
-                style={{
-                  background: '#10b981',
-                  borderColor: '#10b981',
-                  height: 40,
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8
-                }}
-              >
-                {exportLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                Export Excel Spreadsheet
-              </Button>
-            </Space>
-          </Card>
-        </Col>
+                      <Button
+                        type="primary"
+                        onClick={handleExcelExport}
+                        loading={exportLoading}
+                        block
+                        style={{
+                          background: '#10b981',
+                          borderColor: '#10b981',
+                          height: 40,
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8
+                        }}
+                      >
+                        {exportLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                        Export Excel Spreadsheet
+                      </Button>
+                    </Space>
+                  </Card>
+                </Col>
 
-        {/* Compiled PDF Templates List */}
-        <Col xs={24} md={16}>
-          <Card
-            title={
-              <Space>
-                <FileText size={18} style={{ color: '#e53e3e' }} />
-                <span>District Compiled Reporting Templates</span>
-              </Space>
-            }
-            style={{ background: '#10141d', border: '1px solid #1c2430' }}
-          >
-            <Table
-              dataSource={templates}
-              columns={templateColumns}
-              loading={loadingTemplates}
-              rowKey="id"
-              pagination={false}
-              style={{ background: 'transparent' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+                {/* Compiled PDF Templates List */}
+                <Col xs={24} md={16}>
+                  <Card
+                    title={
+                      <Space>
+                        <FileText size={18} style={{ color: '#e53e3e' }} />
+                        <span>District Compiled Reporting Templates</span>
+                      </Space>
+                    }
+                    style={{ background: '#10141d', border: '1px solid #1c2430' }}
+                  >
+                    <Table
+                      dataSource={templates}
+                      columns={templateColumns}
+                      loading={loadingTemplates}
+                      rowKey="id"
+                      pagination={false}
+                      style={{ background: 'transparent' }}
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            )
+          },
+          {
+            key: '2',
+            label: 'Custom Excel Export',
+            children: <CustomExcelBuilder />
+          }
+        ]}
+      />
     </div>
   );
 };

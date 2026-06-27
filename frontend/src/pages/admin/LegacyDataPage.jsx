@@ -98,12 +98,27 @@ function BatchTable({ batches = [], isLoading, onViewBatch }) {
 function ImportPanel({ onImported }) {
   const [recordType, setRecordType] = useState('CASE');
   const [file, setFile] = useState(null);
+  const [psId, setPsId] = useState('');
+  const { i18n } = useTranslation();
+  const currentLng = i18n.language || 'en';
+
+  // Fetch active stations dynamically
+  const { data: stations = [] } = useQuery({
+    queryKey: ['hierarchy', 'stations'],
+    queryFn: async () => {
+      const res = await api.get('/hierarchy/nodes?type=PS');
+      return res.data?.data || [];
+    }
+  });
 
   const importMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('record_type', recordType);
+      if (psId) {
+        formData.append('ps_id', psId);
+      }
       const res = await api.post('/legacy/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -112,6 +127,7 @@ function ImportPanel({ onImported }) {
     onSuccess: () => {
       toast.success('Legacy import triggered successfully');
       setFile(null);
+      setPsId('');
       onImported?.();
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Import failed'),
@@ -126,7 +142,8 @@ function ImportPanel({ onImported }) {
         Bulk Import Records (Excel / CSV)
       </h3>
 
-      <div className="grid grid-cols-2 gap-4 text-[var(--text-main-theme)] font-semibold">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[var(--text-main-theme)] font-semibold">
+        {/* Record Type */}
         <div className="space-y-1.5">
           <label className="text-[var(--text-main-theme)] opacity-80 font-bold">Record Type</label>
           <select
@@ -139,6 +156,25 @@ function ImportPanel({ onImported }) {
             ))}
           </select>
         </div>
+
+        {/* Destination Police Station */}
+        <div className="space-y-1.5">
+          <label className="text-[var(--text-main-theme)] opacity-80 font-bold">Destination Police Station</label>
+          <select
+            value={psId}
+            onChange={(e) => setPsId(e.target.value)}
+            className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl px-3 py-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer shadow-sm font-bold"
+          >
+            <option value="">Select Destination Station...</option>
+            {stations.map(st => (
+              <option key={st.id} value={st.id} className="bg-[var(--bg-page-main)] text-[var(--text-main-theme)]">
+                {currentLng === 'hi' ? st.name_hi : st.name_en}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* File Selection */}
         <div className="space-y-1.5">
           <label className="text-[var(--text-main-theme)] opacity-80 font-bold">File (Excel / CSV)</label>
           <input
@@ -156,7 +192,7 @@ function ImportPanel({ onImported }) {
         </p>
         <button
           type="button"
-          disabled={!file || importMutation.isPending}
+          disabled={!file || !psId || importMutation.isPending}
           onClick={() => importMutation.mutate()}
           className="flex items-center gap-1.5 bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm active:scale-95"
         >
@@ -611,11 +647,13 @@ export default function LegacyDataPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   {[
                     { label: 'Record Type', value: batchDetail.record_type },
                     { label: 'Total Rows',  value: batchDetail.total_rows },
                     { label: 'Imported',    value: batchDetail.imported_count },
+                    { label: 'Duplicates Skipped', value: batchDetail.skipped_count ?? 0 },
+                    { label: 'Validation Errors', value: batchDetail.error_count ?? 0 },
                     { label: 'Status',      value: batchDetail.status },
                   ].map(({ label, value }) => (
                     <div

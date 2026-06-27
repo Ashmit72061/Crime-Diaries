@@ -51,7 +51,9 @@ export const getTrends = async (req, res) => {
     return res.status(400).json({ success: false, message: 'recordType query parameter is required' });
   }
 
-  const typeUpper = recordType.toUpperCase();
+  let typeUpper = recordType.toUpperCase();
+  if (typeUpper === 'CASES') typeUpper = 'CASE';
+  if (typeUpper === 'PCR') typeUpper = 'PCR_CALL';
   const classificationKey = typeUpper === 'CASE' ? 'case_head' : (typeUpper === 'ARREST' ? 'crime_head' : 'pcr_head');
 
   try {
@@ -99,7 +101,9 @@ export const getCompare = async (req, res) => {
     return res.status(400).json({ success: false, message: 'recordType query parameter is required' });
   }
 
-  const typeUpper = recordType.toUpperCase();
+  let typeUpper = recordType.toUpperCase();
+  if (typeUpper === 'CASES') typeUpper = 'CASE';
+  if (typeUpper === 'PCR') typeUpper = 'PCR_CALL';
 
   try {
     let selectCol = 'ps.name_en';
@@ -267,7 +271,9 @@ export const exportSpreadsheet = async (req, res) => {
     return res.status(400).json({ success: false, message: 'recordType query parameter is required' });
   }
 
-  const typeUpper = recordType.toUpperCase();
+  let typeUpper = recordType.toUpperCase();
+  if (typeUpper === 'CASES') typeUpper = 'CASE';
+  if (typeUpper === 'PCR') typeUpper = 'PCR_CALL';
 
   try {
     let query = db('records')

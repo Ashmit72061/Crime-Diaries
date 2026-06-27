@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database, Plus, X, Bookmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useFormSchema } from '../../hooks/useFormSchema.js';
@@ -66,15 +66,19 @@ const MOCK_FIR_LIST = [
 /**
  * DynamicForm
  *
- * @param {string}   recordType     - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
- * @param {object}   initialValues  - Pre-populated data (from existing record.data)
- * @param {function} onSubmit       - Final submit callback(formValues, activeRecordId)
- * @param {boolean}  readOnly       - Lock all inputs for review
- * @param {string[]} targetFields   - Field keys flagged for correction (send-back)
+ * @param {string}   recordType        - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
+ * @param {object}   initialValues     - Pre-populated data (from existing record.data or record object)
+ * @param {Array}    initialPersons    - Pre-populated person entries [{person_type, data}]
+ * @param {Array}    initialProperties - Pre-populated property entries [{major_category, ...}]
+ * @param {function} onSubmit          - Final submit callback(formValues, persons, properties, activeRecordId)
+ * @param {boolean}  readOnly          - Lock all inputs for review
+ * @param {string[]} targetFields      - Field keys flagged for correction (send-back)
  */
 export default function DynamicForm({
   recordType,
   initialValues = {},
+  initialPersons = [],
+  initialProperties = [],
   onSubmit,
   readOnly = false,
   targetFields = [],
@@ -165,6 +169,32 @@ export default function DynamicForm({
     const queryLabel = lang === 'hi' ? 'शिकायतकर्ता का नाम / प्राथमिकी संख्या (वैकल्पिक)' : 'Complainant Name / FIR No. (Optional)';
     const queryPlaceholder = lang === 'hi' ? 'खोजने के लिए लिखें...' : 'Type to search...';
     const btnText = lang === 'hi' ? 'प्राथमिकी खोजें' : 'Search FIR';
+
+    const selectedFir = values.selected_fir;
+    const currentAct = values.act_name || 'IPC';
+    const currentSections = values.sections || '';
+    
+    // Parse sections list
+    const sectionsList = currentSections
+      ? currentSections.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    const handleAddSection = () => {
+      const cleanSec = newSectionVal.trim();
+      if (!cleanSec) return;
+      if (sectionsList.includes(cleanSec)) {
+        setNewSectionVal('');
+        return;
+      }
+      const updatedList = [...sectionsList, cleanSec];
+      handleChange('sections', updatedList.join(', '));
+      setNewSectionVal('');
+    };
+
+    const handleRemoveSection = (secToRemove) => {
+      const updatedList = sectionsList.filter(s => s !== secToRemove);
+      handleChange('sections', updatedList.join(', '));
+    };
     
     return (
       <div className="space-y-6">
@@ -288,7 +318,51 @@ export default function DynamicForm({
                           key={row.fir_no}
                           onClick={() => {
                             if (readOnly) return;
-                            handleChange('selected_fir', row.fir_no);
+                            
+                            // Find the full details from row or casesData
+                            let actName = 'IPC';
+                            let sections = row.sections && row.sections !== 'N/A' ? row.sections : '';
+                            let ioName = '';
+                            let ioRank = '';
+                            let ioPis = '';
+                            let ioMobile = '';
+
+                            if (row.isBackend) {
+                              const matched = (casesData || []).find(c => {
+                                const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+                                return firNo === row.fir_no;
+                              });
+                              if (matched) {
+                                const cData = matched.data || {};
+                                actName = cData.act_name || 'IPC';
+                                sections = cData.sections || '';
+                                ioName = cData.io_name || '';
+                                ioRank = cData.io_rank || '';
+                                ioPis = cData.io_pis || '';
+                                ioMobile = cData.io_mobile || '';
+                              }
+                            } else {
+                              // It's a mock case
+                              actName = 'IPC';
+                              sections = row.sections && row.sections !== 'N/A' ? row.sections : '';
+                              ioName = 'Inspector Satish Kumar';
+                              ioRank = 'Inspector';
+                              ioPis = '28081234';
+                              ioMobile = '9876543210';
+                            }
+
+                            // Directly update values
+                            setValues(prev => ({
+                              ...prev,
+                              selected_fir: row.fir_no,
+                              linked_fir_dd_no: row.fir_no,
+                              act_name: actName,
+                              sections: sections,
+                              io_name: ioName,
+                              io_rank: ioRank,
+                              io_pis: ioPis,
+                              io_mobile: ioMobile
+                            }));
                           }}
                           className={`group cursor-pointer hover:bg-slate-50/80 transition-all ${
                             isSelected
@@ -337,6 +411,127 @@ export default function DynamicForm({
           </div>
         )}
 
+        {/* Linked FIR Offence Details Card */}
+        {selectedFir && (
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+              <h3 className="text-sm font-bold text-slate-800 tracking-wide flex items-center gap-2 font-display">
+                <Bookmark size={16} className="text-[var(--accent-color)]" />
+                <span>
+                  {lang === 'hi' ? 'संबद्ध प्राथमिकी अपराध विवरण (संपादित करें)' : 'Linked FIR Offence Details (Edit)'}
+                </span>
+              </h3>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Act Name Selection */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide">
+                    {lang === 'hi' ? 'अधिनियम का नाम *' : 'Act Name *'}
+                  </label>
+                  <select
+                    disabled={readOnly}
+                    value={currentAct}
+                    onChange={(e) => handleChange('act_name', e.target.value)}
+                    className="w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer"
+                  >
+                    <option value="IPC">IPC</option>
+                    <option value="Delhi Excise Act">Delhi Excise Act</option>
+                    <option value="Arms Act">Arms Act</option>
+                    <option value="Gambling Act">Gambling Act</option>
+                    <option value="DP Act">DP Act</option>
+                    <option value="Other Act">Other Act</option>
+                  </select>
+                </div>
+
+                {/* Act Name Sub-input if Other Act is selected */}
+                {currentAct === 'Other Act' && (
+                  <div className="flex flex-col gap-1.5 animate-in fade-in duration-200">
+                    <label className="text-xs font-bold text-slate-700 tracking-wide">
+                      {lang === 'hi' ? 'अधिनियम का नाम दर्ज करें' : 'Specify Act Name'}
+                    </label>
+                    <input
+                      type="text"
+                      disabled={readOnly}
+                      value={values.other_act_name || ''}
+                      onChange={(e) => handleChange('other_act_name', e.target.value)}
+                      placeholder={lang === 'hi' ? 'अधिनियम का नाम लिखें...' : 'Enter custom act...'}
+                      className="w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Sections Editor */}
+              <div className="flex flex-col gap-3">
+                <label className="text-xs font-bold text-slate-700 tracking-wide">
+                  {lang === 'hi' ? 'धारा संख्या(एँ) *' : 'Sections Code *'}
+                </label>
+
+                {/* Section Chips Container */}
+                <div className="flex flex-wrap gap-2 min-h-[44px] p-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl items-center">
+                  {sectionsList.length === 0 ? (
+                    <span className="text-xs text-slate-400 font-medium px-2 py-1">
+                      {lang === 'hi' ? 'कोई धारा जोड़ी नहीं गई है' : 'No sections added yet.'}
+                    </span>
+                  ) : (
+                    sectionsList.map((sec, idx) => (
+                      <span
+                        key={`${sec}-${idx}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-sm animate-in zoom-in-75 duration-200"
+                      >
+                        <span>{sec}</span>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSection(sec)}
+                            className="p-0.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
+                          >
+                            <X size={12} className="stroke-[2.5]" />
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Section Input Bar */}
+                {!readOnly && (
+                  <div className="flex items-center gap-2 max-w-sm mt-1">
+                    <input
+                      type="text"
+                      disabled={readOnly}
+                      value={newSectionVal}
+                      onChange={(e) => setNewSectionVal(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSection();
+                        }
+                      }}
+                      placeholder={lang === 'hi' ? 'उदा. 379 या 34' : 'e.g. 379 or 34'}
+                      className="flex-1 bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSection}
+                      className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                    >
+                      <Plus size={14} />
+                      <span>{lang === 'hi' ? 'जोड़ें' : 'Add'}</span>
+                    </button>
+                  </div>
+                )}
+                <span className="text-[10px] text-slate-400 font-medium leading-normal">
+                  {lang === 'hi'
+                    ? 'धारा दर्ज करें और Enter दबाएं या "जोड़ें" पर क्लिक करें।'
+                    : 'Type a section code and press Enter or click "Add" to update.'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     );
@@ -364,10 +559,38 @@ export default function DynamicForm({
 
   const finalFirOptions = firOptions.length > 0 ? firOptions : mockOptions;
 
+  const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
+    recordType,
+    initialValues?.id
+  );
+
+  const [values,        setValues       ] = useState({});
+  const [errors,        setErrors       ] = useState({});
+  const [touched,       setTouched      ] = useState({});
+  const [currentStep,   setCurrentStep  ] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [repeaterState, setRepeaterState] = useState({});
+  const [newSectionVal, setNewSectionVal] = useState('');
+
+  const formRef = useRef(null);
+
   const finalSchema = React.useMemo(() => {
     if (!schema || schema.length === 0) return [];
+    
+    let filteredSchema = schema;
+
+    if (recordType === 'CASE') {
+      filteredSchema = schema.filter(section => {
+        if (section.section === 'investigation_officer') {
+          const status = values.status;
+          return status === 'CHARGE SHEET' || status === 'TRANSFER';
+        }
+        return true;
+      });
+    }
+
     if (recordType === 'ARREST' && caseType === 'against_fir') {
-      const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
+      const hasVirtualStep = filteredSchema[0]?.fields?.[0]?.field_key === 'selected_fir';
       if (!hasVirtualStep) {
         const virtualSelectFirStep = {
           title_en: 'Select FIR',
@@ -383,24 +606,11 @@ export default function DynamicForm({
             }
           ]
         };
-        return [virtualSelectFirStep, ...schema];
+        return [virtualSelectFirStep, ...filteredSchema];
       }
     }
-    return schema;
-  }, [schema, recordType, caseType, finalFirOptions]);
-
-  const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
-    recordType,
-    initialValues?.id
-  );
-
-  const [values,       setValues      ] = useState({});
-  const [errors,       setErrors      ] = useState({});
-  const [touched,      setTouched     ] = useState({});
-  const [currentStep,  setCurrentStep ] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState(new Set());
-
-  const formRef = useRef(null);
+    return filteredSchema;
+  }, [schema, recordType, caseType, finalFirOptions, values.status]);
 
   /* ── Sync saved record ID ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -408,6 +618,13 @@ export default function DynamicForm({
       activeRecordIdRef.current = savedRecord.id;
     }
   }, [savedRecord]);
+
+  /* ── Adjust step bounds if schema changes ───────────────────────────────── */
+  useEffect(() => {
+    if (finalSchema.length > 0 && currentStep >= finalSchema.length) {
+      setCurrentStep(finalSchema.length - 1);
+    }
+  }, [finalSchema.length, currentStep]);
 
   const initialValuesStr = JSON.stringify(initialValues || {});
   const userStr = user ? JSON.stringify({
@@ -418,6 +635,36 @@ export default function DynamicForm({
     stationName: user.stationName,
     districtKey: user.districtKey
   }) : '';
+
+  /* ── Seed repeater entries from initialPersons / initialProperties ─────── */
+  useEffect(() => {
+    if (!finalSchema.length) return;
+    const initial = {};
+    // Build section-key → entries map for person sections
+    for (const section of finalSchema) {
+      if (!section.is_repeater) continue;
+      if (section.entity_type === 'person' && section.person_type) {
+        const matching = initialPersons.filter(
+          p => p.person_type === section.person_type
+        );
+        if (matching.length > 0) {
+          initial[section.section] = matching.map(p => ({ ...(p.data || {}) }));
+        }
+      } else if (section.entity_type === 'property') {
+        if (initialProperties.length > 0) {
+          initial[section.section] = initialProperties.map(prop => ({
+            property_major_category: prop.major_category || '',
+            property_minor_category: prop.minor_category || '',
+            property_stolen_recovered: prop.status || 'Stolen',
+            property_details: prop.details || '',
+          }));
+        }
+      }
+    }
+    if (Object.keys(initial).length > 0) {
+      setRepeaterState(prev => ({ ...prev, ...initial }));
+    }
+  }, [initialPersons, initialProperties, finalSchema.length]);
 
   /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
@@ -488,20 +735,48 @@ export default function DynamicForm({
   const validateSection = useCallback((stepIdx, currentValues = values) => {
     const section = finalSchema[stepIdx];
     if (!section) return {};
+    if (section.is_repeater) return {}; // repeater sections have no flat-field validation
 
     const errs = {};
     section.fields.forEach((field) => {
       // Skip validating if field is hidden by condition
       if (field.show_when) {
-        const { field: targetField, value: targetValue } = field.show_when;
-        const currentValue = String(currentValues[targetField] || '').toLowerCase();
-        const allowed = Array.isArray(targetValue)
-          ? targetValue.map(v => String(v).toLowerCase())
-          : [String(targetValue || '').toLowerCase()];
-        if (!allowed.includes(currentValue)) return;
+        const { field: targetField, value: targetValue, operator } = field.show_when;
+        const currentValue = currentValues[targetField];
+        let isVisible = false;
+        if (operator === 'filled') {
+          isVisible = currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== '';
+        } else {
+          isVisible = Array.isArray(targetValue)
+            ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
+            : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
+        }
+        if (!isVisible) {
+          return;
+        }
       }
 
       const rules = parseRules(field.validation_rules);
+
+      if (field.field_key === 'gd_no') {
+        const num = currentValues.gd_no;
+        const dt = currentValues.gd_date;
+        const tm = currentValues.gd_time;
+        const isAnyFilled = !!(num || dt || tm);
+        const isAllFilled = !!(num && dt && tm);
+
+        if (rules.required && !isAllFilled) {
+          errs.gd_no = lang === 'hi'
+            ? 'जीडी नंबर, दिनांक और समय तीनों भरना आवश्यक है।'
+            : 'GD Number, Date and Time are all required.';
+        } else if (isAnyFilled && !isAllFilled) {
+          errs.gd_no = lang === 'hi'
+            ? 'जीडी नंबर, दिनांक और समय तीनों भरें।'
+            : 'Please fill all three: GD Number, Date and Time.';
+        }
+        return;
+      }
+
       if (!rules.required) return;
 
       const val = currentValues[field.field_key];
@@ -520,8 +795,8 @@ export default function DynamicForm({
   /* ── Validate ALL sections ─────────────────────────────────────────────── */
   const validateAll = useCallback((currentValues = values) => {
     const allErrs = {};
-    finalSchema.forEach((section) => {
-      const errs = validateSection(finalSchema.indexOf(section), currentValues);
+    finalSchema.forEach((section, idx) => {
+      const errs = validateSection(idx, currentValues);
       Object.assign(allErrs, errs);
     });
     return allErrs;
@@ -533,8 +808,76 @@ export default function DynamicForm({
 
     setValues((prev) => {
       const next = { ...prev, [key]: val };
+
+      // DOB, Age (Years) and Year of Birth interlinking
+      if (key.endsWith('_dob')) {
+        const prefix = key.substring(0, key.lastIndexOf('_dob'));
+        if (val) {
+          const dobDate = new Date(val);
+          if (!isNaN(dobDate.getTime())) {
+            const birthYear = dobDate.getFullYear();
+            const currentYear = new Date().getFullYear();
+            next[`${prefix}_birth_year`] = birthYear;
+            next[`${prefix}_age_year`] = Math.max(0, currentYear - birthYear);
+          }
+        } else {
+          next[`${prefix}_birth_year`] = '';
+          next[`${prefix}_age_year`] = '';
+        }
+      } else if (key.endsWith('_birth_year')) {
+        const prefix = key.substring(0, key.lastIndexOf('_birth_year'));
+        if (val) {
+          const birthYear = parseInt(val, 10);
+          if (!isNaN(birthYear)) {
+            const currentYear = new Date().getFullYear();
+            next[`${prefix}_age_year`] = Math.max(0, currentYear - birthYear);
+          }
+        } else {
+          next[`${prefix}_age_year`] = '';
+        }
+      } else if (key.endsWith('_age_year')) {
+        const prefix = key.substring(0, key.lastIndexOf('_age_year'));
+        if (val) {
+          const ageYear = parseInt(val, 10);
+          if (!isNaN(ageYear)) {
+            const currentYear = new Date().getFullYear();
+            next[`${prefix}_birth_year`] = currentYear - ageYear;
+          }
+        } else {
+          next[`${prefix}_birth_year`] = '';
+        }
+      }
+
       if (next.time_of_occurrence !== undefined) {
         next.occurrence_time = next.time_of_occurrence;
+      }
+
+      if (key === 'arrested_perm_same' && val === true) {
+        next.arrested_perm_house_no = next.arrested_house_no || '';
+        next.arrested_perm_street = next.arrested_street || '';
+        next.arrested_perm_colony = next.arrested_colony || '';
+        next.arrested_perm_city_town_village = next.arrested_city_town_village || '';
+        next.arrested_perm_tehsil_block_mandal = next.arrested_tehsil_block_mandal || '';
+        next.arrested_perm_country = next.arrested_country || 'Indian';
+        next.arrested_perm_state = next.arrested_state || '';
+        next.arrested_perm_district = next.arrested_district || '';
+        next.arrested_perm_police_station = next.arrested_police_station || '';
+        next.arrested_perm_pincode = next.arrested_pincode || '';
+        next.arrested_perm_address = next.arrested_present_address || '';
+      }
+
+      if (next.arrested_perm_same === true) {
+        if (key === 'arrested_house_no') next.arrested_perm_house_no = val;
+        if (key === 'arrested_street') next.arrested_perm_street = val;
+        if (key === 'arrested_colony') next.arrested_perm_colony = val;
+        if (key === 'arrested_city_town_village') next.arrested_perm_city_town_village = val;
+        if (key === 'arrested_tehsil_block_mandal') next.arrested_perm_tehsil_block_mandal = val;
+        if (key === 'arrested_country') next.arrested_perm_country = val;
+        if (key === 'arrested_state') next.arrested_perm_state = val;
+        if (key === 'arrested_district') next.arrested_perm_district = val;
+        if (key === 'arrested_police_station') next.arrested_perm_police_station = val;
+        if (key === 'arrested_pincode') next.arrested_perm_pincode = val;
+        if (key === 'arrested_present_address') next.arrested_perm_address = val;
       }
 
       // Clear error on change
@@ -568,13 +911,45 @@ export default function DynamicForm({
       return;
     }
 
-    // Auto-populate linked_fir_dd_no when moving from Step 1 (Select FIR) to Step 2 (General Information)
+    // Auto-populate linked_fir_dd_no and case details when moving from Step 1 (Select FIR)
     if (recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0) {
       const selectedFir = values.selected_fir;
       if (selectedFir) {
+        const matchedBackendCase = (casesData || []).find(c => {
+          const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+          return firNo === selectedFir;
+        });
+        const matchedMockCase = MOCK_FIR_LIST.find(c => c.fir_no === selectedFir);
+        let autofilled = {};
+        if (matchedBackendCase) {
+          const cData = matchedBackendCase.data || {};
+          autofilled = {
+            act_name: cData.act_name || '',
+            sections: cData.sections || '',
+            io_name: cData.io_name || '',
+            io_rank: cData.io_rank || '',
+            io_pis: cData.io_pis || '',
+            io_mobile: cData.io_mobile || '',
+          };
+        } else if (matchedMockCase) {
+          autofilled = {
+            act_name: 'IPC',
+            sections: matchedMockCase.sections || '',
+            io_name: 'Inspector Satish Kumar',
+            io_rank: 'Inspector',
+            io_pis: '28081234',
+            io_mobile: '9876543210',
+          };
+        }
         setValues(prev => ({
           ...prev,
-          linked_fir_dd_no: selectedFir
+          linked_fir_dd_no: selectedFir,
+          act_name: prev.act_name || autofilled.act_name || '',
+          sections: prev.sections !== undefined ? prev.sections : (autofilled.sections || ''),
+          io_name: prev.io_name || autofilled.io_name || '',
+          io_rank: prev.io_rank || autofilled.io_rank || '',
+          io_pis: prev.io_pis || autofilled.io_pis || '',
+          io_mobile: prev.io_mobile || autofilled.io_mobile || '',
         }));
       }
     }
@@ -591,34 +966,55 @@ export default function DynamicForm({
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  /* ── Jump to a specific step (click step dot) ─────────────────────────── */
+  /* ── Jump to a specific step ──────────────────────────────────────────── */
   const handleStepClick = (targetIdx) => {
-    if (targetIdx < currentStep) {
-      setCurrentStep(targetIdx);
-      return;
-    }
+    if (targetIdx < currentStep) { setCurrentStep(targetIdx); return; }
     if (targetIdx === currentStep) return;
-
     let canJump = true;
     for (let i = currentStep; i < targetIdx; i++) {
       const errs = validateSection(i);
-      if (Object.keys(errs).length > 0) {
-        setErrors((prev) => ({ ...prev, ...errs }));
-        canJump = false;
-        break;
-      }
-
-      // Auto-populate linked_fir_dd_no if we validate step 0 (Select FIR)
+      if (Object.keys(errs).length > 0) { setErrors((prev) => ({ ...prev, ...errs })); canJump = false; break; }
       if (recordType === 'ARREST' && caseType === 'against_fir' && i === 0) {
         const selectedFir = values.selected_fir;
         if (selectedFir) {
+          const matchedBackendCase = (casesData || []).find(c => {
+            const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+            return firNo === selectedFir;
+          });
+          const matchedMockCase = MOCK_FIR_LIST.find(c => c.fir_no === selectedFir);
+          let autofilled = {};
+          if (matchedBackendCase) {
+            const cData = matchedBackendCase.data || {};
+            autofilled = {
+              act_name: cData.act_name || '',
+              sections: cData.sections || '',
+              io_name: cData.io_name || '',
+              io_rank: cData.io_rank || '',
+              io_pis: cData.io_pis || '',
+              io_mobile: cData.io_mobile || '',
+            };
+          } else if (matchedMockCase) {
+            autofilled = {
+              act_name: 'IPC',
+              sections: matchedMockCase.sections || '',
+              io_name: 'Inspector Satish Kumar',
+              io_rank: 'Inspector',
+              io_pis: '28081234',
+              io_mobile: '9876543210',
+            };
+          }
           setValues(prev => ({
             ...prev,
-            linked_fir_dd_no: selectedFir
+            linked_fir_dd_no: selectedFir,
+            act_name: prev.act_name || autofilled.act_name || '',
+            sections: prev.sections !== undefined ? prev.sections : (autofilled.sections || ''),
+            io_name: prev.io_name || autofilled.io_name || '',
+            io_rank: prev.io_rank || autofilled.io_rank || '',
+            io_pis: prev.io_pis || autofilled.io_pis || '',
+            io_mobile: prev.io_mobile || autofilled.io_mobile || '',
           }));
         }
       }
-
       setCompletedSteps((prev) => new Set([...prev, i]));
     }
     if (canJump) setCurrentStep(targetIdx);
@@ -638,6 +1034,7 @@ export default function DynamicForm({
 
       let firstErrStep = 0;
       finalSchema.forEach((sec, idx) => {
+        if (sec.is_repeater) return;
         const hasErr = sec.fields.some((f) => allErrs[f.field_key]);
         if (hasErr && idx < firstErrStep + 1) firstErrStep = idx;
       });
@@ -659,7 +1056,25 @@ export default function DynamicForm({
     if (finalValues.time_of_occurrence !== undefined) {
       finalValues.occurrence_time = finalValues.time_of_occurrence;
     }
-    onSubmit?.(finalValues, activeRecordIdRef.current);
+
+    // Build persons and properties from repeater sections
+    const persons = [];
+    const properties = [];
+    for (const section of finalSchema) {
+      if (!section.is_repeater) continue;
+      const entries = repeaterState[section.section] || [];
+      if (section.entity_type === 'person' && section.person_type) {
+        for (const entry of entries) {
+          persons.push({ person_type: section.person_type, data: entry });
+        }
+      } else if (section.entity_type === 'property') {
+        for (const entry of entries) {
+          properties.push(entry);
+        }
+      }
+    }
+
+    onSubmit?.(finalValues, persons, properties, activeRecordIdRef.current);
   };
 
   /* ── Manual save draft (button click) ────────────────────────────────────*/
@@ -701,7 +1116,7 @@ export default function DynamicForm({
     );
   }
 
-  const activeSection = finalSchema[currentStep];
+  const activeSection = finalSchema[currentStep] || finalSchema[0];
   const isLastStep    = currentStep === finalSchema.length - 1;
 
   const stepHasError = (idx) => {
@@ -716,7 +1131,6 @@ export default function DynamicForm({
       {finalSchema.length > 1 && (
         <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Active Step Indicator */}
             <div className="flex items-center gap-3">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-color)] text-white text-xs font-bold shadow-md shadow-[var(--accent-glow)] scale-110 flex-shrink-0">
                 {currentStep + 1}
@@ -732,8 +1146,6 @@ export default function DynamicForm({
                 </span>
               </div>
             </div>
-
-            {/* Right: step counter + autosave */}
             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end sm:pl-5 sm:border-l border-slate-100">
               <span className="text-xs font-extrabold text-[var(--accent-color)] bg-[var(--accent-glow)] border border-[var(--accent-color)]/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
                 {lang === 'hi' ? `चरण ${currentStep + 1} / ${finalSchema.length}` : `Step ${currentStep + 1} / ${finalSchema.length}`}
@@ -744,14 +1156,13 @@ export default function DynamicForm({
         </div>
       )}
 
-      {/* ── Single-step save indicator (when no step nav) ─────────────── */}
       {finalSchema.length === 1 && (
         <div className="flex justify-end">
           <FormAutosave status={saveStatus} lang={lang} />
         </div>
       )}
 
-      {/* ── Validation summary (top — shown after first submit attempt) ── */}
+      {/* ── Validation summary ── */}
       {Object.keys(errors).length > 0 && Object.values(touched).some(Boolean) && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 shadow-sm space-y-2">
           <div className="flex items-center gap-2 font-bold text-red-700 mb-1">
@@ -774,12 +1185,9 @@ export default function DynamicForm({
         </div>
       )}
 
-      {/* ── Active Section Form ─────────────────────────────────────────── */}
+      {/* ── Active Section (flat field form OR repeater panel) ── */}
       {activeSection && (
         <div className="space-y-6">
-          {/* Wrap ONLY the fields in a form so Enter key doesn't auto-submit
-              when navigating between steps. The submit action is wired via
-              an explicit onClick on the Submit button in FormToolbar. */}
           <form onSubmit={(e) => e.preventDefault()} noValidate>
             {recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0 ? (
               renderFirSearchStep()
@@ -794,11 +1202,14 @@ export default function DynamicForm({
                 readOnly={readOnly}
                 targetFields={targetFields}
                 lang={lang}
+                entries={repeaterState[activeSection?.section] || []}
+                onEntriesChange={(entries) =>
+                  setRepeaterState(prev => ({ ...prev, [activeSection.section]: entries }))
+                }
               />
             )}
           </form>
 
-          {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
           <FormToolbar
             currentStep={currentStep}
             totalSteps={finalSchema.length}

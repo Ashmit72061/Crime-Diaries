@@ -9,6 +9,7 @@
  */
 
 import { wh, whTable } from '../warehouse.db.js';
+import db from '../../../config/db.js';
 
 /**
  * Rebuilds/updates bridges for both Arrest and Missing Person tables.
@@ -20,7 +21,7 @@ export async function syncBridgeTables() {
 
   // 1. Resolve FIR ↔ Arrest links
   // Finds matches where linked_fir_dd_no equals fir_no or gd_no at the same PS
-  const newArrestLinks = await wh('fact_arrest')
+  const newArrestLinks = await db(`${whTable('fact_arrest')} as fact_arrest`)
     .join(whTable('fact_fir') + ' as f', function() {
       this.on('fact_arrest.ps_id', '=', 'f.ps_id')
           .andOn(function() {
@@ -51,7 +52,7 @@ export async function syncBridgeTables() {
 
   // 2. Resolve FIR ↔ Missing Person links
   // Finds matches where missing dd_no equals fir gd_no or fir_no at the same PS
-  const newMissingLinks = await wh('fact_missing')
+  const newMissingLinks = await db(`${whTable('fact_missing')} as fact_missing`)
     .join(whTable('fact_fir') + ' as f', function() {
       this.on('fact_missing.ps_id', '=', 'f.ps_id')
           .andOn(function() {

@@ -1,3 +1,11 @@
+import platform
+import collections
+if not hasattr(platform, '_uname_patched'):
+    UnameResult = collections.namedtuple('uname_result', ['system', 'node', 'release', 'version', 'machine', 'processor'])
+    platform.machine = lambda: 'AMD64'
+    platform.uname = lambda: UnameResult('Windows', 'localhost', '10', '10.0.19045', 'AMD64', 'Intel64 Family 6 Model 158 Stepping 10, GenuineIntel')
+    platform._uname_patched = True
+
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine

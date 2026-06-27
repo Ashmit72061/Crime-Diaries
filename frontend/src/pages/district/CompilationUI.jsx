@@ -18,29 +18,19 @@ const REPORTS = [
   { tableName: "excel_9arrested_efir_theft",       label: "Arrested - E-FIR Theft",            type: "list",    num: 9  },
   { tableName: "excel_10arrested_efir_mv_theft",   label: "Arrested - E-FIR MV Theft",         type: "list",    num: 10 },
   { tableName: "excel_11proclaimed_offenders",     label: "Proclaimed Offenders",              type: "list",    num: 11 },
-  { tableName: "excel_12listed_criminals_action",  label: "Listed Criminals Action",           type: "list",    num: 12 },
   { tableName: "excel_13arrested_24_hrs_list",     label: "Arrested - Last 24 Hrs",            type: "list",    num: 13 },
   { tableName: "excel_14pi_disposal_manual",       label: "PI Disposal - Manual",              type: "list",    num: 14 },
   { tableName: "excel_15pi_disposal_eproperty",    label: "PI Disposal - E-Property",          type: "list",    num: 15 },
   { tableName: "excel_16pi_disposal_emvt",         label: "PI Disposal - E-MVT",               type: "list",    num: 16 },
-  { tableName: "excel_17juveniles_conflict_law",   label: "Juveniles in Conflict with Law",    type: "list",    num: 17 },
   { tableName: "excel_18missing_persons",          label: "Missing Persons",                   type: "list",    num: 18 },
   { tableName: "excel_19uidb",                     label: "UIDB (Unidentified Bodies)",        type: "list",    num: 19 },
   { tableName: "excel_20abandoned_persons",        label: "Abandoned Persons",                 type: "list",    num: 20 },
   { tableName: "excel_21traced_persons",           label: "Traced Persons",                    type: "list",    num: 21 },
   { tableName: "excel_22women_missing",            label: "Women Missing",                     type: "summary", num: 22 },
   { tableName: "excel_23children_missing",         label: "Children Missing",                  type: "summary", num: 23 },
-  { tableName: "excel_24preventive_action",        label: "Preventive Action",                 type: "list",    num: 24 },
   { tableName: "excel_25inquest_registered",       label: "Inquest Registered",                type: "list",    num: 25 },
   { tableName: "excel_26inquest_acpsdm_disposal",  label: "Inquest ACP/SDM Disposal",          type: "list",    num: 26 },
-  { tableName: "excel_27important_cases",          label: "Important Cases",                   type: "list",    num: 27 },
   { tableName: "excel_28fir_goswara_summary",      label: "FIR Goswara Summary",               type: "summary", num: 28 },
-  { tableName: "excel_29financial_fraud_arrest",   label: "Financial Fraud Arrest",            type: "list",    num: 29 },
-  { tableName: "excel_30patrolling_checking",      label: "Patrolling / Checking",             type: "summary", num: 30 },
-  { tableName: "excel_31ndps_action",              label: "NDPS Action",                       type: "summary", num: 31 },
-  { tableName: "excel_32servant_verification",     label: "Servant Verification",              type: "summary", num: 32 },
-  { tableName: "excel_33mobile_recovered_ps",      label: "Mobile Recovered - PS",             type: "list",    num: 33 },
-  { tableName: "excel_34mobile_recovered_summary", label: "Mobile Recovered Summary",          type: "summary", num: 34 },
 ];
 
 const MOCK_PS_LIST = [
@@ -66,7 +56,10 @@ export default function CompilationUI() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
-  const [compileDate, setCompileDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const today = new Date().toISOString().split('T')[0];
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo]   = useState('');         // optional; blank = single day
+  const [exporting, setExporting] = useState(false);
 
   // Dropdown UI states
   const [selectedPSIds, setSelectedPSIds] = useState(new Set());
@@ -155,42 +148,98 @@ export default function CompilationUI() {
   });
 
   const handleCompileTrigger = async () => {
-    // 1. Trigger DB compilation tracking
-    createCompMutation.mutate(compileDate);
+    if (exporting) return;
+    setExporting(true);
 
-    // 2. Perform Excel report export & download flow
+    // 1. Persist compilation in DB (non-fatal — continues even if no DISTRICT_REVIEW records)
+    try {
+      await createCompMutation.mutateAsync(dateFrom);
+    } catch {
+      // onError toast already shown; continue to export with date-based fallback
+    }
+
+    const token = localStorage.getItem('access_token');
+    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const authHeaders = { 'Authorization': token ? `Bearer ${token}` : '' };
+
+    // 2. Queue the export job — returns 202 JSON { data: { job_id } }
+    let jobId;
     try {
       const params = new URLSearchParams();
-      params.set('date', compileDate);
-      if (selectedPSIds.size > 0) {
-        params.set('psId', Array.from(selectedPSIds).join(','));
-      }
-      if (selectedFields.size < REPORTS.length) {
-        params.set('tableNames', Array.from(selectedFields).join(','));
-      }
+      params.set('date', dateFrom);
+      if (dateTo && dateTo !== dateFrom) params.set('dateTo', dateTo);
+      if (selectedPSIds.size > 0) params.set('psId', Array.from(selectedPSIds).join(','));
+      if (selectedFields.size < REPORTS.length) params.set('tableNames', Array.from(selectedFields).join(','));
 
-      const response = await api.get(`/daily-diary/export?${params.toString()}`, {
-        responseType: 'blob'
+      const exportRes = await fetch(`${BASE_URL}/daily-diary/export?${params}`, {
+        headers: authHeaders,
+        credentials: 'include',
       });
+      const exportJson = await exportRes.json();
+      jobId = exportJson?.data?.job_id;
+      if (!jobId) throw new Error('No job ID returned from server');
+    } catch (err) {
+      console.error('[CompilationUI] Export queue failed:', err);
+      toast.error('Failed to start Daily Diary export.');
+      setExporting(false);
+      return;
+    }
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+    // 3. Poll until READY or FAILED (max ~60 s, polling every 1.5 s)
+    const loadingToastId = toast.loading('Generating Daily Diary Excel…');
+    try {
+      await new Promise((resolve, reject) => {
+        let attempts = 0;
+        const iv = setInterval(async () => {
+          attempts++;
+          try {
+            const statusRes = await fetch(`${BASE_URL}/reports/status/${jobId}`, { headers: authHeaders });
+            const statusJson = await statusRes.json();
+            const status = statusJson?.data?.job?.status || statusJson?.data?.status;
+            if (status === 'READY') { clearInterval(iv); resolve(); }
+            else if (status === 'FAILED' || attempts > 40) {
+              clearInterval(iv);
+              reject(new Error(status === 'FAILED' ? 'Export failed on server' : 'Export timed out'));
+            }
+          } catch (e) { clearInterval(iv); reject(e); }
+        }, 1500);
+      });
+    } catch (err) {
+      toast.dismiss(loadingToastId);
+      console.error('[CompilationUI] Polling failed:', err);
+      toast.error(err.message || 'Failed to generate Daily Diary.');
+      setExporting(false);
+      return;
+    }
+
+    toast.dismiss(loadingToastId);
+
+    // 4. Download the completed file
+    try {
+      const dlRes = await fetch(`${BASE_URL}/reports/download/${jobId}`, { headers: authHeaders });
+      if (!dlRes.ok) throw new Error(`Download returned ${dlRes.status}`);
+      const blob = new Blob([await dlRes.arrayBuffer()], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const psSuffix = selectedPSIds.size > 0 
-        ? (selectedPSIds.size === 1 
-            ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}` 
-            : '_Multiple_Stations') 
-        : '_All_Stations';
-      link.setAttribute('download', `Daily_Diary_${compileDate}${psSuffix}.xlsx`);
+      const psSuffix = selectedPSIds.size === 0
+        ? '_All_Stations'
+        : selectedPSIds.size === 1
+          ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}`
+          : '_Multiple_Stations';
+      const dateSuffix = dateTo && dateTo !== dateFrom ? `${dateFrom}_to_${dateTo}` : dateFrom;
+      link.download = `Daily_Diary_${dateSuffix}${psSuffix}.xlsx`;
       document.body.appendChild(link);
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Daily Diary Excel spreadsheet downloaded successfully!');
+      setTimeout(() => { link.remove(); URL.revokeObjectURL(url); }, 500);
+      toast.success('Daily Diary downloaded successfully!');
     } catch (err) {
-      console.error('[CompilationUI] Excel export failed:', err);
-      toast.error('Failed to download Daily Diary Excel spreadsheet.');
+      console.error('[CompilationUI] Download failed:', err);
+      toast.error('Export ready but download failed. Try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -246,12 +295,30 @@ export default function CompilationUI() {
         </p>
  
         <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
-          <input
-            type="date"
-            value={compileDate}
-            onChange={(e) => setCompileDate(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all shrink-0 font-semibold"
-          />
+          {/* Date range: From (required) + To (optional) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-0.5">From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-0.5">
+                To <span className="text-slate-400 normal-case font-normal">(optional)</span>
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
+              />
+            </div>
+          </div>
  
           {/* POLICE STATION DROPDOWN */}
           <div ref={psDropRef} className="relative flex-1 min-w-[200px]">
@@ -356,7 +423,7 @@ export default function CompilationUI() {
                 <FileText size={14} className="text-[var(--accent-color)] shrink-0" />
                 <span className="truncate text-left">
                   {selectedFields.size === REPORTS.length 
-                    ? 'All Reports (34/34)' 
+                    ? 'All Reports (24/24)' 
                     : `${selectedFields.size} Reports Selected`}
                 </span>
               </div>
@@ -437,13 +504,13 @@ export default function CompilationUI() {
   
             <button
               onClick={handleCompileTrigger}
-              disabled={createCompMutation.isPending || selectedFields.size === 0}
+              disabled={exporting || selectedFields.size === 0}
               className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0 shadow-md shadow-red-500/20"
             >
-              {createCompMutation.isPending ? (
+              {exporting ? (
                 <>
                   <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
-                  <span>Aggregating Data...</span>
+                  <span>Generating…</span>
                 </>
               ) : (
                 <>

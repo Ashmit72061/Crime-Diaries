@@ -67,9 +67,44 @@ export const getFormFields = async (record_type) => {
   );
 
   const grouped = {};
+  const normalizedType = record_type.toUpperCase();
 
-  for (const field of fields) {
-    const sec = field.section || 'general_info';
+  const mappedFields = fields.map(field => {
+    let sec = field.section || 'general_info';
+    let sort_order = field.sort_order;
+
+    if (normalizedType === 'ARREST') {
+      if (field.field_key === 'act_name' || field.field_key === 'sections') {
+        sec = 'offence_info';
+      } else if (field.field_key === 'status') {
+        sec = 'custody_status';
+        sort_order = 429;
+      }
+    } else if (normalizedType === 'UIDB') {
+      if (field.field_key === 'act_name' || field.field_key === 'sections') {
+        sec = 'general_info';
+        sort_order = field.field_key === 'act_name' ? 5.1 : 5.2;
+      } else if (field.field_key === 'status') {
+        sec = 'general_info';
+        sort_order = 5.3;
+      } else if ([
+        'height', 'built', 'complexion', 'face', 'hair', 'moustache', 'beard',
+        'upper_dress_color', 'lower_dress_color', 'zipnet_no', 'identified'
+      ].includes(field.field_key)) {
+        sec = 'corpse_desc';
+      } else if (['informant_name', 'informant_mobile'].includes(field.field_key)) {
+        sec = 'inquest_details';
+      }
+    }
+
+    return { ...field, section: sec, sort_order };
+  });
+
+  // Re-sort by sort_order
+  mappedFields.sort((a, b) => a.sort_order - b.sort_order);
+
+  for (const field of mappedFields) {
+    const sec = field.section;
     if (!grouped[sec]) {
       const t = sectionTitle(sec);
       grouped[sec] = { section: sec, title_en: t.en, title_hi: t.hi, fields: [] };

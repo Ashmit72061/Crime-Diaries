@@ -4,8 +4,10 @@ import knexConfig from '../../knexfile.js';
 import { env } from './env.js';
 import { logger } from '../utils/logger.js';
 
-// Return DATE columns as ISO strings instead of JS Date objects (avoids timezone shift)
-pg.types.setTypeParser(1082, v => v);
+// Return DATE columns as YYYY-MM-DD strings instead of JavaScript Date objects.
+// Without this, node-postgres wraps dates in Date(), which JSON.stringify serialises
+// as ISO-8601 timestamps (e.g. "2026-06-19T18:30:00.000Z" for a 2026-06-20 date in IST).
+pg.types.setTypeParser(1082, val => val);
 
 const environment = env.NODE_ENV || 'development';
 const config = knexConfig[environment];

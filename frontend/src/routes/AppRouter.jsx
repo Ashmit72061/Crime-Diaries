@@ -31,7 +31,7 @@ const DistrictDashboard = lazy(() => import('../pages/district/Dashboard.jsx'));
 const CompilationUI     = lazy(() => import('../pages/district/CompilationUI.jsx'));
 const HQDashboard       = lazy(() => import('../pages/hq/Dashboard.jsx'));
 const AnalyticsDashboard = lazy(() => import('../pages/analytics/AnalyticsDashboard.jsx'));
-const ReportBuilder     = lazy(() => import('../pages/reports/ReportBuilder.jsx'));
+const ReportsPage       = lazy(() => import('../pages/reports/ReportsPage.jsx'));
 const Users             = lazy(() => import('../pages/admin/Users.jsx'));
 const HierarchyManager  = lazy(() => import('../pages/admin/HierarchyManager.jsx'));
 const FieldManager      = lazy(() => import('../pages/admin/FieldManager.jsx'));
@@ -114,7 +114,7 @@ export const AppRouter = () => (
             <Route path="/compile" element={<CompilationUI />} />
             <Route path="/hq" element={<HQDashboard />} />
             <Route path="/analytics" element={<AnalyticsDashboard />} />
-            <Route path="/reports" element={<ReportBuilder />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/hierarchy" element={<HierarchyManager />} />
             <Route path="/admin/fields" element={<FieldManager />} />

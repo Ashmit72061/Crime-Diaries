@@ -37,5 +37,5 @@ start "PHAROS Python Worker" cmd /k "cd ../python_worker && python main.py"
 echo.
 
 echo [6/6] Launching local backend server...
-echo Server running on http://localhost:3000
+echo Server running on http://localhost:5000
 npm run dev
