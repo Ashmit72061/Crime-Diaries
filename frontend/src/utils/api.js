@@ -418,7 +418,7 @@ const formSchemas = {
             { value: 'zero FIR', label_en: 'zero FIR', label_hi: 'जीरो एफआईआर' }
           ]
         },
-        { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number & Date', label_hi: 'प्राथमिकी (FIR) संख्या और दिनांक', validation_rules: { required: true } },
+        { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number,Date & Time', label_hi: 'प्राथमिकी (FIR) संख्या और दिनांक', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
         {

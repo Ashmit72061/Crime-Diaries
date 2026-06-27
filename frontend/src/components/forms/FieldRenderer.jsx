@@ -128,6 +128,15 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
             className={`w-full bg-transparent border-0 text-sm px-3.5 py-2.5 outline-none placeholder:text-slate-400 cursor-pointer ${disabledClass}`}
           />
         </div>
+        <div className="w-full sm:w-[140px] flex items-center min-w-0">
+          <input
+            type="time"
+            disabled={readOnly}
+            value={values?.fir_time || ''}
+            onChange={(e) => onChange('fir_time', e.target.value)}
+            className={`w-full bg-transparent border-0 text-sm px-3.5 py-2.5 outline-none placeholder:text-slate-400 cursor-pointer ${disabledClass}`}
+          />
+        </div>
       </div>
     );
   }

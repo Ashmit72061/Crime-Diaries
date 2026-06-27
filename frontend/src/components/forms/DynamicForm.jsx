@@ -780,8 +780,9 @@ export default function DynamicForm({
       if (field.field_key === 'fir_no') {
         const num = currentValues.fir_no;
         const dt = currentValues.fir_date;
-        const isAnyFilled = !!(num || dt);
-        const isAllFilled = !!(num && dt);
+        const tm = currentValues.fir_time;
+        const isAnyFilled = !!(num || dt || tm);
+        const isAllFilled = !!(num && dt && tm);
 
         if (rules.required && !isAllFilled) {
           errs.fir_no = lang === 'hi'
