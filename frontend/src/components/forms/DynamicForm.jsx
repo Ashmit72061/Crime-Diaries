@@ -954,6 +954,176 @@ export default function DynamicForm({
     );
   };
 
+const renderOccurrenceStep = () => {
+  return (
+    <div className="grid grid-cols-2 gap-4 text-sm">
+
+      {/* LEFT COLUMN */}
+      <div className="space-y-3">
+
+        {/* OCCURRENCE INFORMATION */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            Occurrence Information
+          </legend>
+
+          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+
+            {/* Row 1 */}
+            <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium">
+              Occurrence Date
+            </div>
+            <div className="px-2 py-1 border-b">
+              <input
+                type="date"
+                value={values?.occurrence_date || ""}
+                disabled={readOnly}
+                onChange={(e) =>
+                  handleChange("occurrence_date", e.target.value)
+                }
+                className="w-full h-7 border border-[#7a9cc5] px-2"
+              />
+            </div>
+
+            {/* Row 2 */}
+            <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium">
+              Time of Occurrence
+            </div>
+            <div className="px-2 py-1 border-b">
+              <input
+                type="time"
+                value={values?.time_of_occurrence || ""}
+                disabled={readOnly}
+                onChange={(e) =>
+                  handleChange("time_of_occurrence", e.target.value)
+                }
+                className="w-full h-7 border border-[#7a9cc5] px-2"
+              />
+            </div>
+
+            {/* Row 3 */}
+            <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium">
+              Occurrence Place
+            </div>
+            <div className="px-2 py-1 border-b">
+              <input
+                type="text"
+                value={values?.occurrence_place || ""}
+                disabled={readOnly}
+                onChange={(e) =>
+                  handleChange("occurrence_place", e.target.value)
+                }
+                className="w-full h-7 border border-[#7a9cc5] px-2"
+              />
+            </div>
+
+            {/* Row 4 */}
+            <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium">
+              Local Head
+            </div>
+            <div className="px-2 py-1">
+              <input
+                type="text"
+                value={values?.local_head || ""}
+                disabled={readOnly}
+                onChange={(e) =>
+                  handleChange("local_head", e.target.value)
+                }
+                className="w-full h-7 border border-[#7a9cc5] px-2"
+              />
+            </div>
+
+          </div>
+        </fieldset>
+
+        {/* FOREST AREA */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-3">
+          <div className="flex items-center gap-6 text-[12px]">
+
+            <span className="font-medium">
+              Is the area of crime a forest place?
+            </span>
+
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={values?.forest_place === "Yes"}
+                onChange={() => handleChange("forest_place", "Yes")}
+              />
+              Yes
+            </label>
+
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={values?.forest_place === "No"}
+                onChange={() => handleChange("forest_place", "No")}
+              />
+              No
+            </label>
+
+          </div>
+        </fieldset>
+
+      </div>
+
+
+      {/* RIGHT COLUMN */}
+      <div>
+
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2 h-full">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            Place of Occurrence
+          </legend>
+
+          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+
+            {[
+              ["House No.", "house_no"],
+              ["Street Name", "street_name"],
+              ["Colony / Locality / Area", "colony_locality_area"],
+              ["Village / Town / Area", "village_town_area"],
+              ["Tehsil / Block / Mandal", "tehsil_block_mandal"],
+              ["Pincode", "pincode"]
+            ].map(([label, key], index) => (
+              <React.Fragment key={key}>
+
+                <div
+                  className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium ${
+                    index !== 5 ? "border-b" : ""
+                  }`}
+                >
+                  {label}
+                </div>
+
+                <div
+                  className={`px-2 py-1 ${
+                    index !== 5 ? "border-b" : ""
+                  }`}
+                >
+                  <input
+                    type="text"
+                    value={values?.[key] || ""}
+                    disabled={readOnly}
+                    onChange={(e) =>
+                      handleChange(key, e.target.value)
+                    }
+                    className="w-full h-7 border border-[#7a9cc5] px-2"
+                  />
+                </div>
+
+              </React.Fragment>
+            ))}
+
+          </div>
+        </fieldset>
+
+      </div>
+
+    </div>
+  );
+};
+
   const firOptions = React.useMemo(() => {
     return (casesData || []).map(c => {
       const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
@@ -983,7 +1153,7 @@ export default function DynamicForm({
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
       const tabSpecs = [
         { title_en: 'Acts & Sections', title_hi: 'अधिनियम और धाराएं', keys: ['uid', 'district', 'police_station', 'submission_status', 'case_type', 'fir_no', 'fir_date', 'gd_no', 'gd_date', 'gd_time', 'beat_no', 'act_name', 'sections'] },
-        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_date', 'time_of_occurrence', 'occurrence_place', 'local_head'] },
+        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_date', 'time_of_occurrence', 'occurrence_place', 'local_head','house_no','street_name','colony_locality_area','village_town_area','tehsil_block_mandal','pincode','forest_place'] },
         { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: ['complainant_name', 'complainant_address'] },
         { title_en: 'FIR Contents',    title_hi: 'प्राथमिकी विवरण', keys: ['brief_facts'] },
         { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [] },
@@ -1629,6 +1799,8 @@ export default function DynamicForm({
               renderFirSearchStep()
             ) : recordType === 'CASE' && currentStep === 0 ? (
               renderActsAndSectionsStep()
+              ) : recordType === 'CASE' && currentStep === 1 ? ( 
+               renderOccurrenceStep() 
             ) : (
               <FormSection
                 section={activeSection}
