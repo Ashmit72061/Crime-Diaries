@@ -193,6 +193,32 @@ export default function DynamicForm({
     const queryLabel = lang === 'hi' ? 'शिकायतकर्ता का नाम / प्राथमिकी संख्या (वैकल्पिक)' : 'Complainant Name / FIR No. (Optional)';
     const queryPlaceholder = lang === 'hi' ? 'खोजने के लिए लिखें...' : 'Type to search...';
     const btnText = lang === 'hi' ? 'प्राथमिकी खोजें' : 'Search FIR';
+
+    const selectedFir = values.selected_fir;
+    const currentAct = values.act_name || 'IPC';
+    const currentSections = values.sections || '';
+    
+    // Parse sections list
+    const sectionsList = currentSections
+      ? currentSections.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    const handleAddSection = () => {
+      const cleanSec = newSectionVal.trim();
+      if (!cleanSec) return;
+      if (sectionsList.includes(cleanSec)) {
+        setNewSectionVal('');
+        return;
+      }
+      const updatedList = [...sectionsList, cleanSec];
+      handleChange('sections', updatedList.join(', '));
+      setNewSectionVal('');
+    };
+
+    const handleRemoveSection = (secToRemove) => {
+      const updatedList = sectionsList.filter(s => s !== secToRemove);
+      handleChange('sections', updatedList.join(', '));
+    };
     
     return (
       <div className="space-y-6">
@@ -301,7 +327,51 @@ export default function DynamicForm({
                           key={row.fir_no}
                           onClick={() => {
                             if (readOnly) return;
-                            handleChange('selected_fir', row.fir_no);
+                            
+                            // Find the full details from row or casesData
+                            let actName = 'IPC';
+                            let sections = row.sections && row.sections !== 'N/A' ? row.sections : '';
+                            let ioName = '';
+                            let ioRank = '';
+                            let ioPis = '';
+                            let ioMobile = '';
+
+                            if (row.isBackend) {
+                              const matched = (casesData || []).find(c => {
+                                const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+                                return firNo === row.fir_no;
+                              });
+                              if (matched) {
+                                const cData = matched.data || {};
+                                actName = cData.act_name || 'IPC';
+                                sections = cData.sections || '';
+                                ioName = cData.io_name || '';
+                                ioRank = cData.io_rank || '';
+                                ioPis = cData.io_pis || '';
+                                ioMobile = cData.io_mobile || '';
+                              }
+                            } else {
+                              // It's a mock case
+                              actName = 'IPC';
+                              sections = row.sections && row.sections !== 'N/A' ? row.sections : '';
+                              ioName = 'Inspector Satish Kumar';
+                              ioRank = 'Inspector';
+                              ioPis = '28081234';
+                              ioMobile = '9876543210';
+                            }
+
+                            // Directly update values
+                            setValues(prev => ({
+                              ...prev,
+                              selected_fir: row.fir_no,
+                              linked_fir_dd_no: row.fir_no,
+                              act_name: actName,
+                              sections: sections,
+                              io_name: ioName,
+                              io_rank: ioRank,
+                              io_pis: ioPis,
+                              io_mobile: ioMobile
+                            }));
                           }}
                           className={`group cursor-pointer hover:bg-slate-50/80 transition-all ${
                             isSelected
@@ -350,6 +420,127 @@ export default function DynamicForm({
           </div>
         )}
 
+        {/* Linked FIR Offence Details Card */}
+        {selectedFir && (
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+              <h3 className="text-sm font-bold text-slate-800 tracking-wide flex items-center gap-2 font-display">
+                <Bookmark size={16} className="text-[var(--accent-color)]" />
+                <span>
+                  {lang === 'hi' ? 'संबद्ध प्राथमिकी अपराध विवरण (संपादित करें)' : 'Linked FIR Offence Details (Edit)'}
+                </span>
+              </h3>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Act Name Selection */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide">
+                    {lang === 'hi' ? 'अधिनियम का नाम *' : 'Act Name *'}
+                  </label>
+                  <select
+                    disabled={readOnly}
+                    value={currentAct}
+                    onChange={(e) => handleChange('act_name', e.target.value)}
+                    className="w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer"
+                  >
+                    <option value="IPC">IPC</option>
+                    <option value="Delhi Excise Act">Delhi Excise Act</option>
+                    <option value="Arms Act">Arms Act</option>
+                    <option value="Gambling Act">Gambling Act</option>
+                    <option value="DP Act">DP Act</option>
+                    <option value="Other Act">Other Act</option>
+                  </select>
+                </div>
+
+                {/* Act Name Sub-input if Other Act is selected */}
+                {currentAct === 'Other Act' && (
+                  <div className="flex flex-col gap-1.5 animate-in fade-in duration-200">
+                    <label className="text-xs font-bold text-slate-700 tracking-wide">
+                      {lang === 'hi' ? 'अधिनियम का नाम दर्ज करें' : 'Specify Act Name'}
+                    </label>
+                    <input
+                      type="text"
+                      disabled={readOnly}
+                      value={values.other_act_name || ''}
+                      onChange={(e) => handleChange('other_act_name', e.target.value)}
+                      placeholder={lang === 'hi' ? 'अधिनियम का नाम लिखें...' : 'Enter custom act...'}
+                      className="w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Sections Editor */}
+              <div className="flex flex-col gap-3">
+                <label className="text-xs font-bold text-slate-700 tracking-wide">
+                  {lang === 'hi' ? 'धारा संख्या(एँ) *' : 'Sections Code *'}
+                </label>
+
+                {/* Section Chips Container */}
+                <div className="flex flex-wrap gap-2 min-h-[44px] p-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl items-center">
+                  {sectionsList.length === 0 ? (
+                    <span className="text-xs text-slate-400 font-medium px-2 py-1">
+                      {lang === 'hi' ? 'कोई धारा जोड़ी नहीं गई है' : 'No sections added yet.'}
+                    </span>
+                  ) : (
+                    sectionsList.map((sec, idx) => (
+                      <span
+                        key={`${sec}-${idx}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-sm animate-in zoom-in-75 duration-200"
+                      >
+                        <span>{sec}</span>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSection(sec)}
+                            className="p-0.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
+                          >
+                            <X size={12} className="stroke-[2.5]" />
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Section Input Bar */}
+                {!readOnly && (
+                  <div className="flex items-center gap-2 max-w-sm mt-1">
+                    <input
+                      type="text"
+                      disabled={readOnly}
+                      value={newSectionVal}
+                      onChange={(e) => setNewSectionVal(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSection();
+                        }
+                      }}
+                      placeholder={lang === 'hi' ? 'उदा. 379 या 34' : 'e.g. 379 or 34'}
+                      className="flex-1 bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSection}
+                      className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                    >
+                      <Plus size={14} />
+                      <span>{lang === 'hi' ? 'जोड़ें' : 'Add'}</span>
+                    </button>
+                  </div>
+                )}
+                <span className="text-[10px] text-slate-400 font-medium leading-normal">
+                  {lang === 'hi'
+                    ? 'धारा दर्ज करें और Enter दबाएं या "जोड़ें" पर क्लिक करें।'
+                    : 'Type a section code and press Enter or click "Add" to update.'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     );
@@ -1575,6 +1766,34 @@ const renderOccurrenceStep = () => {
         next.occurrence_time = next.time_of_occurrence;
       }
 
+      if (key === 'arrested_perm_same' && val === true) {
+        next.arrested_perm_house_no = next.arrested_house_no || '';
+        next.arrested_perm_street = next.arrested_street || '';
+        next.arrested_perm_colony = next.arrested_colony || '';
+        next.arrested_perm_city_town_village = next.arrested_city_town_village || '';
+        next.arrested_perm_tehsil_block_mandal = next.arrested_tehsil_block_mandal || '';
+        next.arrested_perm_country = next.arrested_country || 'Indian';
+        next.arrested_perm_state = next.arrested_state || '';
+        next.arrested_perm_district = next.arrested_district || '';
+        next.arrested_perm_police_station = next.arrested_police_station || '';
+        next.arrested_perm_pincode = next.arrested_pincode || '';
+        next.arrested_perm_address = next.arrested_present_address || '';
+      }
+
+      if (next.arrested_perm_same === true) {
+        if (key === 'arrested_house_no') next.arrested_perm_house_no = val;
+        if (key === 'arrested_street') next.arrested_perm_street = val;
+        if (key === 'arrested_colony') next.arrested_perm_colony = val;
+        if (key === 'arrested_city_town_village') next.arrested_perm_city_town_village = val;
+        if (key === 'arrested_tehsil_block_mandal') next.arrested_perm_tehsil_block_mandal = val;
+        if (key === 'arrested_country') next.arrested_perm_country = val;
+        if (key === 'arrested_state') next.arrested_perm_state = val;
+        if (key === 'arrested_district') next.arrested_perm_district = val;
+        if (key === 'arrested_police_station') next.arrested_perm_police_station = val;
+        if (key === 'arrested_pincode') next.arrested_perm_pincode = val;
+        if (key === 'arrested_present_address') next.arrested_perm_address = val;
+      }
+
       // Clear error on change
       if (errors[key]) {
         setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
@@ -1624,13 +1843,45 @@ const renderOccurrenceStep = () => {
       setTouched((prev) => ({ ...prev, ...newTouched }));
     }
 
-    // Auto-populate linked_fir_dd_no when moving from Step 1 (Select FIR) to Step 2 (General Information)
+    // Auto-populate linked_fir_dd_no and case details when moving from Step 1 (Select FIR)
     if (recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0) {
       const selectedFir = values.selected_fir;
       if (selectedFir) {
+        const matchedBackendCase = (casesData || []).find(c => {
+          const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+          return firNo === selectedFir;
+        });
+        const matchedMockCase = MOCK_FIR_LIST.find(c => c.fir_no === selectedFir);
+        let autofilled = {};
+        if (matchedBackendCase) {
+          const cData = matchedBackendCase.data || {};
+          autofilled = {
+            act_name: cData.act_name || '',
+            sections: cData.sections || '',
+            io_name: cData.io_name || '',
+            io_rank: cData.io_rank || '',
+            io_pis: cData.io_pis || '',
+            io_mobile: cData.io_mobile || '',
+          };
+        } else if (matchedMockCase) {
+          autofilled = {
+            act_name: 'IPC',
+            sections: matchedMockCase.sections || '',
+            io_name: 'Inspector Satish Kumar',
+            io_rank: 'Inspector',
+            io_pis: '28081234',
+            io_mobile: '9876543210',
+          };
+        }
         setValues(prev => ({
           ...prev,
-          linked_fir_dd_no: selectedFir
+          linked_fir_dd_no: selectedFir,
+          act_name: prev.act_name || autofilled.act_name || '',
+          sections: prev.sections !== undefined ? prev.sections : (autofilled.sections || ''),
+          io_name: prev.io_name || autofilled.io_name || '',
+          io_rank: prev.io_rank || autofilled.io_rank || '',
+          io_pis: prev.io_pis || autofilled.io_pis || '',
+          io_mobile: prev.io_mobile || autofilled.io_mobile || '',
         }));
       }
     }
@@ -1650,15 +1901,52 @@ const renderOccurrenceStep = () => {
   /* ── Jump to a specific step (click step dot / tab) ───────────────────── */
   const handleStepClick = (targetIdx) => {
     if (targetIdx === currentStep) return;
-
-    // Validate the section they are leaving so that invalid fields get warning indicators
-    const stepErrs = validateSection(currentStep);
-    if (Object.keys(stepErrs).length > 0) {
-      setErrors((prev) => ({ ...prev, ...stepErrs }));
-      const section = finalSchema[currentStep];
-      const newTouched = {};
-      section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
-      setTouched((prev) => ({ ...prev, ...newTouched }));
+    let canJump = true;
+    for (let i = currentStep; i < targetIdx; i++) {
+      const errs = validateSection(i);
+      if (Object.keys(errs).length > 0) { setErrors((prev) => ({ ...prev, ...errs })); canJump = false; break; }
+      if (recordType === 'ARREST' && caseType === 'against_fir' && i === 0) {
+        const selectedFir = values.selected_fir;
+        if (selectedFir) {
+          const matchedBackendCase = (casesData || []).find(c => {
+            const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+            return firNo === selectedFir;
+          });
+          const matchedMockCase = MOCK_FIR_LIST.find(c => c.fir_no === selectedFir);
+          let autofilled = {};
+          if (matchedBackendCase) {
+            const cData = matchedBackendCase.data || {};
+            autofilled = {
+              act_name: cData.act_name || '',
+              sections: cData.sections || '',
+              io_name: cData.io_name || '',
+              io_rank: cData.io_rank || '',
+              io_pis: cData.io_pis || '',
+              io_mobile: cData.io_mobile || '',
+            };
+          } else if (matchedMockCase) {
+            autofilled = {
+              act_name: 'IPC',
+              sections: matchedMockCase.sections || '',
+              io_name: 'Inspector Satish Kumar',
+              io_rank: 'Inspector',
+              io_pis: '28081234',
+              io_mobile: '9876543210',
+            };
+          }
+          setValues(prev => ({
+            ...prev,
+            linked_fir_dd_no: selectedFir,
+            act_name: prev.act_name || autofilled.act_name || '',
+            sections: prev.sections !== undefined ? prev.sections : (autofilled.sections || ''),
+            io_name: prev.io_name || autofilled.io_name || '',
+            io_rank: prev.io_rank || autofilled.io_rank || '',
+            io_pis: prev.io_pis || autofilled.io_pis || '',
+            io_mobile: prev.io_mobile || autofilled.io_mobile || '',
+          }));
+        }
+      }
+      setCompletedSteps((prev) => new Set([...prev, i]));
     }
 
     // Auto-populate linked_fir_dd_no if we leave step 0 (Select FIR)

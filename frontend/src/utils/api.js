@@ -527,7 +527,8 @@ const formSchemas = {
           options: [
             { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' },
             { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
-            { value: 'Involved', label_en: 'Involved', label_hi: 'शामिल' }
+            { value: 'Involved', label_en: 'Involved', label_hi: 'शामिल' },
+            { value: 'Seized', label_en: 'Seized', label_hi: 'जब्त' }
           ],
           validation_rules: { required: true }
         }
@@ -596,7 +597,6 @@ const formSchemas = {
       title_hi: 'गिरफ्तारी घटना का विवरण',
       fields: [
         { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Date of Arrest', label_hi: 'गिरफ्तारी की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrest_time', field_type: 'TIME', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
         { field_key: 'arrest_place', field_type: 'TEXT', label_en: 'Place of Arrest', label_hi: 'गिरफ्तारी का स्थान', validation_rules: { required: true } },
       ]
     },
@@ -606,6 +606,7 @@ const formSchemas = {
       title_hi: 'गिरफ्तार व्यक्ति की व्यक्तिगत जानकारी',
       fields: [
         { field_key: 'arrested_npr', field_type: 'TEXT', label_en: 'Arrested Person NPR No.', label_hi: 'एनपीआर संख्या', validation_rules: { required: false } },
+        { field_key: 'nick_name', field_type: 'TEXT', label_en: 'Nick Name', label_hi: 'उपनाम', validation_rules: { required: false } },
         { field_key: 'arrested_first_name', field_type: 'TEXT', label_en: 'First Name', label_hi: 'पहला नाम', validation_rules: { required: true } },
         { field_key: 'arrested_middle_name', field_type: 'TEXT', label_en: 'Middle Name', label_hi: 'मध्यम नाम', validation_rules: { required: false } },
         { field_key: 'arrested_last_name', field_type: 'TEXT', label_en: 'Last Name', label_hi: 'अंतिम नाम', validation_rules: { required: false } },
@@ -702,6 +703,119 @@ const formSchemas = {
           validation_rules: { required: false }
         },
         { field_key: 'arrested_pincode', field_type: 'TEXT', label_en: 'Pin Code', label_hi: 'पिन कोड', validation_rules: { required: false } },
+        {
+          field_key: 'arrested_perm_same',
+          field_type: 'BOOLEAN',
+          label_en: 'Is Permanent Address same as Present Address?',
+          label_hi: 'क्या स्थायी पता वर्तमान पते के समान है?',
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'arrested_perm_address',
+          field_type: 'TEXTAREA',
+          label_en: 'Full Permanent Address',
+          label_hi: 'स्थायी पता',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_house_no',
+          field_type: 'TEXT',
+          label_en: 'Permanent House No.',
+          label_hi: 'स्थायी मकान संख्या',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_street',
+          field_type: 'TEXT',
+          label_en: 'Permanent Street',
+          label_hi: 'स्थायी गली / सड़क',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_colony',
+          field_type: 'TEXT',
+          label_en: 'Permanent Colony',
+          label_hi: 'स्थायी कॉलोनी',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_city_town_village',
+          field_type: 'TEXT',
+          label_en: 'Permanent Village / City / Town',
+          label_hi: 'स्थायी गांव / शहर / नगर',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_tehsil_block_mandal',
+          field_type: 'TEXT',
+          label_en: 'Permanent Tehsil / Block / Mandal',
+          label_hi: 'स्थायी तहसील / ब्लॉक / मंडल',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_country',
+          field_type: 'SELECT',
+          label_en: 'Permanent Nationality',
+          label_hi: 'स्थायी राष्ट्रीयता',
+          options: [
+            { value: 'Indian', label_en: 'Indian', label_hi: 'भारतीय' },
+            { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_state',
+          field_type: 'SELECT',
+          label_en: 'Permanent State',
+          label_hi: 'स्थायी राज्य',
+          options: [
+            { value: 'Delhi', label_en: 'Delhi', label_hi: 'दिल्ली' },
+            { value: 'Haryana', label_en: 'Haryana', label_hi: 'हरियाणा' },
+            { value: 'Uttar Pradesh', label_en: 'Uttar Pradesh', label_hi: 'उत्तर प्रदेश' },
+            { value: 'Punjab', label_en: 'Punjab', label_hi: 'पंजाब' },
+            { value: 'Rajasthan', label_en: 'Rajasthan', label_hi: 'राजस्थान' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_district',
+          field_type: 'SELECT',
+          label_en: 'Permanent District',
+          label_hi: 'स्थायी जिला',
+          options: [
+            { value: 'New Delhi District (NDD)', label_en: 'New Delhi District (NDD)', label_hi: 'नई दिल्ली जिला' },
+            { value: 'Central District', label_en: 'Central District', label_hi: 'मध्य जिला' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_police_station',
+          field_type: 'SELECT',
+          label_en: 'Permanent Police Station',
+          label_hi: 'स्थायी पुलिस स्टेशन (PS)',
+          options: [
+            { value: 'Parliament Street', label_en: 'Parliament Street', label_hi: 'संसद मार्ग' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
+        {
+          field_key: 'arrested_perm_pincode',
+          field_type: 'TEXT',
+          label_en: 'Permanent Pin Code',
+          label_hi: 'स्थायी पिन कोड',
+          validation_rules: { required: false },
+          show_when: { field: 'arrested_perm_same', value: false }
+        },
       ]
     },
     {
@@ -786,6 +900,13 @@ const formSchemas = {
           validation_rules: { required: true }
         },
         {
+          field_key: 'listed_criminal',
+          field_type: 'BOOLEAN',
+          label_en: 'Listed Criminal / Bad Character (BC)',
+          label_hi: 'सूचीबद्ध अपराधी / बैड कैरेक्टर (BC)',
+          validation_rules: { required: false }
+        },
+        {
           field_key: 'address_verified',
           field_type: 'SELECT',
           label_en: 'Physical Address Verified',
@@ -815,139 +936,45 @@ const formSchemas = {
   PCR_CALL: [
     {
       section: 'general_info',
-      title_en: 'General Diary & Call Logs',
-      title_hi: 'सामान्य डायरी और कॉल लॉग',
+      title_en: 'General Diary Logs',
+      title_hi: 'सामान्य डायरी लॉग',
       fields: [
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
-        { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
-      ]
-    },
-    {
-      section: 'complaint_details',
-      title_en: 'Complaint & PCR Dispatch Gist',
-      title_hi: 'शिकायत और पीसीआर प्रेषण विवरण',
-      fields: [
-        {
-          field_key: 'call_head',
-          field_type: 'SELECT',
-          label_en: 'PCR Call Category Head',
-          label_hi: 'पीसीआर कॉल श्रेणी शीर्ष',
-          options: [
-            { value: 'Quarrel / Public Nuisance', label_en: 'Quarrel / Nuisance', label_hi: 'झगड़ा / सार्वजनिक उपद्रव' },
-            { value: 'Road Accident', label_en: 'Road Accident', label_hi: 'सड़क दुर्घटना' },
-            { value: 'Theft Report', label_en: 'Theft / Purse Snatching', label_hi: 'चोरी की रिपोर्ट' },
-            { value: 'Suspicious Activity', label_en: 'Suspicious Movement / Person', label_hi: 'संदिग्ध गतिविधि' },
-            { value: 'Domestic Violence', label_en: 'Domestic Altercation', label_hi: 'घरेलू हिंसा' },
-            { value: 'Other Emergency', label_en: 'Other Emergency Calls', label_hi: 'अन्य आपातकालीन कॉल' }
-          ],
-          validation_rules: { required: true }
-        },
-        { field_key: 'complainant_name', field_type: 'TEXT', label_en: 'Complainant/Caller Name', label_hi: 'शिकायतकर्ता/कॉलर का नाम', validation_rules: { required: true } },
-        { field_key: 'complainant_address', field_type: 'TEXTAREA', label_en: 'Caller Address', label_hi: 'कॉलर का पता', validation_rules: { required: false } },
-        { field_key: 'call_gist', field_type: 'TEXTAREA', label_en: 'PCR Dispatch Call Gist', label_hi: 'पीसीआर डिस्पैच कॉल विवरण', validation_rules: { required: true } },
-      ]
-    },
-    {
-      section: 'response_io',
-      title_en: 'Responding Officers & Resolution',
-      title_hi: 'प्रतिक्रिया देने वाले अधिकारी और समाधान',
-      fields: [
-        { field_key: 'io_name', field_type: 'TEXT', label_en: 'Assigned Responding Officer (IO) Name', label_hi: 'नियुक्त जांच अधिकारी (IO) का नाम', validation_rules: { required: true } },
-        { field_key: 'eo_name', field_type: 'TEXT', label_en: 'Enquiry Officer Name (If different)', label_hi: 'पूछताछ अधिकारी का नाम (यदि भिन्न हो)', validation_rules: { required: false } },
-        { field_key: 'action_taken', field_type: 'TEXTAREA', label_en: 'Brief Action Taken Report', label_hi: 'संक्षिप्त कार्रवाई रिपोर्ट', validation_rules: { required: true } },
-        {
-          field_key: 'status',
-          field_type: 'SELECT',
-          label_en: 'Final Call Status',
-          label_hi: 'कॉल की अंतिम स्थिति',
-          options: [
-            { value: 'Action Taken', label_en: 'Action Taken & Resolved', label_hi: 'कार्रवाई की गई और सुलझाया गया' },
-            { value: 'Pending', label_en: 'Pending Active Inquiry', label_hi: 'सक्रिय पूछताछ लंबित' },
-            { value: 'Referred', label_en: 'Referred to Special Agency/Unit', label_hi: 'विशेष एजेंसी/इकाई को संदर्भित' },
-            { value: 'Closed', label_en: 'No Action Needed / False Alarm', label_hi: 'कार्रवाई की आवश्यकता नहीं / बंद' }
-          ],
-          validation_rules: { required: true }
-        },
-      ]
-    },
-    {
-      section: 'arrival_geo',
-      title_en: 'Scene Arrival & Geo-Location Data',
-      title_hi: 'घटनास्थल पर आगमन और भू-स्थान डेटा',
-      fields: [
-        { field_key: 'arrival_dd_no', field_type: 'TEXT', label_en: 'Arrival DD Entry Number', label_hi: 'घटनास्थल पर आगमन DD संख्या', validation_rules: { required: true } },
-        { field_key: 'arrival_date', field_type: 'DATE', label_en: 'Arrival Date at Scene', label_hi: 'घटनास्थल पर आगमन की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrival_time', field_type: 'TIME', label_en: 'Arrival Time at Scene', label_hi: 'घटनास्थल पर आगमन का समय', validation_rules: { required: true } },
-        { field_key: 'latitude', field_type: 'TEXT', label_en: 'Incident Location Latitude', label_hi: 'घटना स्थल अक्षांश', validation_rules: { required: false } },
-        { field_key: 'longitude', field_type: 'TEXT', label_en: 'Incident Location Longitude', label_hi: 'घटना स्थल रेखांश', validation_rules: { required: false } },
-        { field_key: 'beat_no', field_type: 'NUMBER', label_en: 'Police Beat Code', label_hi: 'पुलिस बीट संख्या', validation_rules: { required: false } },
+        { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } }
       ]
     }
   ],
   MISSING: [
     {
-      section: 'record_type_select',
-      title_en: 'Register Type & References',
-      title_hi: 'पंजीकरण प्रकार और संदर्भ',
+      section: 'general_info',
+      title_en: 'General Information',
+      title_hi: 'सामान्य जानकारी',
       fields: [
+        { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Number, Date & Time', label_hi: 'जी.डी. नंबर, दिनांक और समय', validation_rules: { required: true } },
         {
-          field_key: 'record_subtype',
+          field_key: 'source',
           field_type: 'SELECT',
-          label_en: 'Missing Register Category Sub-Type',
-          label_hi: 'लापता रजिस्टर श्रेणी उप-प्रकार',
+          label_en: 'Source of Information',
+          label_hi: 'सूचना का स्रोत',
           options: [
-            { value: 'Missing Person', label_en: 'Missing Person Report', label_hi: 'लापता व्यक्ति रिपोर्ट' },
-            { value: 'Unidentified Recovered', label_en: 'Unidentified Body Recovered', label_hi: 'अज्ञात मृत शरीर बरामद' },
-            { value: 'Found Person', label_en: 'Found Person Logged', label_hi: 'मिला हुआ व्यक्ति' }
+            { value: 'PCR', label_en: 'PCR Call', label_hi: 'पीसीआर कॉल' },
+            { value: 'DD', label_en: 'DD / Written Complaint', label_hi: 'डीडी / लिखित शिकायत' }
           ],
           validation_rules: { required: true }
         },
-        { field_key: 'dd_fir_no', field_type: 'TEXT', label_en: 'DD / FIR Reference Number', label_hi: 'डी.डी. / प्राथमिकी संदर्भ संख्या', validation_rules: { required: true } },
-        { field_key: 'dd_fir_date', field_type: 'DATE', label_en: 'Reference Entry Date', label_hi: 'संदर्भ प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
-      ]
-    },
-    {
-      section: 'physical_bio',
-      title_en: 'Physical Description & Biological Metadata',
-      title_hi: 'भौतिक विवरण और जैविक डेटा',
-      fields: [
-        { field_key: 'age', field_type: 'NUMBER', label_en: 'Age / Approximate Age', label_hi: 'आयु / अनुमानित आयु', validation_rules: { required: true } },
         {
-          field_key: 'gender',
+          field_key: 'missing_type',
           field_type: 'SELECT',
-          label_en: 'Biological Gender',
-          label_hi: 'जैविक लिंग',
+          label_en: 'Missing / Found Type',
+          label_hi: 'लापता / मिला प्रकार',
           options: [
-            { value: 'Male', label_en: 'Male', label_hi: 'पुरुष' },
-            { value: 'Female', label_en: 'Female', label_hi: 'महिला' },
-            { value: 'Transgender', label_en: 'Transgender', label_hi: 'ट्रांसजेंडर' },
-            { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }
+            { value: 'Missing', label_en: 'Missing', label_hi: 'लापता' },
+            { value: 'Found', label_en: 'Found', label_hi: 'मिला' }
           ],
           validation_rules: { required: true }
         },
-        { field_key: 'physical_description', field_type: 'TEXTAREA', label_en: 'Physical Features, Clothing, Marks', label_hi: 'शारीरिक बनावट, पहनावा, निशान', validation_rules: { required: true } }
-      ]
-    },
-    {
-      section: 'location_particulars',
-      title_en: 'Occurrence Geography Particulars',
-      title_hi: 'घटना स्थल की भौगोलिक जानकारी',
-      fields: [
-        { field_key: 'last_seen_location', field_type: 'TEXT', label_en: 'Last Seen Location Address', label_hi: 'अंतिम बार देखे जाने का पता', validation_rules: { required: false } },
-        { field_key: 'found_location', field_type: 'TEXT', label_en: 'Found / Recovery Location Address', label_hi: 'बरामदगी / मिलने का पता', validation_rules: { required: false } },
-        { field_key: 'missing_recovered_date', field_type: 'DATE', label_en: 'Date Missing / Recovered', label_hi: 'लापता होने / बरामद होने की तिथि', validation_rules: { required: true } },
-        { field_key: 'missing_recovered_time', field_type: 'TIME', label_en: 'Time Missing / Recovered', label_hi: 'लापता होने / बरामद होने का समय', validation_rules: { required: true } },
-      ]
-    },
-    {
-      section: 'contacts_assigned',
-      title_en: 'Assigned IO & Informant Contacts',
-      title_hi: 'नियुक्त जांच अधिकारी और सूचना प्राप्तकर्ता संपर्क',
-      fields: [
-        { field_key: 'informant_name', field_type: 'TEXT', label_en: 'Complainant / Informant Full Name', label_hi: 'शिकायतकर्ता / सूचना प्रदाता का नाम', validation_rules: { required: true } },
-        { field_key: 'informant_contact', field_type: 'TEXT', label_en: 'Informant Contact Telephone/Mobile', label_hi: 'सूचना प्रदाता का संपर्क नंबर', validation_rules: { required: true } },
-        { field_key: 'io_name', field_type: 'TEXT', label_en: 'Assigned Investigating Officer (IO)', label_hi: 'नियुक्त जांच अधिकारी (IO)', validation_rules: { required: true } },
+        { field_key: 'pcr_call_flag', field_type: 'BOOLEAN', label_en: 'PCR Call (Y/N)', label_hi: 'पीसीआर कॉल (हाँ/नहीं)', validation_rules: { required: false } },
+        { field_key: 'operator_name', field_type: 'TEXT', label_en: 'Operator Name to Whom MPS', label_hi: 'ऑपरेटर का नाम जिसे एमपीएस', validation_rules: { required: false } },
         {
           field_key: 'status',
           field_type: 'SELECT',
@@ -960,50 +987,562 @@ const formSchemas = {
             { value: 'Closed', label_en: 'Closed Case', label_hi: 'मामला बंद' }
           ],
           validation_rules: { required: true }
+        }
+      ]
+    },
+    {
+      section: 'person_details',
+      title_en: 'Person Details',
+      title_hi: 'व्यक्तिगत विवरण',
+      fields: [
+        { field_key: 'mp_known', field_type: 'BOOLEAN', label_en: 'Is Missing Person Identified / Known?', label_hi: 'क्या लापता व्यक्ति की पहचान ज्ञात है?', validation_rules: { required: true } },
+        {
+          field_key: 'missing_name',
+          field_type: 'TEXT',
+          label_en: 'Name of Missing Person',
+          label_hi: 'लापता व्यक्ति का नाम',
+          validation_rules: { required: true },
+          show_when: { field: 'mp_known', value: true }
         },
-        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणी', validation_rules: { required: false } }
+        {
+          field_key: 'mp_house_no',
+          field_type: 'TEXT',
+          label_en: 'Present House No.',
+          label_hi: 'वर्तमान मकान संख्या',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_street',
+          field_type: 'TEXT',
+          label_en: 'Present Street',
+          label_hi: 'वर्तमान गली / सड़क',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_colony',
+          field_type: 'TEXT',
+          label_en: 'Present Colony',
+          label_hi: 'वर्तमान कॉलोनी',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_city_town_village',
+          field_type: 'TEXT',
+          label_en: 'Present Village / City / Town',
+          label_hi: 'वर्तमान गांव / शहर / नगर',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_state',
+          field_type: 'SELECT',
+          label_en: 'Present State',
+          label_hi: 'वर्तमान राज्य',
+          options: [
+            { value: 'Delhi', label_en: 'Delhi', label_hi: 'दिल्ली' },
+            { value: 'Haryana', label_en: 'Haryana', label_hi: 'हरियाणा' },
+            { value: 'Uttar Pradesh', label_en: 'Uttar Pradesh', label_hi: 'उत्तर प्रदेश' },
+            { value: 'Punjab', label_en: 'Punjab', label_hi: 'पंजाब' },
+            { value: 'Rajasthan', label_en: 'Rajasthan', label_hi: 'राजस्थान' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_district',
+          field_type: 'SELECT',
+          label_en: 'Present District',
+          label_hi: 'वर्तमान जिला',
+          options: [
+            { value: 'Central', label_en: 'Central', label_hi: 'मध्य' },
+            { value: 'New Delhi', label_en: 'New Delhi', label_hi: 'नई दिल्ली' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_pincode',
+          field_type: 'TEXT',
+          label_en: 'Present Pin Code',
+          label_hi: 'वर्तमान पिन कोड',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_address',
+          field_type: 'TEXTAREA',
+          label_en: 'Present Full Address',
+          label_hi: 'लापता व्यक्ति का वर्तमान पता (विस्तृत)',
+          validation_rules: { required: false },
+          full_width: true,
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_perm_same',
+          field_type: 'SELECT',
+          label_en: 'Is Permanent Address same as Present Address?',
+          label_hi: 'क्या स्थायी पता वर्तमान पते के समान है?',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हां' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: true },
+          show_when: { field: 'mp_known', value: true }
+        },
+        {
+          field_key: 'mp_perm_house_no',
+          field_type: 'TEXT',
+          label_en: 'Permanent House No.',
+          label_hi: 'स्थायी मकान संख्या',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'mp_perm_street',
+          field_type: 'TEXT',
+          label_en: 'Permanent Street',
+          label_hi: 'स्थायी गली / सड़क',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'mp_perm_colony',
+          field_type: 'TEXT',
+          label_en: 'Permanent Colony',
+          label_hi: 'स्थायी कॉलोनी',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'mp_perm_city_town_village',
+          field_type: 'TEXT',
+          label_en: 'Permanent Village / City / Town',
+          label_hi: 'स्थायी गांव / शहर / नगर',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'mp_perm_state',
+          field_type: 'SELECT',
+          label_en: 'Permanent State',
+          label_hi: 'स्थायी राज्य',
+          options: [
+            { value: 'Delhi', label_en: 'Delhi', label_hi: 'दिल्ली' },
+            { value: 'Haryana', label_en: 'Haryana', label_hi: 'हरियाणा' },
+            { value: 'Uttar Pradesh', label_en: 'Uttar Pradesh', label_hi: 'उत्तर प्रदेश' },
+            { value: 'Punjab', label_en: 'Punjab', label_hi: 'पंजाब' },
+            { value: 'Rajasthan', label_en: 'Rajasthan', label_hi: 'राजस्थान' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'mp_perm_district',
+          field_type: 'SELECT',
+          label_en: 'Permanent District',
+          label_hi: 'स्थायी जिला',
+          options: [
+            { value: 'Central', label_en: 'Central', label_hi: 'मध्य' },
+            { value: 'New Delhi', label_en: 'New Delhi', label_hi: 'नई दिल्ली' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'mp_perm_pincode',
+          field_type: 'TEXT',
+          label_en: 'Permanent Pin Code',
+          label_hi: 'स्थायी पिन कोड',
+          validation_rules: { required: false },
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'missing_address',
+          field_type: 'TEXTAREA',
+          label_en: 'Full Permanent Address',
+          label_hi: 'लापता व्यक्ति का स्थायी पता (विस्तृत)',
+          validation_rules: { required: false },
+          full_width: true,
+          show_when: { field: 'mp_perm_same', value: 'No' }
+        },
+        { field_key: 'age', field_type: 'NUMBER', label_en: 'Age', label_hi: 'उम्र', validation_rules: { required: true } },
+        {
+          field_key: 'gender',
+          field_type: 'SELECT',
+          label_en: 'Gender',
+          label_hi: 'लिंग',
+          options: [
+            { value: 'Male', label_en: 'Male', label_hi: 'पुरुष' },
+            { value: 'Female', label_en: 'Female', label_hi: 'महिला' },
+            { value: 'Transgender', label_en: 'Transgender', label_hi: 'ट्रांसजेंडर' },
+            { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'major_minor',
+          field_type: 'RADIO',
+          label_en: 'Major / Minor',
+          label_hi: 'वयस्क / नाबालिग',
+          options: [
+            { value: 'Major', label_en: 'Major (18+)', label_hi: 'वयस्क (18+)' },
+            { value: 'Minor', label_en: 'Minor (Below 18)', label_hi: 'नाबालिग (18 से कम)' }
+          ],
+          validation_rules: { required: true }
+        },
+        { field_key: 'missing_relative_name', field_type: 'TEXT', label_en: 'Relative Name', label_hi: 'रिश्तेदार का नाम', validation_rules: { required: false } },
+        {
+          field_key: 'missing_relation_type',
+          field_type: 'SELECT',
+          label_en: 'Relation Type',
+          label_hi: 'संबंध का प्रकार',
+          options: [
+            { value: 'Father', label_en: 'Father', label_hi: 'पिता' },
+            { value: 'Mother', label_en: 'Mother', label_hi: 'माता' },
+            { value: 'Husband', label_en: 'Husband', label_hi: 'पति' },
+            { value: 'Wife', label_en: 'Wife', label_hi: 'पत्नी' },
+            { value: 'Guardian', label_en: 'Guardian', label_hi: 'अभिभावक' },
+            { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'missing_relative_name', operator: 'filled' }
+        },
+        { field_key: 'missing_place', field_type: 'TEXT', label_en: 'Last Seen Place', label_hi: 'अंतिम बार देखा गया स्थान', validation_rules: { required: true } },
+        { field_key: 'missing_date', field_type: 'DATE', label_en: 'Date Missing Since', label_hi: 'लापता होने की तिथि', validation_rules: { required: true } },
+        { field_key: 'missing_recovered_time', field_type: 'TIME', label_en: 'Time Missing / Recovered', label_hi: 'लापता होने / बरामद होने का समय', validation_rules: { required: false } },
+        { field_key: 'height', field_type: 'TEXT', label_en: 'Height', label_hi: 'ऊंचाई', validation_rules: { required: false } },
+        {
+          field_key: 'built',
+          field_type: 'SELECT',
+          label_en: 'Built',
+          label_hi: 'शारीरिक बनावट',
+          options: [
+            { value: 'Thin', label_en: 'Thin', label_hi: 'पतला' },
+            { value: 'Medium', label_en: 'Medium', label_hi: 'मध्यम' },
+            { value: 'Strong', label_en: 'Strong', label_hi: 'मजबूत' },
+            { value: 'Fat', label_en: 'Fat', label_hi: 'मोटा' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'complexion',
+          field_type: 'SELECT',
+          label_en: 'Complexion',
+          label_hi: 'रंग',
+          options: [
+            { value: 'Fair', label_en: 'Fair', label_hi: 'गोरा' },
+            { value: 'Wheatish', label_en: 'Wheatish', label_hi: 'गेहुआं' },
+            { value: 'Dark', label_en: 'Dark', label_hi: 'सांवला' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'face',
+          field_type: 'SELECT',
+          label_en: 'Face',
+          label_hi: 'चेहरा',
+          options: [
+            { value: 'Round', label_en: 'Round', label_hi: 'गोल' },
+            { value: 'Oval', label_en: 'Oval', label_hi: 'अंडाकार' },
+            { value: 'Long', label_en: 'Long', label_hi: 'लंबा' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'hair',
+          field_type: 'SELECT',
+          label_en: 'Hair',
+          label_hi: 'बाल',
+          options: [
+            { value: 'Black', label_en: 'Black', label_hi: 'काले' },
+            { value: 'Grey', label_en: 'Grey', label_hi: 'सफेद' },
+            { value: 'Bald', label_en: 'Bald', label_hi: 'गंजा' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'moustache',
+          field_type: 'SELECT',
+          label_en: 'Moustache',
+          label_hi: 'मूछें',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'beard',
+          field_type: 'SELECT',
+          label_en: 'Beard',
+          label_hi: 'दाढ़ी',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: false }
+        },
+        { field_key: 'dress_color', field_type: 'TEXT', label_en: 'Dress & Color', label_hi: 'पहनावा और रंग', validation_rules: { required: false } },
+        { field_key: 'physical_description', field_type: 'TEXTAREA', label_en: 'Physical Description', label_hi: 'शारीरिक हुलिया', validation_rules: { required: true }, full_width: true }
+      ]
+    },
+    {
+      section: 'contacts_assigned',
+      title_en: 'Informant Contact',
+      title_hi: 'सूचना प्रदाता संपर्क',
+      fields: [
+        { field_key: 'informant_name', field_type: 'TEXT', label_en: 'Complainant / Informant Full Name', label_hi: 'शिकायतकर्ता / सूचना प्रदाता का नाम', validation_rules: { required: true } },
+        { field_key: 'informant_contact', field_type: 'TEXT', label_en: 'Informant Contact Telephone/Mobile', label_hi: 'सूचना प्रदाता का संपर्क नंबर', validation_rules: { required: true } },
+        { field_key: 'zipnet_no', field_type: 'TEXT', label_en: 'ZIPNET No.', label_hi: 'जिपनेट संख्या', validation_rules: { required: false } }
+      ]
+    },
+    {
+      section: 'investigation_officer',
+      title_en: 'Investigating Officer',
+      title_hi: 'जांच अधिकारी',
+      fields: [
+        { field_key: 'io_name', field_type: 'TEXT', label_en: 'Assigned Investigating Officer (IO)', label_hi: 'नियुक्त जांच अधिकारी (IO)', validation_rules: { required: true } },
+        { field_key: 'io_rank', field_type: 'TEXT', label_en: 'IO Rank', label_hi: 'जांच अधिकारी का पद', validation_rules: { required: false } },
+        { field_key: 'io_pis', field_type: 'TEXT', label_en: 'IO PIS No.', label_hi: 'जांच अधिकारी का पीआईएस नंबर', validation_rules: { required: false } },
+        { field_key: 'io_mobile', field_type: 'TEXT', label_en: 'IO Mobile No.', label_hi: 'जांच अधिकारी का मोबाइल नंबर', validation_rules: { required: false } },
+        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणी', validation_rules: { required: false }, full_width: true }
       ]
     }
   ],
   UIDB: [
     {
       section: 'general_info',
-      title_en: 'Basic UIDB Information',
-      title_hi: 'बुनियादी यूआईडीबी जानकारी',
+      title_en: 'General Information',
+      title_hi: 'सामान्य जानकारी',
       fields: [
-        { field_key: 'uidbNumber', field_type: 'TEXT', label_en: 'UIDB Gazette Number', label_hi: 'यूआईडीबी राजपत्र संख्या', validation_rules: { required: true } },
-        { field_key: 'ddNumber', field_type: 'TEXT', label_en: 'DD Number', label_hi: 'डी.डी. संख्या', validation_rules: { required: false } },
-        { field_key: 'ddDate', field_type: 'DATE', label_en: 'DD Date', label_hi: 'डी.डी. तिथि', validation_rules: { required: false } },
-        { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
-      ]
-    },
-    {
-      section: 'officer_informant',
-      title_en: 'Reporting Officers & Informant',
-      title_hi: 'रिपोर्टिंग अधिकारी और मुखबिर',
-      fields: [
-        { field_key: 'dutyOfficer', field_type: 'TEXT', label_en: 'Duty Officer', label_hi: 'ड्यूटी अधिकारी', validation_rules: { required: false } },
-        { field_key: 'ioName', field_type: 'TEXT', label_en: 'IO Name (Investigating Officer)', label_hi: 'जांच अधिकारी का नाम', validation_rules: { required: false } },
-        { field_key: 'informantName', field_type: 'TEXT', label_en: 'Informant Name', label_hi: 'सूचना प्रदाता का नाम', validation_rules: { required: false } },
-        { field_key: 'informantMobile', field_type: 'PHONE', label_en: 'Informant Mobile', label_hi: 'सूचना प्रदाता का मोबाइल नंबर', validation_rules: { required: false } },
-      ]
-    },
-    {
-      section: 'discovery_details',
-      title_en: 'Body Discovery Details',
-      title_hi: 'शव बरामदगी का विवरण',
-      fields: [
-        { field_key: 'foundPlace', field_type: 'TEXT', label_en: 'Place Body Found', label_hi: 'शव मिलने का स्थान', validation_rules: { required: true } },
-        { field_key: 'uidbDate', field_type: 'DATE', label_en: 'Discovery Date', label_hi: 'शव मिलने की तिथि', validation_rules: { required: false } },
+        { field_key: 'uidb_no', field_type: 'TEXT', label_en: 'UIDB Gazette Number', label_hi: 'यूआईडीबी राजपत्र संख्या', validation_rules: { required: true } },
+        { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
+        {
+          field_key: 'act_name',
+          field_type: 'SELECT',
+          label_en: 'Act / Law Name',
+          label_hi: 'अधिनियम / कानून का नाम',
+          options: [
+            { value: 'CrPC', label_en: 'CrPC', label_hi: 'सीआरपीसी' },
+            { value: 'BNSS', label_en: 'BNSS', label_hi: 'बीएनएसएस' },
+            { value: 'IPC', label_en: 'IPC', label_hi: 'आईपीसी' },
+            { value: 'BNS', label_en: 'BNS', label_hi: 'बीएनएस' },
+            { value: 'Other Act', label_en: 'Other Act', label_hi: 'अन्य अधिनियम' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'sections',
+          field_type: 'SELECT',
+          label_en: 'Sections',
+          label_hi: 'धाराएं',
+          options: [
+            { value: '174 CrPC', label_en: '174 CrPC', label_hi: '174 सीआरपीसी' },
+            { value: '194 BNSS', label_en: '194 BNSS', label_hi: '194 बीएनएसएस' },
+            { value: '176 CrPC', label_en: '176 CrPC', label_hi: '176 सीआरपीसी' },
+            { value: '196 BNSS', label_en: '196 BNSS', label_hi: '196 बीएनएसएस' },
+            { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'status',
+          field_type: 'SELECT',
+          label_en: 'Status',
+          label_hi: 'स्थिति',
+          options: [
+            { value: 'Referred to district hospital', label_en: 'Referred to district hospital', label_hi: 'जिला अस्पताल को संदर्भित' },
+            { value: 'Identified', label_en: 'Identified', label_hi: 'पहचाना गया' },
+            { value: 'body claimed', label_en: 'Body Claimed', label_hi: 'शव पर दावा किया गया' },
+            { value: 'Unidentified', label_en: 'Unidentified', label_hi: 'अज्ञात' },
+            { value: 'held in mortuary', label_en: 'Held in Mortuary', label_hi: 'मुर्दाघर में रखा गया' }
+          ],
+          validation_rules: { required: true }
+        }
       ]
     },
     {
       section: 'corpse_desc',
-      title_en: 'Corpse Physical Description',
-      title_hi: 'शारीरिक विवरण',
+      title_en: 'Corpse Description',
+      title_hi: 'शव विवरण',
       fields: [
-        { field_key: 'name', field_type: 'TEXT', label_en: 'Assumed Name / Unknown Tag', label_hi: 'मान लिया गया नाम / अज्ञात टैग', validation_rules: { required: false } },
-        { field_key: 'age', field_type: 'TEXT', label_en: 'Estimated Age', label_hi: 'अनुमानित आयु', validation_rules: { required: false } },
+        { field_key: 'identified', field_type: 'BOOLEAN', label_en: 'Corpse Identified', label_hi: 'शव की पहचान हुई', validation_rules: { required: true } },
+        {
+          field_key: 'deceased_name',
+          field_type: 'TEXT',
+          label_en: 'Name of Deceased',
+          label_hi: 'मृतक का नाम',
+          validation_rules: { required: true },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_house_no',
+          field_type: 'TEXT',
+          label_en: 'Deceased Present House No.',
+          label_hi: 'मृतक का मकान संख्या',
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_street',
+          field_type: 'TEXT',
+          label_en: 'Deceased Present Street',
+          label_hi: 'मृतक का गली / सड़क',
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_colony',
+          field_type: 'TEXT',
+          label_en: 'Deceased Present Colony',
+          label_hi: 'मृतक का कॉलोनी',
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_city_town_village',
+          field_type: 'TEXT',
+          label_en: 'Deceased Present Village / City / Town',
+          label_hi: 'मृतक का गांव / शहर / नगर',
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_state',
+          field_type: 'SELECT',
+          label_en: 'Deceased Present State',
+          label_hi: 'मृतक का राज्य',
+          options: [
+            { value: 'Delhi', label_en: 'Delhi', label_hi: 'दिल्ली' },
+            { value: 'Haryana', label_en: 'Haryana', label_hi: 'हरियाणा' },
+            { value: 'Uttar Pradesh', label_en: 'Uttar Pradesh', label_hi: 'उत्तर प्रदेश' },
+            { value: 'Punjab', label_en: 'Punjab', label_hi: 'पंजाब' },
+            { value: 'Rajasthan', label_en: 'Rajasthan', label_hi: 'राजस्थान' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_district',
+          field_type: 'SELECT',
+          label_en: 'Deceased Present District',
+          label_hi: 'मृतक का जिला',
+          options: [
+            { value: 'Central', label_en: 'Central', label_hi: 'मध्य' },
+            { value: 'New Delhi', label_en: 'New Delhi', label_hi: 'नई दिल्ली' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_pincode',
+          field_type: 'TEXT',
+          label_en: 'Deceased Present Pin Code',
+          label_hi: 'मृतक का पिन कोड',
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_address',
+          field_type: 'TEXTAREA',
+          label_en: 'Deceased Full Present Address',
+          label_hi: 'मृतक का वर्तमान पता (विस्तृत)',
+          validation_rules: { required: false },
+          full_width: true,
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_perm_same',
+          field_type: 'SELECT',
+          label_en: 'Is Permanent Address same as Present Address?',
+          label_hi: 'क्या स्थायी पता वर्तमान पते के समान है?',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हां' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: true },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_perm_house_no',
+          field_type: 'TEXT',
+          label_en: 'Deceased Permanent House No.',
+          label_hi: 'मृतक का स्थायी मकान संख्या',
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_street',
+          field_type: 'TEXT',
+          label_en: 'Deceased Permanent Street',
+          label_hi: 'मृतक का स्थायी गली / सड़क',
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_colony',
+          field_type: 'TEXT',
+          label_en: 'Deceased Permanent Colony',
+          label_hi: 'मृतक का स्थायी कॉलोनी',
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_city_town_village',
+          field_type: 'TEXT',
+          label_en: 'Deceased Permanent Village / City / Town',
+          label_hi: 'मृतक का स्थायी गांव / शहर / नगर',
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_state',
+          field_type: 'SELECT',
+          label_en: 'Deceased Permanent State',
+          label_hi: 'मृतक का स्थायी राज्य',
+          options: [
+            { value: 'Delhi', label_en: 'Delhi', label_hi: 'दिल्ली' },
+            { value: 'Haryana', label_en: 'Haryana', label_hi: 'हरियाणा' },
+            { value: 'Uttar Pradesh', label_en: 'Uttar Pradesh', label_hi: 'उत्तर प्रदेश' },
+            { value: 'Punjab', label_en: 'Punjab', label_hi: 'पंजाब' },
+            { value: 'Rajasthan', label_en: 'Rajasthan', label_hi: 'राजस्थान' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_district',
+          field_type: 'SELECT',
+          label_en: 'Deceased Permanent District',
+          label_hi: 'मृतक का स्थायी जिला',
+          options: [
+            { value: 'Central', label_en: 'Central', label_hi: 'मध्य' },
+            { value: 'New Delhi', label_en: 'New Delhi', label_hi: 'नई दिल्ली' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_pincode',
+          field_type: 'TEXT',
+          label_en: 'Deceased Permanent Pin Code',
+          label_hi: 'मृतक का स्थायी पिन कोड',
+          validation_rules: { required: false },
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        {
+          field_key: 'deceased_perm_address',
+          field_type: 'TEXTAREA',
+          label_en: 'Deceased Full Permanent Address',
+          label_hi: 'मृतक का स्थायी पता (विस्तृत)',
+          validation_rules: { required: false },
+          full_width: true,
+          show_when: { field: 'deceased_perm_same', value: 'No' }
+        },
+        { field_key: 'approx_age', field_type: 'TEXT', label_en: 'Estimated/Approximate Age', label_hi: 'अनुमानित आयु', validation_rules: { required: false } },
         {
           field_key: 'gender',
           field_type: 'SELECT',
@@ -1017,10 +1556,87 @@ const formSchemas = {
           ],
           validation_rules: { required: true }
         },
+        { field_key: 'found_place', field_type: 'TEXT', label_en: 'Place Body Found', label_hi: 'शव मिलने का स्थान', validation_rules: { required: true } },
+        { field_key: 'found_date', field_type: 'DATE', label_en: 'Date Body Found', label_hi: 'शव मिलने की तिथि', validation_rules: { required: true } },
+        { field_key: 'found_time', field_type: 'TIME', label_en: 'Time Body Found', label_hi: 'शव मिलने का समय', validation_rules: { required: false } },
+        { field_key: 'found_latitude', field_type: 'TEXT', label_en: 'Place Body Found Latitude', label_hi: 'शव मिलने का स्थान अक्षांश', validation_rules: { required: false } },
+        { field_key: 'found_longitude', field_type: 'TEXT', label_en: 'Place Body Found Longitude', label_hi: 'शव मिलने का स्थान रेखांश', validation_rules: { required: false } },
+        { field_key: 'zipnet_no', field_type: 'TEXT', label_en: 'ZIPNET Number', label_hi: 'ज़िपनेट नंबर', validation_rules: { required: false } },
         { field_key: 'height', field_type: 'TEXT', label_en: 'Height', label_hi: 'ऊंचाई', validation_rules: { required: false } },
-        { field_key: 'complexion', field_type: 'TEXT', label_en: 'Complexion', label_hi: 'रंग', validation_rules: { required: false } },
-        { field_key: 'identificationMarks', field_type: 'TEXT', label_en: 'Identification Marks', label_hi: 'पहचान चिन्ह', validation_rules: { required: false } },
-        { field_key: 'description', field_type: 'TEXTAREA', label_en: 'Detailed Description of Apparel & Condition', label_hi: 'परिधान और स्थिति का विस्तृत विवरण', validation_rules: { required: false } },
+        {
+          field_key: 'built',
+          field_type: 'SELECT',
+          label_en: 'Built',
+          label_hi: 'शारीरिक बनावट',
+          options: [
+            { value: 'Thin', label_en: 'Thin', label_hi: 'पतला' },
+            { value: 'Medium', label_en: 'Medium', label_hi: 'मध्यम' },
+            { value: 'Strong', label_en: 'Strong', label_hi: 'मजबूत' },
+            { value: 'Fat', label_en: 'Fat', label_hi: 'मोटा' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'complexion',
+          field_type: 'SELECT',
+          label_en: 'Complexion',
+          label_hi: 'रंग',
+          options: [
+            { value: 'Fair', label_en: 'Fair', label_hi: 'गोरा' },
+            { value: 'Wheatish', label_en: 'Wheatish', label_hi: 'गेहुआं' },
+            { value: 'Dark', label_en: 'Dark', label_hi: 'सांवला' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'face',
+          field_type: 'SELECT',
+          label_en: 'Face',
+          label_hi: 'चेहरा',
+          options: [
+            { value: 'Round', label_en: 'Round', label_hi: 'गोल' },
+            { value: 'Oval', label_en: 'Oval', label_hi: 'अंडाकार' },
+            { value: 'Long', label_en: 'Long', label_hi: 'लंबा' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'hair',
+          field_type: 'SELECT',
+          label_en: 'Hair',
+          label_hi: 'बाल',
+          options: [
+            { value: 'Black', label_en: 'Black', label_hi: 'काले' },
+            { value: 'Grey', label_en: 'Grey', label_hi: 'सफेद' },
+            { value: 'Bald', label_en: 'Bald', label_hi: 'गंजा' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'moustache',
+          field_type: 'SELECT',
+          label_en: 'Moustache',
+          label_hi: 'मूछें',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'beard',
+          field_type: 'SELECT',
+          label_en: 'Beard',
+          label_hi: 'दाढ़ी',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: false }
+        },
+        { field_key: 'upper_dress_color', field_type: 'TEXT', label_en: 'Upper Dress Color', label_hi: 'ऊपरी पहनावे का रंग', validation_rules: { required: false } },
+        { field_key: 'lower_dress_color', field_type: 'TEXT', label_en: 'Lower Dress Color', label_hi: 'निचले पहनावे का रंग', validation_rules: { required: false } },
+        { field_key: 'identification_marks', field_type: 'TEXT', label_en: 'Identification Marks', label_hi: 'पहचान चिन्ह', validation_rules: { required: false } }
       ]
     },
     {
@@ -1043,22 +1659,89 @@ const formSchemas = {
           validation_rules: { required: false }
         },
         {
-          field_key: 'deceased_father_husband_name',
+          field_key: 'deceased_relative_name',
           field_type: 'TEXT',
-          label_en: "Deceased's Father / Husband Name",
-          label_hi: 'मृतक के पिता / पति का नाम',
+          label_en: 'Relative Name',
+          label_hi: 'रिश्तेदार का नाम',
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'deceased_relation_type',
+          field_type: 'SELECT',
+          label_en: 'Relation with Deceased',
+          label_hi: 'मृतक से संबंध',
+          options: [
+            { value: 'Father', label_en: 'Father', label_hi: 'पिता' },
+            { value: 'Mother', label_en: 'Mother', label_hi: 'माता' },
+            { value: 'Husband', label_en: 'Husband', label_hi: 'पति' },
+            { value: 'Wife', label_en: 'Wife', label_hi: 'पत्नी' },
+            { value: 'Brother', label_en: 'Brother', label_hi: 'भाई' },
+            { value: 'Sister', label_en: 'Sister', label_hi: 'बहन' },
+            { value: 'Son', label_en: 'Son', label_hi: 'पुत्र' },
+            { value: 'Daughter', label_en: 'Daughter', label_hi: 'पुत्री' },
+            { value: 'Guardian', label_en: 'Guardian', label_hi: 'अभिभावक' },
+            { value: 'Friend', label_en: 'Friend', label_hi: 'मित्र' },
+            { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'identified', value: true }
+        },
+        {
+          field_key: 'filed_by_acp_sdm',
+          field_type: 'SELECT',
+          label_en: 'Inquest Filed by ACP / SDM',
+          label_hi: 'जांच एसीपी / एसडीएम द्वारा दायर',
+          options: [
+            { value: 'SDM', label_en: 'SDM', label_hi: 'एसडीएम' },
+            { value: 'ACP', label_en: 'ACP', label_hi: 'एसीपी' },
+            { value: 'None', label_en: 'None', label_hi: 'कोई नहीं' }
+          ],
           validation_rules: { required: false }
-        }
+        },
+        {
+          field_key: 'filed_by_acp_sdm_date',
+          field_type: 'DATE',
+          label_en: 'Date of Filed by ACP/SDM',
+          label_hi: 'एसीपी/एसडीएम द्वारा दायर करने की तिथि',
+          validation_rules: { required: false },
+          show_when: { field: 'filed_by_acp_sdm', value: ['SDM', 'ACP'] }
+        },
+        { field_key: 'informant_name', field_type: 'TEXT', label_en: 'Informant Name', label_hi: 'सूचना प्रदाता का नाम', validation_rules: { required: false } },
+        {
+          field_key: 'informant_relation',
+          field_type: 'SELECT',
+          label_en: 'Relation with Deceased',
+          label_hi: 'मृतक से संबंध',
+          options: [
+            { value: 'Father', label_en: 'Father', label_hi: 'पिता' },
+            { value: 'Mother', label_en: 'Mother', label_hi: 'माता' },
+            { value: 'Husband', label_en: 'Husband', label_hi: 'पति' },
+            { value: 'Wife', label_en: 'Wife', label_hi: 'पत्नी' },
+            { value: 'Brother', label_en: 'Brother', label_hi: 'भाई' },
+            { value: 'Sister', label_en: 'Sister', label_hi: 'बहन' },
+            { value: 'Son', label_en: 'Son', label_hi: 'पुत्र' },
+            { value: 'Daughter', label_en: 'Daughter', label_hi: 'पुत्री' },
+            { value: 'Guardian', label_en: 'Guardian', label_hi: 'अभिभावक' },
+            { value: 'Friend', label_en: 'Friend', label_hi: 'मित्र' },
+            { value: 'Neighbor', label_en: 'Neighbor', label_hi: 'पड़ोसी' },
+            { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: false },
+          show_when: { field: 'informant_name', operator: 'filled' }
+        },
+        { field_key: 'informant_mobile', field_type: 'PHONE', label_en: 'Informant Mobile', label_hi: 'सूचना प्रदाता का मोबाइल नंबर', validation_rules: { required: false } }
       ]
     },
     {
-      section: 'zipnet_status',
-      title_en: 'ZIPNET Database & Status',
-      title_hi: 'ज़िपनेट डेटाबेस और स्थिति',
+      section: 'investigation_officer',
+      title_en: 'Investigating Officer Details',
+      title_hi: 'जांच अधिकारी का विवरण',
       fields: [
-        { field_key: 'zipnetNumber', field_type: 'TEXT', label_en: 'ZIPNET Number', label_hi: 'ज़िपनेट नंबर', validation_rules: { required: false } },
-        { field_key: 'identified', field_type: 'BOOLEAN', label_en: 'Corpse Identified', label_hi: 'शव की पहचान हुई', validation_rules: { required: false } },
-        { field_key: 'status', field_type: 'TEXT', label_en: 'Current Status / Mortuary Remarks', label_hi: 'वर्तमान स्थिति / शवगृह टिप्पणी', validation_rules: { required: false } },
+        { field_key: 'io_name', field_type: 'TEXT', label_en: 'IO / Officer Name', label_hi: 'जांच अधिकारी का नाम', validation_rules: { required: true } },
+        { field_key: 'io_rank', field_type: 'TEXT', label_en: 'IO Rank', label_hi: 'जांच अधिकारी का पद', validation_rules: { required: false } },
+        { field_key: 'io_pis', field_type: 'TEXT', label_en: 'PIS No. of IO', label_hi: 'जांच अधिकारी का पीआईएस नंबर', validation_rules: { required: false } },
+        { field_key: 'io_mobile', field_type: 'PHONE', label_en: 'IO Mobile No.', label_hi: 'जांच अधिकारी का मोबाइल नंबर', validation_rules: { required: true } }
       ]
     }
   ]
