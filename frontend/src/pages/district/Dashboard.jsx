@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Shield, BookOpen, FileCheck, PhoneCall, TrendingUp, BarChart3, Radio, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -48,8 +49,17 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function DistrictDashboard() {
+  const { t, i18n } = useTranslation();
+  const currentLng = i18n.language || 'en';
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, jurisdiction } = useAuthStore();
+
+  const getDistrictName = () => {
+    const isHq = user?.role === 'HQ' || user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' || user?.role === 'SYSTEM_ADMIN';
+    if (isHq) return "DELHI POLICE";
+    const rawName = jurisdiction?.district?.name_en || user?.districtKey || "Delhi Police";
+    return rawName.replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+  };
 
   // Fetch Analytics Overview Cards
   const { data: stats = {} } = useQuery({
@@ -87,8 +97,8 @@ export default function DistrictDashboard() {
  
       {/* ══════════════ HERO HEADER ══════════════ */}
       <div className="relative overflow-hidden hero-banner-gradient px-8 py-8">
-        <span className="user-greeting-badge text-2xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
-          Hi, {user?.username || 'User'}
+        <span className="user-greeting-badge text-5xl font-bold text-white/95 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-sm">
+          Hi, {currentLng === 'hi' ? (user?.name_hi || user?.name_en || user?.username) : (user?.name_en || user?.username || 'User')}
         </span>
         <div className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-10 left-1/3 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
@@ -105,7 +115,7 @@ export default function DistrictDashboard() {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/80 backdrop-blur-sm">
               <Shield size={12} className="text-amber-400" />
-              DELHI POLICE · DISTRICT DCP CONSOLE
+              {getDistrictName()} · DISTRICT DCP CONSOLE
             </span>
           </div>
  
@@ -119,33 +129,6 @@ export default function DistrictDashboard() {
               <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/55">
                 Aggregated operational statistics and crime logs spanning all Police Stations under district jurisdiction.
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1">
-                  <MapPin size={11} className="text-white/50" />
-                  <span className="text-xs text-white/60">Delhi, India</span>
-                </div>
-                <div className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1">
-                  <Shield size={11} className="text-white/50" />
-                  <span className="text-xs text-white/60">District Jurisdiction</span>
-                </div>
-              </div>
-            </div>
- 
-            {/* Hero metric tiles */}
-            <div className="flex flex-wrap gap-3 lg:flex-shrink-0">
-              {[
-                { label: 'FIR Cases',  value: stats.cases_today   || 0, color: 'text-amber-300',   bg: 'bg-white/10',   border: 'border-white/10'   },
-                { label: 'PCR Calls',  value: stats.pcr_today     || 0, color: 'text-sky-300',     bg: 'bg-white/10',     border: 'border-white/10'     },
-                { label: 'Arrests',    value: stats.arrests_today || 0, color: 'text-emerald-300', bg: 'bg-white/10', border: 'border-white/10' },
-              ].map((tile) => (
-                <div
-                  key={tile.label}
-                  className={`min-w-[96px] rounded-2xl border ${tile.border} ${tile.bg} px-5 py-4 text-center backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white/20`}
-                >
-                  <div className={`tabular-nums text-3xl font-bold ${tile.color}`}>{tile.value}</div>
-                  <div className="mt-1 text-xs font-medium text-white/50">{tile.label}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

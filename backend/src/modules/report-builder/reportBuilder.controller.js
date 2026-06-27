@@ -119,7 +119,7 @@ export const getMetadata = async (req, res) => {
 
       tables[tableKey] = {
         record_type: tableKey,
-        label_en: { CASE: 'FIR Master', ARREST: 'Arrest / Person Master', PCR_CALL: 'PCR / Kalandra Master', MISSING: 'Missing Person Master', UIDB: 'UIDB Master' }[tableKey] || tableKey,
+        label_en: { CASE: 'FIR Master', ARREST: 'Arrest / Person Master', PCR_CALL: 'PCR', MISSING: 'Missing Person Master', UIDB: 'UIDB Master' }[tableKey] || tableKey,
         fields: filtered,
         system_fields: filterFieldsForRole(REPORTABLE_FIELDS._SYSTEM, role).map(f => ({
           key: f.key, label_en: f.label_en, label_hi: f.label_hi, data_type: f.data_type, operators: f.operators
@@ -642,7 +642,7 @@ export const getLookupValues = async (req, res) => {
         data = [
           { value: 'CASE', label: 'FIR Master' },
           { value: 'ARREST', label: 'Arrest / Person Master' },
-          { value: 'PCR_CALL', label: 'PCR / Kalandra Master' },
+          { value: 'PCR_CALL', label: 'PCR' },
           { value: 'MISSING', label: 'Missing Person Master' },
           { value: 'UIDB', label: 'UIDB Master' },
         ];

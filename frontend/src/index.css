@@ -413,7 +413,7 @@ a:focus-visible {
 }
 
 .sidebar-nav.expanded {
-  width: 260px;
+  width: 220px;
 }
 
 .sidebar-nav.collapsed {
@@ -619,12 +619,16 @@ a:focus-visible {
   list-style: none;
   font-size: 0.85rem;
   font-weight: 500;
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 .breadcrumb-item {
   display: flex;
   align-items: center;
   color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .breadcrumb-item a {
@@ -647,12 +651,14 @@ a:focus-visible {
 .crumb-current {
   color: var(--text-primary);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .navbar-right {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  flex-shrink: 0;
 }
 
 .time-display {
@@ -661,6 +667,51 @@ a:focus-visible {
   color: var(--text-muted);
   border-right: 1px solid var(--border-light);
   padding-right: 1.25rem;
+}
+
+.console-switcher-name {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ── Responsive Header Layout Utilities ── */
+@media (max-width: 1300px) {
+  .time-display {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .navbar-right {
+    gap: 0.75rem;
+  }
+  .navbar-header {
+    padding: 0 1rem;
+  }
+  .live-status-text {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .officer-details {
+    display: none !important;
+  }
+  .officer-profile-btn {
+    padding: 0.15rem;
+    border-radius: 50% !important;
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+    align-items: center;
+  }
+  .console-switcher-name {
+    max-width: 80px;
+  }
 }
 
 /* Console Scope Switcher */
@@ -673,6 +724,12 @@ a:focus-visible {
   padding: 0.3rem 0.65rem;
   border-radius: var(--radius-sm);
   transition: border-color 0.15s ease;
+}
+
+@media (max-width: 1439px) {
+  .console-switcher-status-bar-active {
+    display: none !important;
+  }
 }
 
 .console-switcher-container:hover {
@@ -1009,15 +1066,21 @@ a:focus-visible {
   background-color: var(--bg-primary);
   height: 100vh;
   overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 .page-wrapper {
-  padding: 1.5rem 2rem;
+  padding: 0.4rem 0.5rem;
   max-width: 100% !important;
   width: 100%;
   margin: 0;
   flex: 1;
   overflow-y: auto;
+}
+
+/* If the page content has a hero banner, remove padding from page-wrapper to allow full-bleed headers */
+.page-wrapper:has(.hero-banner-gradient) {
+  padding: 0 !important;
 }
 
 /* Eliminate nested page wrapper padding / margin issues */
@@ -2625,10 +2688,41 @@ textarea.form-control {
 
 /* Custom Form Improvements for Delhi Police Command Center */
 .form-label-custom {
-  font-size: 0.95rem !important;
+  font-size: 0.82rem !important;
   font-weight: 600 !important;
   color: var(--text-primary) !important;
-  margin-bottom: 0.45rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
+/* Compact overrides for Head Constable Page (Record Registry Forms) */
+.theme-hc-page input[type="text"],
+.theme-hc-page input[type="number"],
+.theme-hc-page input[type="date"],
+.theme-hc-page input[type="datetime-local"],
+.theme-hc-page input[type="time"],
+.theme-hc-page textarea,
+.theme-hc-page .relative > div.flex.pr-10 {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  font-size: 0.8rem !important;
+  border-width: 1px !important;
+  border-radius: 0.375rem !important;
+}
+
+.theme-hc-page select,
+.theme-hc-page .relative > select {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  font-size: 0.8rem !important;
+  border-width: 1px !important;
+  border-radius: 0.375rem !important;
+  height: auto !important;
+  min-height: 1.8rem !important;
+  line-height: normal !important;
 }
 
 /* Override Ant Design Inputs for Form Controls */
@@ -2712,7 +2806,7 @@ textarea.form-control {
 
 /* ─── Form Labels ─────────────────────────────────────────────── */
 .form-label-custom {
-  font-size: 1rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.1rem;
@@ -2972,10 +3066,15 @@ textarea.form-control {
 }
 
 .hologram-crest {
-  height: 96px;
-  width: 96px;
+  height: 76px;
+  width: 76px;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(13, 42, 74, 0.15));
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.prism-hologram:hover .hologram-crest {
+  transform: scale(1.08) rotate(3deg);
 }
 
 .hologram-text-block {
@@ -2983,32 +3082,61 @@ textarea.form-control {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
+  max-width: 320px; /* Constrain width so subtitle wraps nicely and fits in container */
 }
 
 .hologram-title {
   font-family: var(--font-display);
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #0d2a4a; /* Delhi Police Navy Blue */
-  letter-spacing: 0.02em;
-  line-height: 1.15;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  color: #0d2a4a; /* Fallback */
+  transition: all 0.3s ease;
+}
+
+/* Glow effect for PRISM */
+.hologram-title.glow-text {
+  background: linear-gradient(135deg, #0d2a4a 0%, #1e3a8a 35%, #cca43b 65%, #0d2a4a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(204, 164, 59, 0.45)) drop-shadow(0 0 1px rgba(15, 82, 186, 0.3));
+  animation: hologramGlow 6s linear infinite, hologramPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes hologramGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes hologramPulse {
+  0% {
+    filter: drop-shadow(0 1px 2px rgba(15, 82, 186, 0.15)) drop-shadow(0 0 4px rgba(204, 164, 59, 0.3));
+  }
+  100% {
+    filter: drop-shadow(0 2px 6px rgba(15, 82, 186, 0.3)) drop-shadow(0 0 10px rgba(204, 164, 59, 0.65));
+  }
 }
 
 .hologram-line {
   height: 2px;
   width: 100%;
-  background-color: #0d2a4a;
-  margin: 0.25rem 0 0.3rem 0;
+  background: linear-gradient(90deg, #0d2a4a 0%, #cca43b 50%, rgba(204, 164, 59, 0) 100%);
+  margin: 0.25rem 0 0.35rem 0;
   opacity: 0.8;
 }
 
 .hologram-subtitle {
   font-family: var(--font-sans);
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #cca43b; /* Crest Gold */
-  letter-spacing: 0.08em;
-  line-height: 1;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 /* Glowing high-contrast text for headers */
@@ -3608,7 +3736,7 @@ textarea.form-control {
 
 .theme-acp-page {
   --bg-page-main: #f0f9ff !important; /* Soft light skyblue/teal page background (inherited from shared page) */
-  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%) !important; /* Skyblue to Teal gradient */
+  --hero-gradient: linear-gradient(135deg, #bbf7f0 0%, #2dd4bf 100%) !important; /* Richer Teal gradient */
   --accent-color: #0284c7 !important; /* Premium Skyblue/Teal accent */
   --accent-color-hover: #0369a1 !important;
   --accent-glow: rgba(2, 132, 199, 0.08) !important;
@@ -3661,7 +3789,7 @@ textarea.form-control {
 
 .theme-shared-page {
   --bg-page-main: #f0f9ff !important; /* Soft light skyblue/teal page background */
-  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%) !important; /* Skyblue to Teal gradient */
+  --hero-gradient: linear-gradient(135deg, #bbf7f0 0%, #2dd4bf 100%) !important; /* Richer Teal gradient */
   --accent-color: #0284c7 !important; /* Premium Skyblue/Teal accent */
   --accent-color-hover: #0369a1 !important;
   --accent-glow: rgba(2, 132, 199, 0.08) !important;
@@ -3821,6 +3949,8 @@ textarea.form-control {
   color: #ffffff !important;
 }
 
+.theme-shared-page .hero-banner-gradient .user-greeting-badge,
+.theme-acp-page .hero-banner-gradient .user-greeting-badge,
 .theme-shared-page .user-greeting-badge,
 .theme-acp-page .user-greeting-badge {
   color: #0f172a !important;
@@ -3838,5 +3968,158 @@ input[type=number]::-webkit-inner-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+/* ── Language Toggle Button Styles ──────────────────────────────────────── */
+.lang-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+}
+
+.lang-toggle-pill:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background-color: var(--primary-glow);
+  transform: translateY(-1px);
+}
+
+.lang-toggle-label {
+  letter-spacing: 0.05em;
+}
+
+.lang-toggle-active-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--primary-accent);
+  color: var(--text-inverse);
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 50%;
+}
+
+.lang-toggle-badge {
+  position: fixed;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+}
+
+.lang-toggle-badge:hover {
+  background-color: #ffffff;
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.lang-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+}
+
+.lang-toggle-icon:hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background-color: var(--primary-glow);
+  transform: scale(1.05);
+}
+
+.lang-toggle-indicator {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.25rem;
+  min-width: 1rem;
+  height: 1rem;
+  background-color: var(--primary-accent);
+  color: var(--text-inverse);
+  font-size: 0.55rem;
+  font-weight: 800;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--bg-card);
+}
+
+/* ── DateTime Picker Vertical Sliders ──────────────────────────────────── */
+.datetime-picker-vertical-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 24px;
+  height: 130px;
+  cursor: pointer;
+  accent-color: #0f52ba;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+.datetime-picker-vertical-slider::-webkit-slider-runnable-track {
+  width: 5px;
+  background: linear-gradient(to bottom, #93b5e0, #3b7dd8);
+  border-radius: 4px;
+}
+.datetime-picker-vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1a6bce;
+  cursor: pointer;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  margin-left: -7px;
+}
+.datetime-picker-vertical-slider::-moz-range-track {
+  width: 5px;
+  background: linear-gradient(to bottom, #93b5e0, #3b7dd8);
+  border-radius: 4px;
+  border: none;
+}
+.datetime-picker-vertical-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1a6bce;
+  cursor: pointer;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
 }
 

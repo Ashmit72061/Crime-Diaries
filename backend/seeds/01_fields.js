@@ -504,7 +504,7 @@ const fields = [
   { id: 'C_5',  field_key: 'gd_time',           field_type: 'TIME',   applicable_record_types: JSON.stringify([]),                              label_en: 'GD Time',                     label_hi: 'जीडी समय',                      visible_to_levels: L, editable_by_levels: E, section: 'general_info',            sort_order: 5 },
 
   // occurrence_place — Place of occurrence, shared by CASE and PCR_CALL
-  { id: 'C_8',  field_key: 'occurrence_place',  field_type: 'TEXT',   applicable_record_types: JSON.stringify(['PCR_CALL']),                          label_en: 'Place of Occurrence',         label_hi: 'घटना का स्थान',                 visible_to_levels: L, editable_by_levels: E, section: 'incident_details',        sort_order: 8,  validation_rules: JSON.stringify({ required: false }) },
+  { id: 'C_8',  field_key: 'occurrence_place',  field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE', 'PCR_CALL']),                  label_en: 'Place of Occurrence',         label_hi: 'घटना का स्थान',                 visible_to_levels: L, editable_by_levels: E, section: 'incident_details',        sort_order: 8,  validation_rules: JSON.stringify({ required: false }) },
 
   // io_mobile — IO mobile number, shared by CASE, ARREST and UIDB
   { id: 'C_19', field_key: 'io_mobile',         field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB']),   label_en: 'IO Mobile No.',               label_hi: 'जांच अधिकारी का मोबाइल',        visible_to_levels: L, editable_by_levels: E, section: 'investigation_officer',   sort_order: 503 },
@@ -571,10 +571,10 @@ const fields = [
   { id: 'C_min_oth',   field_key: 'other_minor_head',     field_type: 'TEXT',     applicable_record_types: JSON.stringify(['CASE']), label_en: 'Minor Head (Other)',                  label_hi: 'लघु शीर्ष (अन्य)',              visible_to_levels: L, editable_by_levels: E, section: 'incident_details',        sort_order: 13.9, show_when: JSON.stringify({ field: 'act_name', value: 'Other Act' }) },
 
   // Occurrence timeline fields
-  { id: 'C_occ_type',  field_key: 'occurrence_time_type', field_type: 'SELECT',   applicable_record_types: JSON.stringify(['CASE']),     label_en: 'Occurrence Time',                     label_hi: 'घटना प्रकार',                  visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.0, options: JSON.stringify([{ value: 'Known', label_en: 'Known', label_hi: 'ज्ञात' }, { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }]) },
-  { id: 'C_occ_from',  field_key: 'occurrence_from_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Occurrence From Date & Time',      label_hi: 'घटना की प्रारंभिक तारीख और समय',visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.1 },
-  { id: 'C_occ_to',    field_key: 'occurrence_to_date_time',   field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Occurrence To Date & Time',        label_hi: 'घटना की समाप्ति तारीख और समय',  visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.2 },
-  { id: 'C_rec_ps',    field_key: 'info_received_at_ps_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Information Received at PS',        label_hi: 'थाने पर सूचना प्राप्त होने का समय',visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.3 },
+  { id: 'C_occ_type',  field_key: 'occurrence_time_type', field_type: 'RADIO',    applicable_record_types: JSON.stringify(['CASE']),     label_en: 'Is Time of Occurrence',               label_hi: 'क्या घटना का समय ज्ञात है?',     visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.0, validation_rules: JSON.stringify({ required: true }), options: JSON.stringify([{ value: 'Known', label_en: 'Known', label_hi: 'ज्ञात' }, { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }]) },
+  { id: 'C_occ_from',  field_key: 'occurrence_from_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'From Date / Time',                        label_hi: 'दिनांक / समय से',               visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.1, validation_rules: JSON.stringify({ required: true }) },
+  { id: 'C_occ_to',    field_key: 'occurrence_to_date_time',   field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'To Date / Time',                          label_hi: 'दिनांक / समय तक',               visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.2, validation_rules: JSON.stringify({ required: true }) },
+  { id: 'C_rec_ps',    field_key: 'info_received_at_ps_date_time', field_type: 'DATETIME', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Information received at P.S.',            label_hi: 'थाने पर सूचना प्राप्त होने का समय',visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.3, validation_rules: JSON.stringify({ required: true }) },
   { id: 'C_org_crime',  field_key: 'organised_crime',      field_type: 'SELECT', applicable_record_types: JSON.stringify(['CASE']), label_en: 'Organised Crime',                   label_hi: 'संगठित अपराध',                 visible_to_levels: L, editable_by_levels: E, section: 'occurrence_info',        sort_order: 1.4, options: JSON.stringify([{ value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' }, { value: 'No', label_en: 'No', label_hi: 'नहीं' }]) },
 
   // Occurrence address extra fields (latitude/longitude)
@@ -868,6 +868,21 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       ])
     },
     {
+      id: `${prefix}_marital_status`,   field_key: `${prefix}_marital_status`,   field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Marital Status`, label_hi: `${labelPrefixHi} वैवाहिक स्थिति`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 4.1, is_active: true, scope_level: 'global',
+      validation_rules: JSON.stringify({ required: false }),
+      options: JSON.stringify([
+        { value: 'Married', label_en: 'Married', label_hi: 'विवाहित' },
+        { value: 'Unmarried', label_en: 'Unmarried', label_hi: 'अविवाहित' },
+        { value: 'Divorced', label_en: 'Divorced', label_hi: 'तलाकशुदा' },
+        { value: 'Widowed', label_en: 'Widowed', label_hi: 'विधवा/विधुर' },
+        { value: 'Single', label_en: 'Single', label_hi: 'अकेला' },
+        { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }
+      ])
+    },
+    {
       id: `${prefix}_relation_type`,   field_key: `${prefix}_relation_type`,   field_type: 'SELECT',
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Relation Type`, label_hi: `${labelPrefixHi} संबंध का प्रकार`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
@@ -896,10 +911,22 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       sort_order: baseOrder + 7, is_active: true, scope_level: 'global'
     },
     {
+      id: `${prefix}_mobile_country_code`, field_key: `${prefix}_mobile_country_code`, field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Mobile Country Code`, label_hi: `${labelPrefixHi} मोबाइल देश कोड`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 7.9, is_active: true, scope_level: 'global'
+    },
+    {
       id: `${prefix}_mobile`,          field_key: `${prefix}_mobile`,          field_type: 'TEXT',
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Mobile No.`, label_hi: `${labelPrefixHi} मोबाइल नंबर`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
       sort_order: baseOrder + 8, is_active: true, scope_level: 'global'
+    },
+    {
+      id: `${prefix}_email`,           field_key: `${prefix}_email`,           field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Email ID`, label_hi: `${labelPrefixHi} ईमेल आईडी`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 8.1, is_active: true, scope_level: 'global'
     },
     {
       id: `${prefix}_dob`,             field_key: `${prefix}_dob`,             field_type: 'DATE',
@@ -924,6 +951,18 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Year of Birth`, label_hi: `${labelPrefixHi} जन्म का वर्ष`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
       sort_order: baseOrder + 12, is_active: true, scope_level: 'global'
+    },
+    {
+      id: `${prefix}_age_range_from`,  field_key: `${prefix}_age_range_from`,  field_type: 'NUMBER',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Age Range From`, label_hi: `${labelPrefixHi} आयु सीमा से`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 12.1, is_active: true, scope_level: 'global'
+    },
+    {
+      id: `${prefix}_age_range_to`,    field_key: `${prefix}_age_range_to`,    field_type: 'NUMBER',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Age Range To`, label_hi: `${labelPrefixHi} आयु सीमा तक`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 12.2, is_active: true, scope_level: 'global'
     },
     {
       id: `${prefix}_house_no`,        field_key: `${prefix}_house_no`,        field_type: 'TEXT',
@@ -1242,7 +1281,79 @@ const generatedFields = [
       { value: 'Guardian', label_en: 'Guardian', label_hi: 'अभिभावक' },
       { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
     ])
-  }
+  },
+  {
+    id: 'complainant_same_as_victim',
+    field_key: 'complainant_same_as_victim',
+    field_type: 'BOOLEAN',
+    applicable_record_types: JSON.stringify(['CASE']),
+    label_en: 'Is Complainant same as Victim?',
+    label_hi: 'क्या शिकायतकर्ता ही पीड़ित है?',
+    visible_to_levels: L,
+    editable_by_levels: E,
+    section: 'complainant_personal_info',
+    sort_order: 408.5,
+    is_active: true,
+    scope_level: 'global'
+  },
+  {
+    id: 'complainant_perm_same',
+    field_key: 'complainant_perm_same',
+    field_type: 'BOOLEAN',
+    applicable_record_types: JSON.stringify(['CASE']),
+    label_en: 'Is Permanent Address same as Present Address?',
+    label_hi: 'क्या स्थायी पता वर्तमान पते के समान है?',
+    visible_to_levels: L,
+    editable_by_levels: E,
+    section: 'complainant_address',
+    sort_order: 423.9,
+    is_active: true,
+    scope_level: 'global'
+  },
+  ...generateAddressFields('complainant_perm', 'Complainant Permanent', 'शिकायतकर्ता का स्थायी पता', ['CASE'], 'complainant_address').map((f, idx) => ({
+    ...f,
+    sort_order: 424.0 + idx * 0.05
+  })),
+  {
+    id: 'victim_perm_same',
+    field_key: 'victim_perm_same',
+    field_type: 'BOOLEAN',
+    applicable_record_types: JSON.stringify(['CASE']),
+    label_en: 'Is Permanent Address same as Present Address?',
+    label_hi: 'क्या स्थायी पता वर्तमान पते के समान है?',
+    visible_to_levels: L,
+    editable_by_levels: E,
+    section: 'victim_address',
+    sort_order: 483.9,
+    is_active: true,
+    scope_level: 'global',
+    repeater_entity: 'PERSON_VICTIM'
+  },
+  ...generateAddressFields('victim_perm', 'Victim Permanent', 'पीड़ित का स्थायी पता', ['CASE'], 'victim_address').map((f, idx) => ({
+    ...f,
+    sort_order: 484.0 + idx * 0.05,
+    repeater_entity: 'PERSON_VICTIM'
+  })),
+  {
+    id: 'accused_perm_same',
+    field_key: 'accused_perm_same',
+    field_type: 'BOOLEAN',
+    applicable_record_types: JSON.stringify(['CASE']),
+    label_en: 'Is Permanent Address same as Present Address?',
+    label_hi: 'क्या स्थायी पता वर्तमान पते के समान है?',
+    visible_to_levels: L,
+    editable_by_levels: E,
+    section: 'accused_address',
+    sort_order: 453.9,
+    is_active: true,
+    scope_level: 'global',
+    repeater_entity: 'PERSON_ACCUSED'
+  },
+  ...generateAddressFields('accused_perm', 'Accused Permanent', 'अभियुक्त का स्थायी पता', ['CASE'], 'accused_address').map((f, idx) => ({
+    ...f,
+    sort_order: 454.0 + idx * 0.05,
+    repeater_entity: 'PERSON_ACCUSED'
+  }))
 ];
 
 fields.push(...generatedFields);
