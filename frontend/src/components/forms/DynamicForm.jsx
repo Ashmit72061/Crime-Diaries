@@ -3165,6 +3165,25 @@ const renderAccusedStep = () => {
         return;
       }
 
+      if (field.field_key === 'fir_no') {
+        const num = currentValues.fir_no;
+        const dt = currentValues.fir_date;
+        const tm = currentValues.fir_time;
+        const isAnyFilled = !!(num || dt || tm);
+        const isAllFilled = !!(num && dt && tm);
+
+        if (rules.required && !isAllFilled) {
+          errs.fir_no = lang === 'hi'
+            ? 'प्राथमिकी संख्या और दिनांक दोनों भरना आवश्यक है।'
+            : 'FIR Number and Date are both required.';
+        } else if (isAnyFilled && !isAllFilled) {
+          errs.fir_no = lang === 'hi'
+            ? 'प्राथमिकी संख्या और दिनांक दोनों भरें।'
+            : 'Please fill both: FIR Number and Date.';
+        }
+        return;
+      }
+
       if (!rules.required) return;
 
       const val = currentValues[field.field_key];

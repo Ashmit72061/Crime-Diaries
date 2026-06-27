@@ -418,8 +418,7 @@ const formSchemas = {
             { value: 'zero FIR', label_en: 'zero FIR', label_hi: 'जीरो एफआईआर' }
           ]
         },
-        { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number', label_hi: 'प्राथमिकी (FIR) संख्या', validation_rules: { required: true } },
-        { field_key: 'fir_date', field_type: 'DATE', label_en: 'FIR Date', label_hi: 'प्राथमिकी की तिथि', validation_rules: { required: true } },
+        { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number,Date & Time', label_hi: 'प्राथमिकी (FIR) संख्या और दिनांक', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
         {
@@ -439,6 +438,13 @@ const formSchemas = {
             { value: 'TRANSFER', label_en: 'TRANSFER', label_hi: 'स्थानांतरण (TRANSFER)' }
           ],
           validation_rules: { required: true }
+        },
+        {
+          field_key: 'is_important',
+          field_type: 'BOOLEAN',
+          label_en: 'Mark as Important Case',
+          label_hi: 'महत्वपूर्ण मामले के रूप में चिह्नित करें',
+          validation_rules: { required: false }
         },
       ]
     },
