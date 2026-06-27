@@ -777,6 +777,24 @@ export default function DynamicForm({
         return;
       }
 
+      if (field.field_key === 'fir_no') {
+        const num = currentValues.fir_no;
+        const dt = currentValues.fir_date;
+        const isAnyFilled = !!(num || dt);
+        const isAllFilled = !!(num && dt);
+
+        if (rules.required && !isAllFilled) {
+          errs.fir_no = lang === 'hi'
+            ? 'प्राथमिकी संख्या और दिनांक दोनों भरना आवश्यक है।'
+            : 'FIR Number and Date are both required.';
+        } else if (isAnyFilled && !isAllFilled) {
+          errs.fir_no = lang === 'hi'
+            ? 'प्राथमिकी संख्या और दिनांक दोनों भरें।'
+            : 'Please fill both: FIR Number and Date.';
+        }
+        return;
+      }
+
       if (!rules.required) return;
 
       const val = currentValues[field.field_key];
