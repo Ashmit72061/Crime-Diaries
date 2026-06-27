@@ -1,6 +1,7 @@
 import * as dailyDiaryService from './daily-diary.service.js';
 import db from '../../config/db.js';
 import { logger } from '../../utils/logger.js';
+import { generateParallelReport } from '../reports/reports.parallel.service.js';
 
 // Helper to validate and default date
 const getValidatedDate = (req) => {
@@ -109,12 +110,17 @@ export const exportExcel = async (req, res, next) => {
         const job = await db('report_jobs').where({ id: jobId }).first();
         if (!job) return;
         const def = JSON.parse(job.custom_definition || '{}');
-        await dailyDiaryService.buildDailyDiaryExcel(
-          def.sheets,
-          def.reports,
-          def.report_columns,
+        await generateParallelReport(
+          jobId,
+          {
+            date,
+            dateTo,
+            psId: scope.psId,
+            districtId: scope.districtId,
+            subDivId: scope.subDivId
+          },
           job.file_path,
-          def.column_labels  // undefined falls back to module-level COLUMN_LABELS
+          tableNames
         );
         await db('report_jobs').where({ id: jobId }).update({
           status: 'READY',

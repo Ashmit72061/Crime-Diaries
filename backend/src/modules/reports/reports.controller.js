@@ -808,7 +808,34 @@ export const downloadReport = async (req, res) => {
       });
     }
 
+    const filename = req.params.filename;
     const ext = job.format.toLowerCase();
+    const finalExt = ext === 'excel' ? 'xlsx' : ext;
+
+    let filterObj = {};
+    try {
+      filterObj = JSON.parse(job.filters || '{}');
+    } catch (e) {}
+
+    let dateStr = '';
+    if (filterObj.date) {
+      dateStr = `_${String(filterObj.date).replace(/-/g, '')}`;
+    } else if (filterObj.dateFrom) {
+      const from = String(filterObj.dateFrom).replace(/-/g, '');
+      const to = filterObj.dateTo ? `_to_${String(filterObj.dateTo).replace(/-/g, '')}` : '';
+      dateStr = `_${from}${to}`;
+    } else if (filterObj.fromDate) {
+      const from = String(filterObj.fromDate).replace(/-/g, '');
+      const to = filterObj.toDate ? `_to_${String(filterObj.toDate).replace(/-/g, '')}` : '';
+      dateStr = `_${from}${to}`;
+    }
+
+    let downloadFilename = filename || `Pharos_Report${dateStr}_${job.id}.${finalExt}`;
+    // Ensure extension is correctly set
+    if (!downloadFilename.endsWith(`.${finalExt}`)) {
+      downloadFilename = `${downloadFilename}.${finalExt}`;
+    }
+
     let contentType = 'text/csv';
     if (ext === 'pdf') {
       contentType = 'application/pdf';
@@ -816,8 +843,8 @@ export const downloadReport = async (req, res) => {
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     }
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename=Pharos_Report_${job.id}.${ext === 'excel' ? 'xlsx' : ext}`);
-    return res.download(job.file_path, `Pharos_Report_${job.id}.${ext === 'excel' ? 'xlsx' : ext}`);
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+    return res.download(job.file_path, downloadFilename);
   } catch (error) {
     return res.status(500).json({
       status: 'error',

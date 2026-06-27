@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database, ChevronLeft, ChevronRight, Plus, X, Bookmark } from 'lucide-react';
@@ -2505,7 +2506,7 @@ const renderVictimStep = () => {
       </div>
 
       {/* ── Victim Modal Dialog ── */}
-      {isVictimModalOpen && (
+      {isVictimModalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
 
@@ -2575,7 +2576,8 @@ const renderVictimStep = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
@@ -2918,7 +2920,7 @@ const renderAccusedStep = () => {
       </div>
 
       {/* ── Accused Modal Dialog ── */}
-      {isAccusedModalOpen && (
+      {isAccusedModalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
 
@@ -2988,7 +2990,8 @@ const renderAccusedStep = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
@@ -3602,7 +3605,7 @@ const renderArrestedStep = () => {
       </div>
 
       {/* Modal Dialog */}
-      {isArrestedModalOpen && (
+      {isArrestedModalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
             {/* Header */}
@@ -3671,7 +3674,8 @@ const renderArrestedStep = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -3778,7 +3782,7 @@ const renderIntimationStep = () => {
       </div>
 
       {/* Modal Dialog */}
-      {isIntimationModalOpen && (
+      {isIntimationModalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
             {/* Header */}
@@ -3872,7 +3876,8 @@ const renderIntimationStep = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -4038,10 +4043,11 @@ const renderActionTakenStep = () => {
       });
     }
 
-    if (recordType === 'ARREST' && (caseType === 'against_fir' || caseType === 'kalandra')) {
+    if (recordType === 'ARREST' && (caseType === 'against_fir' || caseType === 'kalandra' || !caseType)) {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
+      const effectiveCaseType = caseType || 'kalandra'; // null = edit mode, treat as kalandra
       const tabSpecs = [];
-      if (caseType === 'against_fir') {
+      if (effectiveCaseType === 'against_fir') {
         tabSpecs.push({
           title_en: 'Select FIR',
           title_hi: 'प्राथमिकी (FIR) चुनें',
@@ -5658,9 +5664,10 @@ const renderActionTakenStep = () => {
                renderVictimStep() 
               ) : recordType === 'CASE' && currentStep === 5 ? ( 
                renderAccusedStep() 
-              ) : recordType === 'CASE' && currentStep === 6 ? ( 
-               renderPropertyStep() 
-              ) : recordType === 'CASE' && currentStep === 7 ? ( 
+              ) : (recordType === 'CASE' && currentStep === 6) ||
+                  (recordType === 'ARREST' && activeSection?.entity_type === 'property') ? (
+               renderPropertyStep()
+              ) : recordType === 'CASE' && currentStep === 7 ? (
                renderActionTakenStep() 
             ) : (
               <FormSection

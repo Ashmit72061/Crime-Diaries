@@ -45,12 +45,7 @@ const getRawRecords = async (date, psId, districtId, subDivId, dateTo = null) =>
   } else if (isRange) {
     query = query.whereBetween('records.record_date', [date, dateTo]);
   } else {
-    if (fromDate && toDate) {
-      query = query.where('records.record_date', '>=', fromDate)
-                   .where('records.record_date', '<=', toDate);
-    } else {
-      query = query.where('records.record_date', date);
-    }
+    query = query.where('records.record_date', date);
   }
 
   if (psId) {
@@ -145,7 +140,7 @@ export const queueDailyDiaryExport = async (user, date, psId, districtId, subDiv
   };
 
   const jobId      = uuidv4();
-  const reportsDir = process.env.REPORTS_DIR || './generated-reports';
+  const reportsDir = path.resolve(process.env.REPORTS_DIR || './generated-reports');
   if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
   const filePath   = path.join(reportsDir, `${jobId}.xlsx`);
   const userId     = user?.userId || user?.id || null;

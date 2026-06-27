@@ -1,4 +1,4 @@
-import { db, connectDB } from '../src/config/db.js';
+﻿import { db, connectDB } from '../src/config/db.js';
 
 async function main() {
   await connectDB();
@@ -45,8 +45,9 @@ async function main() {
         sections: 'BNS 305',
         complainant_name: 'Amit Kumar',
         complainant_father_husband_name: 'Ram Kumar',
+        complainant_parent_name: 'Ram Kumar',
         complainant_address: 'Flat 402, Sector 9, Delhi',
-        occurrence_time: '02:30 Hrs',
+        occurrence_time: '02:30:00',
         occurrence_place: 'Flat 402, Sector 9, Delhi',
         local_head: 'Burglary',
         property_description: 'Gold jewelry, Laptop, Cash Rs. 50,000',
@@ -73,9 +74,10 @@ async function main() {
         sections: 'BNS 306',
         complainant_name: 'Priya Sharma',
         complainant_father_husband_name: 'R. K. Sharma',
+        complainant_parent_name: 'R. K. Sharma',
         complainant_address: 'H.No. 12, Gali 2, Shashi Garden, Delhi',
         occurrence_place: 'H.No. 12, Gali 2, Shashi Garden, Delhi',
-        occurrence_time: '14:00 Hrs',
+        occurrence_time: '14:00:00',
         local_head: 'House Theft',
         property_description: 'Bicycle, Copper wires',
         io_name: 'SI Naveen Malik',
@@ -101,8 +103,9 @@ async function main() {
         sections: 'BNS 303',
         complainant_name: 'Suresh Gupta',
         complainant_father_husband_name: 'M. L. Gupta',
+        complainant_parent_name: 'M. L. Gupta',
         complainant_address: 'Shop 4, Market Area, Delhi',
-        occurrence_time: '18:15 Hrs',
+        occurrence_time: '23:45:00',
         local_head: 'Other Theft',
         property_description: 'Iron rod, Cash box',
         occurrence_place: 'Shop 4, Market Area, Delhi',
@@ -128,10 +131,11 @@ async function main() {
         fir_no: 'FIR/MVT/2026/0004',
         sections: 'BNS 303(2)',
         occurrence_date: targetDate,
-        occurrence_time: '23:45 Hrs',
+        occurrence_time: '23:45:00',
         occurrence_place: 'Parking Lot Metro Station, Delhi',
         complainant_name: 'Rajesh Tyagi',
         complainant_father_husband_name: 'S. K. Tyagi',
+        complainant_parent_name: 'S. K. Tyagi',
         complainant_address: 'Pandav Nagar, Delhi',
         vehicle_no: 'DL 3S CA 1234',
         vehicle_type: 'Motorcycle Splendor',
@@ -161,8 +165,9 @@ async function main() {
         sections: 'BNS 103 (Murder)',
         complainant_name: 'Sunil Dutt',
         complainant_father_husband_name: 'Late Sh. K. C. Dutt',
+        complainant_parent_name: 'Late Sh. K. C. Dutt',
         complainant_address: 'A-21, Gazipur, Delhi',
-        occurrence_time: '21:00 Hrs',
+        occurrence_time: '21:00:00',
         occurrence_place: 'Main Road near Gazipur Flyover, Delhi',
         local_head: 'Murder',
         brief_facts: 'Information received regarding a fight. Police reached the spot and found one person dead. FIR registered.',
@@ -189,8 +194,9 @@ async function main() {
         sections: 'BNS 309(4) (Robbery)',
         complainant_name: 'Manish Rawat',
         complainant_father_husband_name: 'Pratap Rawat',
+        complainant_parent_name: 'Pratap Rawat',
         complainant_address: 'B-45, Mayur Vihar, Delhi',
-        occurrence_time: '22:30 Hrs',
+        occurrence_time: '22:30:00',
         occurrence_place: 'Pocket-1 Park, Mayur Vihar, Delhi',
         local_head: 'Robbery',
         brief_facts: 'Complainant was robbed of his mobile phone and wallet at knife point.',
@@ -218,9 +224,10 @@ async function main() {
         sections: 'BNSS 194',
         deceased_name: 'Ramesh Chander',
         deceased_father_husband_name: 'Shankar Lal',
+        deceased_parent_name: 'Shankar Lal',
         deceased_address: 'Sanjay Park, Delhi',
         gender: 'Male',
-        age: '45',
+        arrested_age: '45',
         cause_of_death: 'Heart Attack',
         occurrence_place: 'Sanjay Park Bench, Delhi',
         local_head: 'Inquest',
@@ -294,8 +301,9 @@ async function main() {
         sections: 'BNS 103',
         arrested_name: 'John Doe',
         arrested_father_husband_name: 'Richard Doe',
+        arrested_parent_name: 'Richard Doe',
         arrested_address: 'Noida Sec 62, UP',
-        age: '28',
+        arrested_age: '28',
         io_name: 'SI Vijay Singh',
         status: 'Judicial Custody',
         prev_involvement: '1',
@@ -321,7 +329,7 @@ async function main() {
         arrested_name: 'Madan Lal',
         arrested_father_husband_name: 'Sohan Lal',
         arrested_address: 'Kalyanpuri, Delhi',
-        age: '32',
+        arrested_age: '32',
         io_name: 'ASI Dharam Singh',
         status: 'Bail',
         crime_head: 'PREVENTIVE',
@@ -346,7 +354,7 @@ async function main() {
         arrested_name: 'Karan @ Kalu',
         arrested_father_husband_name: 'Charan Singh',
         arrested_address: 'Trilokpuri, Delhi',
-        age: '35',
+        arrested_age: '35',
         io_name: 'SI Rajesh',
         status: 'Judicial Custody',
         crime_head: 'PO',
@@ -373,7 +381,7 @@ async function main() {
         arrested_name: 'Sohan Lal',
         arrested_father_husband_name: 'Mohan Lal',
         arrested_address: 'Shashi Garden, Delhi',
-        age: '29',
+        arrested_age: '29',
         io_name: 'SI Harish',
         status: 'Police Custody',
         crime_head: 'listed',
@@ -401,7 +409,7 @@ async function main() {
         arrested_name: 'Rinku (Name Changed)',
         arrested_father_husband_name: 'Baldev Singh',
         arrested_address: 'Kalyanpuri J.J. Cluster, Delhi',
-        age: '16',
+        arrested_age: '16',
         io_name: 'SI Naveen Malik',
         status: 'Bail by JJB',
         juvenile_category: 'First offender',
@@ -427,7 +435,7 @@ async function main() {
         arrested_name: 'Vikram Adityan',
         arrested_father_husband_name: 'Adityan Pillai',
         arrested_address: 'Dwarka Sector 10, Delhi',
-        age: '26',
+        arrested_age: '26',
         io_name: 'SI Cyber Cell',
         status: 'JC',
         crime_head: 'Fraud',
@@ -457,7 +465,7 @@ async function main() {
         arrested_name: 'Rakesh Yadav',
         arrested_father_husband_name: 'Lalji Yadav',
         arrested_address: 'Kondli, Delhi',
-        age: '24',
+        arrested_age: '24',
         io_name: 'SI Sandeep',
         status: 'Bail',
         crime_head: 'PREVENTIVE',
@@ -482,7 +490,7 @@ async function main() {
         arrested_name: 'Devender Singh',
         arrested_father_husband_name: 'Prakash Singh',
         arrested_address: 'Gazipur Dairy Farm, Delhi',
-        age: '27',
+        arrested_age: '27',
         io_name: 'ASI Satish',
         status: 'Bail',
         crime_head: 'PREVENTIVE',
@@ -507,7 +515,7 @@ async function main() {
         arrested_name: 'Gaurav Kumar',
         arrested_father_husband_name: 'Jai Kumar',
         arrested_address: 'Kalyanpuri, Delhi',
-        age: '22',
+        arrested_age: '22',
         io_name: 'SI Harish',
         status: 'Bail',
         crime_head: 'PREVENTIVE',
@@ -532,7 +540,7 @@ async function main() {
         arrested_name: 'Vinay @ Vicky',
         arrested_father_husband_name: 'Vijay Kumar',
         arrested_address: 'Mayur Vihar, Delhi',
-        age: '29',
+        arrested_age: '29',
         io_name: 'SI Vijay Singh',
         status: 'JC',
         crime_head: 'PREVENTIVE',
@@ -557,7 +565,7 @@ async function main() {
         arrested_name: 'Jeetu Kumar',
         arrested_father_husband_name: 'Satbir Singh',
         arrested_address: 'Gazipur, Delhi',
-        age: '30',
+        arrested_age: '30',
         io_name: 'ASI Satish',
         status: 'Bail',
         crime_head: 'PREVENTIVE',
@@ -583,7 +591,7 @@ async function main() {
         arrested_name: 'Sanjay Verma',
         arrested_father_husband_name: 'Ram Verma',
         arrested_address: 'Mandawali, Delhi',
-        age: '28',
+        arrested_age: '28',
         io_name: 'HC Dinesh',
         status: 'Bail'
       })
@@ -607,7 +615,7 @@ async function main() {
         arrested_name: 'Kalu Ram',
         arrested_father_husband_name: 'Shankar Lal',
         arrested_address: 'Kalyanpuri, Delhi',
-        age: '31',
+        arrested_age: '31',
         io_name: 'HC Dinesh',
         status: 'Bail'
       })
@@ -631,7 +639,7 @@ async function main() {
         arrested_name: 'Pappu @ Shooter',
         arrested_father_husband_name: 'Bhagat Singh',
         arrested_address: 'Khoda Colony, UP',
-        age: '23',
+        arrested_age: '23',
         io_name: 'SI Harish',
         status: 'JC'
       })
@@ -655,7 +663,7 @@ async function main() {
         arrested_name: 'Bobby Singh',
         arrested_father_husband_name: 'Gurnam Singh',
         arrested_address: 'Mayur Vihar, Delhi',
-        age: '40',
+        arrested_age: '40',
         io_name: 'ASI Satish',
         status: 'Bail'
       })
@@ -679,7 +687,7 @@ async function main() {
         arrested_name: 'Vicky Dev',
         arrested_father_husband_name: 'Laxman Dev',
         arrested_address: 'Paharganj, Delhi',
-        age: '33',
+        arrested_age: '33',
         io_name: 'SI Harish',
         status: 'JC'
       })
@@ -705,7 +713,7 @@ async function main() {
         missing_name: 'Seema Kumari',
         missing_address: 'H.No 105, Gazipur, Delhi',
         gender: 'Female',
-        age: '24',
+        arrested_age: '24',
         source: 'DD_ENTRY',
         missing_date: targetDate,
         missing_place: 'Gazipur Market, Delhi',
@@ -731,7 +739,7 @@ async function main() {
         missing_name: 'Suman Lata',
         missing_address: 'H.No 108, Gazipur, Delhi',
         gender: 'Female',
-        age: '26',
+        arrested_age: '26',
         source: 'PCR',
         missing_date: targetDate,
         missing_place: 'Anand Vihar ISBT, Delhi',
@@ -758,7 +766,7 @@ async function main() {
         missing_name: 'Rahul Kumar',
         missing_address: 'H.No 109, Shashi Garden, Delhi',
         gender: 'Male',
-        age: '12',
+        arrested_age: '12',
         source: 'PCR',
         missing_date: targetDate,
         missing_place: 'Near school park, Shashi Garden, Delhi',
@@ -785,7 +793,7 @@ async function main() {
         missing_name: 'Babita Kumari',
         missing_address: 'H.No 110, Shashi Garden, Delhi',
         gender: 'Female',
-        age: '10',
+        arrested_age: '10',
         source: 'DD_ENTRY',
         missing_date: targetDate,
         missing_place: 'Near school, Shashi Garden, Delhi',
@@ -811,7 +819,7 @@ async function main() {
         operator_name: 'HC Ramesh',
         missing_name: 'Unknown Male Child',
         gender: 'Male',
-        age: '6',
+        arrested_age: '6',
         source: 'DD_ENTRY',
         missing_place: 'Metro Station platform, Delhi',
         found_place: 'Metro Station platform, Delhi',
@@ -884,9 +892,9 @@ async function main() {
     await db('workflow_transitions').insert(transitions);
     await db('record_revisions').insert(revisions);
 
-    console.log('✅ Daily Diary Mock Seeding completed successfully!');
+    console.log('âœ… Daily Diary Mock Seeding completed successfully!');
   } catch (error) {
-    console.error('❌ Seeding failed:', error.message);
+    console.error('âŒ Seeding failed:', error.message);
   } finally {
     await db.destroy();
     process.exit(0);
@@ -894,3 +902,4 @@ async function main() {
 }
 
 main().catch(console.error);
+
