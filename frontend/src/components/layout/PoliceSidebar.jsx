@@ -159,7 +159,7 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
           />
           {!isCollapsed && (
             <div className="brand-text">
-              <span className="brand-main">PHAROS</span>
+              <span className="brand-main">PRISM</span>
               <span className="brand-sub" style={{ fontSize: "0.6rem" }}>DELHI POLICE</span>
             </div>
           )}

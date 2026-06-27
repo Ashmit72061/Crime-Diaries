@@ -42,7 +42,7 @@ export const getRecord = async (req, res) => {
 };
 
 export const create = async (req, res) => {
-  const { record_type, data } = req.body;
+  const { record_type, data, persons = [], properties = [] } = req.body;
   const record_date = req.body.record_date || new Date().toISOString().split('T')[0];
   const ipAddress = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
 
@@ -56,7 +56,8 @@ export const create = async (req, res) => {
       record_type,
       record_date,
       data,
-      ipAddress
+      ipAddress,
+      { persons, properties }
     );
     return res.status(201).json({ success: true, data: record });
   } catch (error) {
@@ -67,7 +68,7 @@ export const create = async (req, res) => {
 
 export const update = async (req, res) => {
   const { id } = req.params;
-  const { data } = req.body;
+  const { data, persons, properties } = req.body;
   const ipAddress = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1';
 
   if (!data) {
@@ -78,7 +79,7 @@ export const update = async (req, res) => {
     // Validate scope
     await verifyRecordAccess(id, req.user);
 
-    const record = await recordsService.updateRecord(id, req.user, data, ipAddress);
+    const record = await recordsService.updateRecord(id, req.user, data, ipAddress, { persons, properties });
     return res.status(200).json({ success: true, data: record });
   } catch (error) {
     const status = error.message.includes('Access denied') ? 403 : (error.status || 500);

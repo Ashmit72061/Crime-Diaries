@@ -54,12 +54,12 @@ export function useFormSchema(recordType) {
         fields: (sec.fields || []).map(normalizeField),
       }));
 
-      // Inject readonly system fields into the first section if not already present
-      if (normalized.length > 0) {
-        const firstSec = normalized[0];
-        const existingKeys = new Set(firstSec.fields.map((f) => f.field_key));
+      // Inject readonly system fields into the first FLAT (non-repeater) section
+      const firstFlatSec = normalized.find((sec) => !sec.is_repeater);
+      if (firstFlatSec) {
+        const existingKeys = new Set(firstFlatSec.fields.map((f) => f.field_key));
         const toInject = SYSTEM_FIELDS.filter((f) => !existingKeys.has(f.field_key));
-        firstSec.fields = [...toInject, ...firstSec.fields];
+        firstFlatSec.fields = [...toInject, ...firstFlatSec.fields];
       }
 
       return normalized;

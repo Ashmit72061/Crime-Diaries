@@ -256,8 +256,23 @@ export const getRecordDetails = async (id) => {
   try {
     linkedRecords = await getLinksForRecord(id);
   } catch (_e) {
-    // Graceful degradation — table may not exist yet in rolling deploy
     linkedRecords = [];
+  }
+
+  // Fetch persons and properties (graceful — tables may not exist in older deploys)
+  let persons = [];
+  let properties = [];
+  try {
+    persons = await db('record_persons')
+      .where({ record_id: id })
+      .orderBy('sort_order', 'asc');
+    persons.forEach(p => { p.data = parseJsonField(p.data) || {}; });
+
+    properties = await db('record_properties')
+      .where({ record_id: id })
+      .orderBy('sort_order', 'asc');
+  } catch (_e) {
+    // Tables not yet migrated — degrade gracefully
   }
 
   return {
@@ -265,11 +280,24 @@ export const getRecordDetails = async (id) => {
     revisions,
     transitions,
     customFields: customValues,
-    linkedRecords
+    linkedRecords,
+    persons,
+    properties,
   };
 };
 
-export const createRecord = async (user, recordType, recordDate, data, ipAddress) => {
+const extractPersonSearchCols = (personType, data) => {
+  const prefix = personType.toLowerCase();
+  return {
+    first_name: data[`${prefix}_first_name`] || null,
+    last_name: data[`${prefix}_last_name`] || null,
+    mobile: data[`${prefix}_mobile`] || null,
+    city: data[`${prefix}_city_town_village`] || null,
+    district: data[`${prefix}_district`] || null,
+  };
+};
+
+export const createRecord = async (user, recordType, recordDate, data, ipAddress, { persons = [], properties = [] } = {}) => {
   const mergedData = mergeConditionalFields({ ...data });
   const dbRecord = await db.transaction(async (trx) => {
     await validateSelectFields(trx, recordType, mergedData);
@@ -339,6 +367,35 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
       ip_address: ipAddress
     });
 
+    // Persist persons
+    if (persons.length > 0) {
+      const personRows = persons.map((p, i) => ({
+        id: uuidv4(),
+        record_id: id,
+        person_type: p.person_type,
+        ...extractPersonSearchCols(p.person_type, p.data || {}),
+        data: JSON.stringify(p.data || {}),
+        sort_order: i,
+        created_at: new Date().toISOString(),
+      }));
+      await trx('record_persons').insert(personRows);
+    }
+
+    // Persist properties
+    if (properties.length > 0) {
+      const propertyRows = properties.map((prop, i) => ({
+        id: uuidv4(),
+        record_id: id,
+        major_category: prop.property_major_category || null,
+        minor_category: prop.property_minor_category || null,
+        status: prop.property_stolen_recovered || 'Stolen',
+        details: prop.property_details || null,
+        sort_order: i,
+        created_at: new Date().toISOString(),
+      }));
+      await trx('record_properties').insert(propertyRows);
+    }
+
     return { id, uid, data: hydratedData };
   });
 
@@ -353,7 +410,7 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
   return dbRecord;
 };
 
-export const updateRecord = async (id, user, data, ipAddress) => {
+export const updateRecord = async (id, user, data, ipAddress, { persons, properties } = {}) => {
   const dbRecord = await db.transaction(async (trx) => {
     const record = await trx('records').where({ id }).first();
     if (!record) throw new Error('Record not found');
@@ -427,6 +484,41 @@ export const updateRecord = async (id, user, data, ipAddress) => {
         new_value: String(change.new_value),
         ip_address: ipAddress
       });
+    }
+
+    // Replace persons if provided
+    if (Array.isArray(persons)) {
+      await trx('record_persons').where({ record_id: id }).delete();
+      if (persons.length > 0) {
+        const personRows = persons.map((p, i) => ({
+          id: uuidv4(),
+          record_id: id,
+          person_type: p.person_type,
+          ...extractPersonSearchCols(p.person_type, p.data || {}),
+          data: JSON.stringify(p.data || {}),
+          sort_order: i,
+          created_at: new Date().toISOString(),
+        }));
+        await trx('record_persons').insert(personRows);
+      }
+    }
+
+    // Replace properties if provided
+    if (Array.isArray(properties)) {
+      await trx('record_properties').where({ record_id: id }).delete();
+      if (properties.length > 0) {
+        const propertyRows = properties.map((prop, i) => ({
+          id: uuidv4(),
+          record_id: id,
+          major_category: prop.property_major_category || null,
+          minor_category: prop.property_minor_category || null,
+          status: prop.property_stolen_recovered || 'Stolen',
+          details: prop.property_details || null,
+          sort_order: i,
+          created_at: new Date().toISOString(),
+        }));
+        await trx('record_properties').insert(propertyRows);
+      }
     }
 
     return { id, data: hydratedData };
