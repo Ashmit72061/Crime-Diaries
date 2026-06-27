@@ -786,12 +786,12 @@ export default function DynamicForm({
 
         if (rules.required && !isAllFilled) {
           errs.fir_no = lang === 'hi'
-            ? 'प्राथमिकी संख्या और दिनांक दोनों भरना आवश्यक है।'
-            : 'FIR Number and Date are both required.';
+            ? 'प्राथमिकी संख्या, दिनांक और समय तीनों भरना आवश्यक है।'
+            : 'FIR Number, Date and Time are all required.';
         } else if (isAnyFilled && !isAllFilled) {
           errs.fir_no = lang === 'hi'
-            ? 'प्राथमिकी संख्या और दिनांक दोनों भरें।'
-            : 'Please fill both: FIR Number and Date.';
+            ? 'प्राथमिकी संख्या, दिनांक और समय तीनों भरें।'
+            : 'Please fill all three: FIR Number, Date and Time.';
         }
         return;
       }

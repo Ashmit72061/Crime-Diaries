@@ -141,6 +141,88 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
     );
   }
 
+function NicknameChipsField({ disabled, value, onChange, lang, placeholder }) {
+  const list = value ? String(value).split(',').map(v => v.trim()).filter(Boolean) : [];
+  const [inputVal, setInputVal] = React.useState('');
+
+  const handleAdd = () => {
+    const trimmed = inputVal.trim();
+    if (trimmed && !list.includes(trimmed)) {
+      const nextList = [...list, trimmed];
+      onChange(nextList.join(', '));
+    }
+    setInputVal('');
+  };
+
+  const handleRemove = (item) => {
+    const nextList = list.filter(v => v !== item);
+    onChange(nextList.join(', '));
+  };
+
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      {/* Chips Container */}
+      <div className="flex flex-wrap gap-1.5 min-h-[44px] p-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl items-center">
+        {list.length === 0 ? (
+          <span className="text-xs text-slate-400 font-medium px-2">
+            {lang === 'hi' ? 'कोई उपनाम नहीं जोड़ा गया है' : 'No nicknames added yet.'}
+          </span>
+        ) : (
+          list.map((item, idx) => (
+            <span
+              key={idx}
+              className="inline-flex items-center gap-1.5 bg-slate-800 text-white text-xs font-bold pl-2.5 pr-1.5 py-1.5 rounded-lg transition-all animate-in zoom-in-95 duration-100"
+            >
+              <span>{item}</span>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => handleRemove(item)}
+                  className="hover:bg-slate-700 p-0.5 rounded-md transition-colors"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="stroke-white" strokeWidth="1.5">
+                    <path d="M1 1l8 8M9 1L1 9" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+            </span>
+          ))
+        )}
+      </div>
+
+      {/* Input box to add */}
+      {!disabled && (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAdd();
+              }
+            }}
+            placeholder={placeholder || (lang === 'hi' ? 'उपनाम दर्ज करें...' : 'Enter nickname...')}
+            className="flex-1 bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2 rounded-xl outline-none focus:border-[var(--accent-color)] transition-all"
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 font-bold text-xs rounded-xl transition-all active:scale-95 cursor-pointer"
+          >
+            {lang === 'hi' ? 'जोड़ें' : 'Add'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+  if (key.endsWith('_nickname')) {
+    return <NicknameChipsField disabled={readOnly} value={value} onChange={handleChange} lang={lang} placeholder={placeholder} />;
+  }
+
   if (type === 'TEXT') {
     return <TextField id={`field-${key}`} disabled={readOnly} value={value} onChange={handleChange} status={status} placeholder={placeholder} />;
   }

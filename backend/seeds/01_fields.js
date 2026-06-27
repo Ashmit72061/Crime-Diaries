@@ -849,6 +849,12 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       sort_order: baseOrder + 3, is_active: true, scope_level: 'global'
     },
     {
+      id: `${prefix}_nickname`,        field_key: `${prefix}_nickname`,        field_type: 'TEXT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Nickname(s)`, label_hi: `${labelPrefixHi} उपनाम`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 3.5, is_active: true, scope_level: 'global'
+    },
+    {
       id: `${prefix}_gender`,          field_key: `${prefix}_gender`,          field_type: 'SELECT',
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Gender`, label_hi: `${labelPrefixHi} लिंग`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
