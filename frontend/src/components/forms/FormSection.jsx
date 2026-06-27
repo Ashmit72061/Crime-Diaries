@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertCircle, AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertCircle, AlertTriangle, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import FieldRenderer from './FieldRenderer.jsx';
 import SelectField from './SelectField.jsx';
 
@@ -304,6 +304,162 @@ function isFullWidth(field) {
   return fw.includes((field.field_type || '').toUpperCase()) || field.full_width === true;
 }
 
+function RepeaterSection({
+  section,
+  currentStep,
+  entries = [],
+  onEntriesChange,
+  readOnly,
+  lang = 'en',
+}) {
+  const [collapsed, setCollapsed] = useState({});
+
+  const addEntry = () => {
+    onEntriesChange([...entries, {}]);
+  };
+
+  const removeEntry = (idx) => {
+    const next = entries.filter((_, i) => i !== idx);
+    onEntriesChange(next);
+  };
+
+  const updateEntryField = (idx, key, val) => {
+    const next = entries.map((e, i) => i === idx ? { ...e, [key]: val } : e);
+    onEntriesChange(next);
+  };
+
+  const toggleCollapse = (idx) => {
+    setCollapsed(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const entityLabel = section.entity_type === 'property'
+    ? (lang === 'hi' ? 'संपत्ति' : 'Property')
+    : (lang === 'hi' ? 'व्यक्ति' : 'Person');
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
+            {currentStep + 1}
+          </span>
+          <h2 className="text-base font-bold text-slate-800 tracking-wide">
+            {lang === 'hi' ? (section.title_hi || section.title_en) : section.title_en}
+          </h2>
+          <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+            {entries.length}
+          </span>
+        </div>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={addEntry}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[var(--accent-color)] hover:bg-[var(--accent-color)]/90 rounded-lg shadow transition-all cursor-pointer"
+          >
+            <Plus size={13} />
+            {lang === 'hi' ? `${entityLabel} जोड़ें` : `Add ${entityLabel}`}
+          </button>
+        )}
+      </div>
+
+      <div className="p-4 space-y-4">
+        {entries.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+            <p className="text-sm font-semibold">
+              {lang === 'hi'
+                ? `कोई ${entityLabel} नहीं जोड़ा गया`
+                : `No ${entityLabel.toLowerCase()} added yet`}
+            </p>
+            {!readOnly && (
+              <p className="text-xs">
+                {lang === 'hi'
+                  ? `ऊपर "जोड़ें" बटन दबाएं`
+                  : `Click "Add ${entityLabel}" above to begin`}
+              </p>
+            )}
+          </div>
+        )}
+
+        {entries.map((entry, idx) => {
+          const isCollapsed = collapsed[idx];
+          const summaryKey = section.fields.find(f => f.field_key.endsWith('_first_name') || f.field_key.endsWith('_major_category'))?.field_key;
+          const summary = summaryKey ? entry[summaryKey] : null;
+
+          return (
+            <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between bg-slate-50 px-4 py-3 border-b border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => toggleCollapse(idx)}
+                  className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"
+                >
+                  {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                  <span>
+                    {entityLabel} #{idx + 1}
+                    {summary && <span className="text-slate-400 font-normal ml-2">— {summary}</span>}
+                  </span>
+                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => removeEntry(idx)}
+                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+
+              {!isCollapsed && (
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                  {section.fields.map((field) => {
+                    const key = field.field_key;
+
+                    // Evaluate show_when against this row's own values (not top-level form)
+                    if (field.show_when) {
+                      const { field: triggerKey, value: triggerValue } = field.show_when;
+                      const currentValue = entry[triggerKey];
+                      const isMatch = Array.isArray(triggerValue)
+                        ? triggerValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
+                        : String(currentValue || '').toLowerCase() === String(triggerValue || '').toLowerCase();
+                      if (!isMatch) return null;
+                    }
+
+                    const rules = parseRules(field.validation_rules);
+                    const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+                    const fw = isFullWidth(field);
+
+                    return (
+                      <div
+                        key={key}
+                        className={`flex flex-col gap-1.5 ${fw ? 'md:col-span-2' : ''}`}
+                      >
+                        <label className="form-label-custom">
+                          {label}
+                          {rules.required && <span className="text-red-500 font-bold ml-0.5">*</span>}
+                        </label>
+                        <FieldRenderer
+                          field={field}
+                          value={entry[key]}
+                          onChange={(k, v) => updateEntryField(idx, k, v)}
+                          readOnly={readOnly}
+                          hasError={false}
+                          lang={lang}
+                          values={entry}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function FormSection({
   section,
   currentStep,
@@ -315,24 +471,22 @@ export default function FormSection({
   readOnly,
   targetFields = [],
   lang = 'en',
-  saveStatus = null,
-  hideHeader = false,
+  // Repeater props (only used when section.is_repeater === true)
+  entries,
+  onEntriesChange,
 }) {
   if (!section) return null;
 
-  if (!section.fields || section.fields.length === 0) {
+  if (section.is_repeater) {
     return (
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-16 flex flex-col items-center justify-center text-slate-500 gap-3">
-        <AlertCircle size={32} className="text-slate-400" />
-        <p className="text-sm font-semibold text-slate-700">
-          {lang === 'hi' ? 'कोई इनपुट फ़ील्ड आवश्यक नहीं है' : 'No input fields required'}
-        </p>
-        <p className="text-xs text-slate-400 text-center max-w-sm leading-relaxed">
-          {lang === 'hi'
-            ? 'इस अनुभाग के लिए कोई प्रविष्टि आवश्यक नहीं है।'
-            : 'No form details are configured for this section in the current database registry.'}
-        </p>
-      </div>
+      <RepeaterSection
+        section={section}
+        currentStep={currentStep}
+        entries={entries || []}
+        onEntriesChange={onEntriesChange}
+        readOnly={readOnly}
+        lang={lang}
+      />
     );
   }
 

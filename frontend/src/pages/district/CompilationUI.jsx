@@ -56,8 +56,10 @@ export default function CompilationUI() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
-  const [fromDate, setFromDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [toDate, setToDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const today = new Date().toISOString().split('T')[0];
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo]   = useState('');         // optional; blank = single day
+  const [exporting, setExporting] = useState(false);
 
   // Dropdown UI states
   const [selectedPSIds, setSelectedPSIds] = useState(new Set());
@@ -146,70 +148,98 @@ export default function CompilationUI() {
   });
 
   const handleCompileTrigger = async () => {
-    // 1. Persist compilation first so record_ids are in the DB before the export fetch runs.
+    if (exporting) return;
+    setExporting(true);
+
+    // 1. Persist compilation in DB (non-fatal — continues even if no DISTRICT_REVIEW records)
     try {
-      await createCompMutation.mutateAsync({
-        period: toDate,
-        fromDate,
-        toDate
-      });
+      await createCompMutation.mutateAsync(dateFrom);
     } catch {
       // onError toast already shown; continue to export with date-based fallback
     }
 
-    // 2. Perform Excel report export & download using native fetch
+    const token = localStorage.getItem('access_token');
+    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const authHeaders = { 'Authorization': token ? `Bearer ${token}` : '' };
+
+    // 2. Queue the export job — returns 202 JSON { data: { job_id } }
+    let jobId;
     try {
       const params = new URLSearchParams();
-      params.set('date', toDate);
-      params.set('fromDate', fromDate);
-      params.set('toDate', toDate);
-      if (selectedPSIds.size > 0) {
-        params.set('psId', Array.from(selectedPSIds).join(','));
-      }
-      if (selectedFields.size < REPORTS.length) {
-        params.set('tableNames', Array.from(selectedFields).join(','));
-      }
+      params.set('date', dateFrom);
+      if (dateTo && dateTo !== dateFrom) params.set('dateTo', dateTo);
+      if (selectedPSIds.size > 0) params.set('psId', Array.from(selectedPSIds).join(','));
+      if (selectedFields.size < REPORTS.length) params.set('tableNames', Array.from(selectedFields).join(','));
 
-      const token = localStorage.getItem('access_token');
-      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const fetchUrl = `${BASE_URL}/daily-diary/export?${params.toString()}`;
-
-      const response = await fetch(fetchUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
+      const exportRes = await fetch(`${BASE_URL}/daily-diary/export?${params}`, {
+        headers: authHeaders,
         credentials: 'include',
       });
+      const exportJson = await exportRes.json();
+      jobId = exportJson?.data?.job_id;
+      if (!jobId) throw new Error('No job ID returned from server');
+    } catch (err) {
+      console.error('[CompilationUI] Export queue failed:', err);
+      toast.error('Failed to start Daily Diary export.');
+      setExporting(false);
+      return;
+    }
 
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error('[CompilationUI] Export error response:', errText);
-        throw new Error(`Server returned ${response.status}`);
-      }
+    // 3. Poll until READY or FAILED (max ~60 s, polling every 1.5 s)
+    const loadingToastId = toast.loading('Generating Daily Diary Excel…');
+    try {
+      await new Promise((resolve, reject) => {
+        let attempts = 0;
+        const iv = setInterval(async () => {
+          attempts++;
+          try {
+            const statusRes = await fetch(`${BASE_URL}/reports/status/${jobId}`, { headers: authHeaders });
+            const statusJson = await statusRes.json();
+            const status = statusJson?.data?.job?.status || statusJson?.data?.status;
+            if (status === 'READY') { clearInterval(iv); resolve(); }
+            else if (status === 'FAILED' || attempts > 40) {
+              clearInterval(iv);
+              reject(new Error(status === 'FAILED' ? 'Export failed on server' : 'Export timed out'));
+            }
+          } catch (e) { clearInterval(iv); reject(e); }
+        }, 1500);
+      });
+    } catch (err) {
+      toast.dismiss(loadingToastId);
+      console.error('[CompilationUI] Polling failed:', err);
+      toast.error(err.message || 'Failed to generate Daily Diary.');
+      setExporting(false);
+      return;
+    }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
+    toast.dismiss(loadingToastId);
+
+    // 4. Download the completed file
+    try {
+      const dlRes = await fetch(`${BASE_URL}/reports/download/${jobId}`, { headers: authHeaders });
+      if (!dlRes.ok) throw new Error(`Download returned ${dlRes.status}`);
+      const blob = new Blob([await dlRes.arrayBuffer()], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const psSuffix = selectedPSIds.size > 0 
-        ? (selectedPSIds.size === 1 
-            ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}` 
-            : '_Multiple_Stations') 
-        : '_All_Stations';
-      link.setAttribute('download', `Daily_Diary_${fromDate}_to_${toDate}${psSuffix}.xlsx`);
+      const psSuffix = selectedPSIds.size === 0
+        ? '_All_Stations'
+        : selectedPSIds.size === 1
+          ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}`
+          : '_Multiple_Stations';
+      const dateSuffix = dateTo && dateTo !== dateFrom ? `${dateFrom}_to_${dateTo}` : dateFrom;
+      link.download = `Daily_Diary_${dateSuffix}${psSuffix}.xlsx`;
       document.body.appendChild(link);
       link.click();
-      setTimeout(() => {
-        link.remove();
-        window.URL.revokeObjectURL(url);
-      }, 500);
-
-      toast.success('Daily Diary Excel spreadsheet downloaded successfully!');
+      setTimeout(() => { link.remove(); URL.revokeObjectURL(url); }, 500);
+      toast.success('Daily Diary downloaded successfully!');
     } catch (err) {
-      console.error('[CompilationUI] Excel export failed:', err);
-      toast.error('Failed to download Daily Diary Excel spreadsheet.');
+      console.error('[CompilationUI] Download failed:', err);
+      toast.error('Export ready but download failed. Try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -484,13 +514,13 @@ export default function CompilationUI() {
           <div className="w-full sm:w-auto shrink-0 flex flex-col justify-end">
             <button
               onClick={handleCompileTrigger}
-              disabled={createCompMutation.isPending || selectedFields.size === 0}
-              className="w-full sm:w-auto bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0 shadow-md shadow-red-500/20"
+              disabled={exporting || selectedFields.size === 0}
+              className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shrink-0 shadow-md shadow-red-500/20"
             >
-              {createCompMutation.isPending ? (
+              {exporting ? (
                 <>
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white animate-pulse" />
-                  <span>Aggregating Data...</span>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                  <span>Generating…</span>
                 </>
               ) : (
                 <>

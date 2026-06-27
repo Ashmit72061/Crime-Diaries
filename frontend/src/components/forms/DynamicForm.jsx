@@ -90,15 +90,19 @@ const MOCK_FIR_LIST = [
 /**
  * DynamicForm
  *
- * @param {string}   recordType     - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
- * @param {object}   initialValues  - Pre-populated data (from existing record.data)
- * @param {function} onSubmit       - Final submit callback(formValues, activeRecordId)
- * @param {boolean}  readOnly       - Lock all inputs for review
- * @param {string[]} targetFields   - Field keys flagged for correction (send-back)
+ * @param {string}   recordType        - 'CASE' | 'ARREST' | 'PCR_CALL' | 'MISSING' | 'UIDB'
+ * @param {object}   initialValues     - Pre-populated data (from existing record.data or record object)
+ * @param {Array}    initialPersons    - Pre-populated person entries [{person_type, data}]
+ * @param {Array}    initialProperties - Pre-populated property entries [{major_category, ...}]
+ * @param {function} onSubmit          - Final submit callback(formValues, persons, properties, activeRecordId)
+ * @param {boolean}  readOnly          - Lock all inputs for review
+ * @param {string[]} targetFields      - Field keys flagged for correction (send-back)
  */
 export default function DynamicForm({
   recordType,
   initialValues = {},
+  initialPersons = [],
+  initialProperties = [],
   onSubmit,
   readOnly = false,
   targetFields = [],
@@ -1175,7 +1179,7 @@ const renderOccurrenceStep = () => {
     }
 
     if (recordType === 'ARREST' && caseType === 'against_fir') {
-      const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
+      const hasVirtualStep = filteredSchema[0]?.fields?.[0]?.field_key === 'selected_fir';
       if (!hasVirtualStep) {
         const virtualSelectFirStep = {
           title_en: 'Select FIR',
@@ -1191,7 +1195,7 @@ const renderOccurrenceStep = () => {
             }
           ]
         };
-        return [virtualSelectFirStep, ...schema];
+        return [virtualSelectFirStep, ...filteredSchema];
       }
     }
     return schema;
@@ -1323,6 +1327,13 @@ const renderOccurrenceStep = () => {
     }
   }, [savedRecord]);
 
+  /* ── Adjust step bounds if schema changes ───────────────────────────────── */
+  useEffect(() => {
+    if (finalSchema.length > 0 && currentStep >= finalSchema.length) {
+      setCurrentStep(finalSchema.length - 1);
+    }
+  }, [finalSchema.length, currentStep]);
+
   const initialValuesStr = JSON.stringify(initialValues || {});
   const userStr = user ? JSON.stringify({
     id: user.id,
@@ -1353,6 +1364,35 @@ const renderOccurrenceStep = () => {
     prevCaseTypeRef.current = caseType;
     prevInitialIdRef.current = initialValues?.id;
   }, [recordType, caseType, initialValues?.id]);
+  /* ── Seed repeater entries from initialPersons / initialProperties ─────── */
+  useEffect(() => {
+    if (!finalSchema.length) return;
+    const initial = {};
+    // Build section-key → entries map for person sections
+    for (const section of finalSchema) {
+      if (!section.is_repeater) continue;
+      if (section.entity_type === 'person' && section.person_type) {
+        const matching = initialPersons.filter(
+          p => p.person_type === section.person_type
+        );
+        if (matching.length > 0) {
+          initial[section.section] = matching.map(p => ({ ...(p.data || {}) }));
+        }
+      } else if (section.entity_type === 'property') {
+        if (initialProperties.length > 0) {
+          initial[section.section] = initialProperties.map(prop => ({
+            property_major_category: prop.major_category || '',
+            property_minor_category: prop.minor_category || '',
+            property_stolen_recovered: prop.status || 'Stolen',
+            property_details: prop.details || '',
+          }));
+        }
+      }
+    }
+    if (Object.keys(initial).length > 0) {
+      setRepeaterState(prev => ({ ...prev, ...initial }));
+    }
+  }, [initialPersons, initialProperties, finalSchema.length]);
 
   /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
@@ -1425,6 +1465,7 @@ const renderOccurrenceStep = () => {
   const validateSection = useCallback((stepIdx, currentValues = values) => {
     const section = finalSchema[stepIdx];
     if (!section) return {};
+    if (section.is_repeater) return {}; // repeater sections have no flat-field validation
 
     const errs = {};
     section.fields.forEach((field) => {
@@ -1477,8 +1518,8 @@ const renderOccurrenceStep = () => {
   /* ── Validate ALL sections ─────────────────────────────────────────────── */
   const validateAll = useCallback((currentValues = values) => {
     const allErrs = {};
-    finalSchema.forEach((section) => {
-      const errs = validateSection(finalSchema.indexOf(section), currentValues);
+    finalSchema.forEach((section, idx) => {
+      const errs = validateSection(idx, currentValues);
       Object.assign(allErrs, errs);
     });
     return allErrs;
@@ -1650,6 +1691,7 @@ const renderOccurrenceStep = () => {
 
       let firstErrStep = 0;
       finalSchema.forEach((sec, idx) => {
+        if (sec.is_repeater) return;
         const hasErr = sec.fields.some((f) => allErrs[f.field_key]);
         if (hasErr && idx < firstErrStep + 1) firstErrStep = idx;
       });
@@ -1671,7 +1713,25 @@ const renderOccurrenceStep = () => {
     if (finalValues.time_of_occurrence !== undefined) {
       finalValues.occurrence_time = finalValues.time_of_occurrence;
     }
-    onSubmit?.(finalValues, activeRecordIdRef.current);
+
+    // Build persons and properties from repeater sections
+    const persons = [];
+    const properties = [];
+    for (const section of finalSchema) {
+      if (!section.is_repeater) continue;
+      const entries = repeaterState[section.section] || [];
+      if (section.entity_type === 'person' && section.person_type) {
+        for (const entry of entries) {
+          persons.push({ person_type: section.person_type, data: entry });
+        }
+      } else if (section.entity_type === 'property') {
+        for (const entry of entries) {
+          properties.push(entry);
+        }
+      }
+    }
+
+    onSubmit?.(finalValues, persons, properties, activeRecordIdRef.current);
   };
 
   /* ── Manual save draft (button click) ────────────────────────────────────*/
@@ -1765,7 +1825,7 @@ const renderOccurrenceStep = () => {
         </div>
       </div>
 
-      {/* ── Validation summary (top — shown after first submit attempt) ── */}
+      {/* ── Validation summary ── */}
       {Object.keys(errors).length > 0 && Object.values(touched).some(Boolean) && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 shadow-sm space-y-2">
           <div className="flex items-center gap-2 font-bold text-red-700 mb-1">
@@ -1788,7 +1848,7 @@ const renderOccurrenceStep = () => {
         </div>
       )}
 
-      {/* ── Active Section Form ─────────────────────────────────────────── */}
+      {/* ── Active Section (flat field form OR repeater panel) ── */}
       {activeSection && (
         <div className="space-y-3">
           {/* Wrap ONLY the fields in a form so Enter key doesn't auto-submit
@@ -1819,7 +1879,6 @@ const renderOccurrenceStep = () => {
             )}
           </form>
 
-          {/* ── Footer Action Bar (FormToolbar) ─────────────────────────── */}
           <FormToolbar
             currentStep={currentStep}
             totalSteps={finalSchema.length}

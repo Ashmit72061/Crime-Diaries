@@ -214,8 +214,19 @@ const initMockDB = () => {
           linked_fir_dd_time: '10:30',
           act_name: 'BNS',
           sections: '303(2)',
-          arrested_name: 'Suraj Pal',
-          arrested_address: 'Jhuggi No. 54, Yamuna Pushta, Delhi',
+          arrested_first_name: 'Suraj',
+          arrested_last_name: 'Pal',
+          arrested_gender: 'Male',
+          arrested_relation_type: 'Father',
+          arrested_relative_name: 'Ram Pal',
+          arrested_house_no: 'Jhuggi No. 54',
+          arrested_street: 'Yamuna Pushta',
+          arrested_colony: 'Yamuna Pushta',
+          arrested_city_town_village: 'Delhi',
+          arrested_state: 'Delhi',
+          arrested_district: 'Central District',
+          arrested_police_station: 'Parliament Street',
+          arrested_pincode: '110001',
           arrest_date: '2026-06-16',
           arrest_time: '08:45',
           arrest_place: 'Palika Bazaar Entry Gate',
@@ -230,8 +241,8 @@ const initMockDB = () => {
           verifying_officer_rank: 'Head Constable',
           crime_head: 'Theft',
           record_date: '2026-06-16',
-          status: 'judicial custody',
-          recovered_material: 'Stolen leather bag containing Rs. 5,000 cash',
+          status: 'judicial_custody',
+          recovery: 'Stolen leather bag containing Rs. 5,000 cash',
           special_scheme: 'anti snatching',
         },
         revisions: [
@@ -410,9 +421,25 @@ const formSchemas = {
         { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number', label_hi: 'प्राथमिकी (FIR) संख्या', validation_rules: { required: true } },
         { field_key: 'fir_date', field_type: 'DATE', label_en: 'FIR Date', label_hi: 'प्राथमिकी की तिथि', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
-        { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: false } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
+        {
+          field_key: 'status',
+          field_type: 'SELECT',
+          label_en: 'Case Status',
+          label_hi: 'मामले की स्थिति',
+          options: [
+            { value: 'CHARGE SHEET', label_en: 'CHARGE SHEET', label_hi: 'आरोप पत्र (CHARGE SHEET)' },
+            { value: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_en: 'POLICE INVESTIGATION REPORT(PIR-JCL)', label_hi: 'पुलिस जांच रिपोर्ट (PIR-JCL)' },
+            { value: 'UNTRACED', label_en: 'UNTRACED', label_hi: 'अनट्रेस (UNTRACED)' },
+            { value: 'PENDING', label_en: 'PENDING', label_hi: 'लंबित (PENDING)' },
+            { value: 'CANCELLATION', label_en: 'CANCELLATION', label_hi: 'रद्दीकरण (CANCELLATION)' },
+            { value: 'QUASHED', label_en: 'QUASHED', label_hi: 'खारिज (QUASHED)' },
+            { value: 'CLOSURE REPORT', label_en: 'CLOSURE REPORT', label_hi: 'क्लोजर रिपोर्ट (CLOSURE REPORT)' },
+            { value: 'RELEASED U/S 189 BNSS', label_en: 'RELEASED U/S 189 BNSS', label_hi: 'धारा 189 BNSS के तहत रिहा' },
+            { value: 'TRANSFER', label_en: 'TRANSFER', label_hi: 'स्थानांतरण (TRANSFER)' }
+          ],
+          validation_rules: { required: true }
+        },
       ]
     },
     {
@@ -420,8 +447,6 @@ const formSchemas = {
       title_en: 'Incident Details',
       title_hi: 'घटना का विवरण',
       fields: [
-        { field_key: 'occurrence_date', field_type: 'DATE', label_en: 'Date of Occurrence', label_hi: 'घटना की तिथि', validation_rules: { required: true } },
-        { field_key: 'time_of_occurrence', field_type: 'TIME', label_en: 'Time of Occurrence', label_hi: 'घटना का समय', validation_rules: { required: true } },
         { field_key: 'occurrence_place', field_type: 'TEXT', label_en: 'Place of Occurrence', label_hi: 'घटना का स्थान', validation_rules: { required: true } },
         { field_key: 'brief_facts', field_type: 'TEXTAREA', label_en: 'Brief Facts of the Case', label_hi: 'मामले के संक्षिप्त तथ्य', validation_rules: { required: true } },
         {
@@ -446,18 +471,6 @@ const formSchemas = {
       ]
     },
     {
-      section: 'complainant_accused_info',
-      title_en: 'Complainant & Accused Particulars',
-      title_hi: 'शिकायतकर्ता और आरोपी का विवरण',
-      fields: [
-        { field_key: 'complainant_name', field_type: 'TEXT', label_en: 'Complainant Name', label_hi: 'शिकायतकर्ता का नाम', validation_rules: { required: true } },
-        { field_key: 'complainant_address', field_type: 'TEXTAREA', label_en: 'Complainant Address', label_hi: 'शिकायतकर्ता का पता', validation_rules: { required: false } },
-        { field_key: 'accused_name', field_type: 'TEXT', label_en: 'Name of Accused', label_hi: 'आरोपी का नाम', validation_rules: { required: true } },
-        { field_key: 'accused_address', field_type: 'TEXTAREA', label_en: 'Address of Accused', label_hi: 'आरोपी का पता', validation_rules: { required: false } },
-        { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Arrest Date (If arrest made)', label_hi: 'गिरफ्तारी की तिथि (यदि लागू हो)', validation_rules: { required: false } },
-      ]
-    },
-    {
       section: 'investigation_officer',
       title_en: 'Investigating Officer Details',
       title_hi: 'जांच अधिकारी का विवरण',
@@ -468,68 +481,56 @@ const formSchemas = {
       ]
     },
     {
-      section: 'stolen_property',
-      title_en: 'Stolen Property',
-      title_hi: 'चोरी की गई संपत्ति',
+      section: 'property_details',
+      title_en: 'Properties Involved',
+      title_hi: 'शामिल संपत्ति',
+      is_repeater: true,
+      entity_type: 'property',
       fields: [
-        { field_key: 'stolen_property', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
         {
-          field_key: 'property_status',
+          field_key: 'property_major_category',
           field_type: 'SELECT',
-          label_en: 'Property Status',
-          label_hi: 'संपत्ति की स्थिति',
+          label_en: 'Property Major Category',
+          label_hi: 'संपत्ति मुख्य श्रेणी',
+          options: [
+            { value: 'Vehicle', label_en: 'Vehicle', label_hi: 'वाहन' },
+            { value: 'Mobile Phone', label_en: 'Mobile Phone', label_hi: 'मोबाइल फोन' },
+            { value: 'Cash', label_en: 'Cash', label_hi: 'नकद' },
+            { value: 'Jewellery', label_en: 'Gold/Jewellery', label_hi: 'सोना/आभूषण' },
+            { value: 'Electronics', label_en: 'Electronics/Gadgets', label_hi: 'इलेक्ट्रॉनिक्स' },
+            { value: 'Documents', label_en: 'Official/Personal Documents', label_hi: 'दस्तावेज़' },
+            { value: 'Drugs', label_en: 'Drugs/Narcotics', label_hi: 'नशीले पदार्थ' },
+            { value: 'Arms', label_en: 'Arms/Ammunition', label_hi: 'हथियार' },
+            { value: 'Others', label_en: 'Others', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'property_minor_category',
+          field_type: 'TEXT',
+          label_en: 'Property Minor Category',
+          label_hi: 'संपत्ति उप श्रेणी',
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'property_details',
+          field_type: 'TEXTAREA',
+          label_en: 'Property Details / Description',
+          label_hi: 'संपत्ति का विवरण',
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'property_stolen_recovered',
+          field_type: 'SELECT',
+          label_en: 'Property Stolen / Recovered',
+          label_hi: 'संपत्ति चोरी / बरामद स्थिति',
           options: [
             { value: 'Stolen', label_en: 'Stolen', label_hi: 'चोरी हुई' },
-            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
-          ],
-          validation_rules: { required: true }
-        },
-        {
-          field_key: 'status',
-          field_type: 'SELECT',
-          label_en: 'Case Status',
-          label_hi: 'मामले की स्थिति',
-          options: [
-            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
-            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
-            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
-          ],
-          validation_rules: { required: true }
-        },
-        { field_key: 'remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
-      ]
-    },
-    {
-      section: 'recovered_property',
-      title_en: 'Recovered Property',
-      title_hi: 'बरामद संपत्ति',
-      fields: [
-        { field_key: 'property_description', field_type: 'TEXTAREA', label_en: 'Property Description', label_hi: 'संपत्ति का विवरण', validation_rules: { required: false } },
-        { field_key: 'recovered_property', field_type: 'TEXTAREA', label_en: 'Recovery Property', label_hi: 'बरामद की गई संपत्ति', validation_rules: { required: false } },
-        {
-          field_key: 'recovered_property_status',
-          field_type: 'SELECT',
-          label_en: 'Property Status',
-          label_hi: 'संपत्ति की स्थिति',
-          options: [
             { value: 'Recovered', label_en: 'Recovered', label_hi: 'बरामद' },
-            { value: 'NA', label_en: 'Not Applicable', label_hi: 'लागू नहीं' }
+            { value: 'Involved', label_en: 'Involved', label_hi: 'शामिल' }
           ],
           validation_rules: { required: true }
-        },
-        {
-          field_key: 'recovered_case_status',
-          field_type: 'SELECT',
-          label_en: 'Case Status',
-          label_hi: 'मामले की स्थिति',
-          options: [
-            { value: 'Open', label_en: 'Open', label_hi: 'लंबित' },
-            { value: 'Chargesheeted', label_en: 'Chargesheeted', label_hi: 'चार्जशीट' },
-            { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
-          ],
-          validation_rules: { required: true }
-        },
-        { field_key: 'recovered_remarks', field_type: 'TEXTAREA', label_en: 'Remarks', label_hi: 'टिप्पणियां', validation_rules: { required: false } }
+        }
       ]
     },
     {
@@ -558,15 +559,12 @@ const formSchemas = {
       ]
     },
     {
-      section: 'arrestee_info',
-      title_en: 'Arrested Person Particulars',
-      title_hi: 'गिरफ्तार व्यक्ति का विवरण',
+      section: 'incident_details',
+      title_en: 'Incident Details',
+      title_hi: 'घटना का विवरण',
       fields: [
-        { field_key: 'arrested_name', field_type: 'TEXT', label_en: 'Name of Arrested/Detained Person', label_hi: 'गिरफ्तार/हिरासत में लिए गए व्यक्ति का नाम', validation_rules: { required: true } },
-        { field_key: 'arrested_address', field_type: 'TEXTAREA', label_en: 'Address of Arrested Person', label_hi: 'गिरफ्तार व्यक्ति का पता', validation_rules: { required: true } },
-        { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Date of Arrest', label_hi: 'गिरफ्तारी की तिथि', validation_rules: { required: true } },
-        { field_key: 'arrest_time', field_type: 'TIME', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
-        { field_key: 'arrest_place', field_type: 'TEXT', label_en: 'Place of Arrest', label_hi: 'गिरफ्तारी का स्थान', validation_rules: { required: true } },
+        { field_key: 'act_name', field_type: 'TEXT', label_en: 'Act Name', label_hi: 'अधिनियम का नाम', validation_rules: { required: true } },
+        { field_key: 'sections', field_type: 'TEXT', label_en: 'Sections Code', label_hi: 'धारा संख्या(एँ)', validation_rules: { required: true } },
       ]
     },
     {
@@ -574,8 +572,6 @@ const formSchemas = {
       title_en: 'Offence Classification',
       title_hi: 'अपराध वर्गीकरण',
       fields: [
-        { field_key: 'act_name', field_type: 'TEXT', label_en: 'Act Name', label_hi: 'अधिनियम का नाम', validation_rules: { required: true } },
-        { field_key: 'sections', field_type: 'TEXT', label_en: 'Sections Code', label_hi: 'धारा संख्या(एँ)', validation_rules: { required: true } },
         {
           field_key: 'crime_head',
           field_type: 'SELECT',
@@ -592,6 +588,161 @@ const formSchemas = {
           ],
           validation_rules: { required: true }
         },
+      ]
+    },
+    {
+      section: 'arrestee_info',
+      title_en: 'Arrest Event Details',
+      title_hi: 'गिरफ्तारी घटना का विवरण',
+      fields: [
+        { field_key: 'arrest_date', field_type: 'DATE', label_en: 'Date of Arrest', label_hi: 'गिरफ्तारी की तिथि', validation_rules: { required: true } },
+        { field_key: 'arrest_time', field_type: 'TIME', label_en: 'Time of Arrest', label_hi: 'गिरफ्तारी का समय', validation_rules: { required: true } },
+        { field_key: 'arrest_place', field_type: 'TEXT', label_en: 'Place of Arrest', label_hi: 'गिरफ्तारी का स्थान', validation_rules: { required: true } },
+      ]
+    },
+    {
+      section: 'arrested_personal_info',
+      title_en: 'Arrested Person Personal Information',
+      title_hi: 'गिरफ्तार व्यक्ति की व्यक्तिगत जानकारी',
+      fields: [
+        { field_key: 'arrested_npr', field_type: 'TEXT', label_en: 'Arrested Person NPR No.', label_hi: 'एनपीआर संख्या', validation_rules: { required: false } },
+        { field_key: 'arrested_first_name', field_type: 'TEXT', label_en: 'First Name', label_hi: 'पहला नाम', validation_rules: { required: true } },
+        { field_key: 'arrested_middle_name', field_type: 'TEXT', label_en: 'Middle Name', label_hi: 'मध्यम नाम', validation_rules: { required: false } },
+        { field_key: 'arrested_last_name', field_type: 'TEXT', label_en: 'Last Name', label_hi: 'अंतिम नाम', validation_rules: { required: false } },
+        {
+          field_key: 'arrested_gender',
+          field_type: 'SELECT',
+          label_en: 'Gender',
+          label_hi: 'लिंग',
+          options: [
+            { value: 'Male', label_en: 'Male', label_hi: 'पुरुष' },
+            { value: 'Female', label_en: 'Female', label_hi: 'महिला' },
+            { value: 'Transgender', label_en: 'Transgender', label_hi: 'ट्रांसजेंडर' },
+            { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'arrested_relation_type',
+          field_type: 'SELECT',
+          label_en: 'Relation Type',
+          label_hi: 'संबंध का प्रकार',
+          options: [
+            { value: 'Father', label_en: 'Father', label_hi: 'पिता' },
+            { value: 'Mother', label_en: 'Mother', label_hi: 'माता' },
+            { value: 'Husband', label_en: 'Husband', label_hi: 'पति' },
+            { value: 'Wife', label_en: 'Wife', label_hi: 'पत्नी' },
+            { value: 'Guardian', label_en: 'Guardian', label_hi: 'अभिभावक' },
+            { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: false }
+        },
+        { field_key: 'arrested_relative_name', field_type: 'TEXT', label_en: 'Relative Name', label_hi: 'रिश्तेदार का नाम', validation_rules: { required: false } },
+        { field_key: 'arrested_mobile', field_type: 'TEXT', label_en: 'Mobile No.', label_hi: 'मोबाइल नंबर', validation_rules: { required: false } },
+        { field_key: 'arrested_dob', field_type: 'DATE', label_en: 'Date of Birth', label_hi: 'जन्म तिथि', validation_rules: { required: false } },
+        { field_key: 'arrested_age_year', field_type: 'NUMBER', label_en: 'Age (Years)', label_hi: 'आयु (वर्ष)', validation_rules: { required: false } },
+        { field_key: 'arrested_birth_year', field_type: 'NUMBER', label_en: 'Year of Birth', label_hi: 'जन्म का वर्ष', validation_rules: { required: false } },
+      ]
+    },
+    {
+      section: 'arrested_address',
+      title_en: 'Arrested Person Address',
+      title_hi: 'गिरफ्तार व्यक्ति का पता',
+      fields: [
+        { field_key: 'arrested_house_no', field_type: 'TEXT', label_en: 'House No.', label_hi: 'मकान संख्या', validation_rules: { required: false } },
+        { field_key: 'arrested_street', field_type: 'TEXT', label_en: 'Street', label_hi: 'गली / सड़क', validation_rules: { required: false } },
+        { field_key: 'arrested_colony', field_type: 'TEXT', label_en: 'Colony', label_hi: 'कॉलोनी', validation_rules: { required: false } },
+        { field_key: 'arrested_city_town_village', field_type: 'TEXT', label_en: 'Village / City / Town', label_hi: 'गांव / शहर / नगर', validation_rules: { required: false } },
+        { field_key: 'arrested_tehsil_block_mandal', field_type: 'TEXT', label_en: 'Tehsil / Block / Mandal', label_hi: 'तहसील / ब्लॉक / मंडल', validation_rules: { required: false } },
+        { field_key: 'arrested_present_address', field_type: 'TEXTAREA', label_en: 'Full Present Address', label_hi: 'वर्तमान पता', validation_rules: { required: false } },
+        {
+          field_key: 'arrested_country',
+          field_type: 'SELECT',
+          label_en: 'Nationality',
+          label_hi: 'राष्ट्रीयता',
+          options: [
+            { value: 'Indian', label_en: 'Indian', label_hi: 'भारतीय' },
+            { value: 'Other', label_en: 'Other', label_hi: 'अन्य' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'arrested_state',
+          field_type: 'SELECT',
+          label_en: 'State',
+          label_hi: 'राज्य',
+          options: [
+            { value: 'Delhi', label_en: 'Delhi', label_hi: 'दिल्ली' },
+            { value: 'Haryana', label_en: 'Haryana', label_hi: 'हरियाणा' },
+            { value: 'Uttar Pradesh', label_en: 'Uttar Pradesh', label_hi: 'उत्तर प्रदेश' },
+            { value: 'Punjab', label_en: 'Punjab', label_hi: 'पंजाब' },
+            { value: 'Rajasthan', label_en: 'Rajasthan', label_hi: 'राजस्थान' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'arrested_district',
+          field_type: 'SELECT',
+          label_en: 'District',
+          label_hi: 'जिला',
+          options: [
+            { value: 'New Delhi District (NDD)', label_en: 'New Delhi District (NDD)', label_hi: 'नई दिल्ली जिला' },
+            { value: 'Central District', label_en: 'Central District', label_hi: 'मध्य जिला' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'arrested_police_station',
+          field_type: 'SELECT',
+          label_en: 'Police Station',
+          label_hi: 'पुलिस स्टेशन (PS)',
+          options: [
+            { value: 'Parliament Street', label_en: 'Parliament Street', label_hi: 'संसद मार्ग' }
+          ],
+          validation_rules: { required: false }
+        },
+        { field_key: 'arrested_pincode', field_type: 'TEXT', label_en: 'Pin Code', label_hi: 'पिन कोड', validation_rules: { required: false } },
+      ]
+    },
+    {
+      section: 'custody_status',
+      title_en: 'Custody Status & Recoveries',
+      title_hi: 'हिरासत की स्थिति और बरामदगी',
+      fields: [
+        {
+          field_key: 'status',
+          field_type: 'SELECT',
+          label_en: 'Arrestee Status',
+          label_hi: 'बंदी की स्थिति',
+          options: [
+            { value: 'police_custody', label_en: 'Police Custody', label_hi: 'पुलिस हिरासत' },
+            { value: 'bail', label_en: 'Released on Bail', label_hi: 'जमानत पर रिहा' },
+            { value: 'judicial_custody', label_en: 'Sent to Judicial Custody', label_hi: 'न्यायिक हिरासत में' },
+            { value: 'released', label_en: 'Released', label_hi: 'रिहा' },
+            { value: 'others', label_en: 'Others / Discharged', label_hi: 'अन्य / आरोपमुक्त' }
+          ],
+          validation_rules: { required: true }
+        },
+        {
+          field_key: 'other_status_reason',
+          field_type: 'TEXT',
+          label_en: 'Reason for Other Status',
+          label_hi: 'अन्य स्थिति का कारण',
+          validation_rules: { required: false },
+          show_when: { field: 'status', value: 'others' }
+        },
+        { field_key: 'recovery', field_type: 'TEXTAREA', label_en: 'Recovered Material Items', label_hi: 'बरामद की गई सामग्री', validation_rules: { required: false } },
+      ]
+    },
+    {
+      section: 'investigation_officer',
+      title_en: 'Investigating Officer Details',
+      title_hi: 'जांच अधिकारी का विवरण',
+      fields: [
+        { field_key: 'io_name', field_type: 'TEXT', label_en: 'IO Name', label_hi: 'जांच अधिकारी का नाम', validation_rules: { required: true } },
+        { field_key: 'io_rank', field_type: 'TEXT', label_en: 'IO Rank', label_hi: 'जांच अधिकारी का पद', validation_rules: { required: false } },
+        { field_key: 'io_pis', field_type: 'TEXT', label_en: 'IO PIS No.', label_hi: 'जांच अधिकारी का पीआईएस नंबर', validation_rules: { required: false } },
+        { field_key: 'io_mobile', field_type: 'PHONE', label_en: 'IO Mobile Number', label_hi: 'जांच अधिकारी का मोबाइल नंबर', validation_rules: { required: true } },
       ]
     },
     {
@@ -651,51 +802,6 @@ const formSchemas = {
       ]
     },
     {
-      section: 'custody_status',
-      title_en: 'Custody Status & Recoveries',
-      title_hi: 'हिरासत की स्थिति और बरामदगी',
-      fields: [
-        {
-          field_key: 'status',
-          field_type: 'SELECT',
-          label_en: 'Arrestee Status',
-          label_hi: 'बंदी की स्थिति',
-          options: [
-            { value: 'bail', label_en: 'Released on Bail', label_hi: 'जमानत पर रिहा' },
-            { value: 'judicial custody', label_en: 'Sent to Judicial Custody', label_hi: 'न्यायिक हिरासत में' },
-            { value: 'police custody', label_en: 'Under Police Custody Remand', label_hi: 'पुलिस रिमांड में' },
-            { value: 'others', label_en: 'Others / Discharged', label_hi: 'अन्य / आरोपमुक्त' }
-          ],
-          validation_rules: { required: true }
-        },
-        {
-          field_key: 'other_status_reason',
-          field_type: 'TEXT',
-          label_en: 'Reason for Other Status',
-          label_hi: 'अन्य स्थिति का कारण',
-          validation_rules: { required: false },
-          show_when: { field: 'status', value: 'others' }
-        },
-        { field_key: 'recovered_material', field_type: 'TEXTAREA', label_en: 'Recovered Material Items', label_hi: 'बरामद की गई सामग्री', validation_rules: { required: false } },
-        {
-          field_key: 'special_scheme',
-          field_type: 'SELECT',
-          label_en: 'Arrest Scoped in Special Scheme',
-          label_hi: 'विशेष योजना के अंतर्गत गिरफ्तारी',
-          options: [
-            { value: 'integrated patrolling', label_en: 'Integrated Patrolling Beat', label_hi: 'एकीकृत गश्त बीट' },
-            { value: 'group patrolling', label_en: 'Group Patrolling', label_hi: 'समूह गश्त' },
-            { value: 'cycle patrolling', label_en: 'Cycle Patrolling Beat', label_hi: 'साइकिल गश्त' },
-            { value: 'anti snatching', label_en: 'Anti-Snatching Operations squad', label_hi: 'झपटमारी विरोधी अभियान दस्ता' },
-            { value: 'PRAHARI', label_en: 'PRAHARI scheme', label_hi: 'प्रहरी योजना' },
-            { value: 'Eye and ear scheme', label_en: 'Eye and Ear scheme', label_hi: 'आंख और कान योजना' },
-            { value: 'None', label_en: 'Not Under Special Scheme', label_hi: 'किसी विशेष योजना के अंतर्गत नहीं' }
-          ],
-          validation_rules: { required: false }
-        },
-      ]
-    },
-    {
       section: 'informant_contact',
       title_en: 'Arrest Informant/Relative Info',
       title_hi: 'बंदी के संबंधी/सूचना प्राप्तकर्ता का विवरण',
@@ -713,8 +819,6 @@ const formSchemas = {
       title_hi: 'सामान्य डायरी और कॉल लॉग',
       fields: [
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
-        { field_key: 'gd_date', field_type: 'DATE', label_en: 'GD Entry Date', label_hi: 'जी.डी. प्रविष्टि तिथि', validation_rules: { required: true } },
-        { field_key: 'gd_time', field_type: 'TIME', label_en: 'GD Entry Time', label_hi: 'जी.डी. प्रविष्टि समय', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
       ]
     },
@@ -917,6 +1021,34 @@ const formSchemas = {
         { field_key: 'complexion', field_type: 'TEXT', label_en: 'Complexion', label_hi: 'रंग', validation_rules: { required: false } },
         { field_key: 'identificationMarks', field_type: 'TEXT', label_en: 'Identification Marks', label_hi: 'पहचान चिन्ह', validation_rules: { required: false } },
         { field_key: 'description', field_type: 'TEXTAREA', label_en: 'Detailed Description of Apparel & Condition', label_hi: 'परिधान और स्थिति का विस्तृत विवरण', validation_rules: { required: false } },
+      ]
+    },
+    {
+      section: 'inquest_details',
+      title_en: 'Inquest Details',
+      title_hi: 'इन्क्वेस्ट विवरण',
+      fields: [
+        {
+          field_key: 'cause_of_death',
+          field_type: 'SELECT',
+          label_en: 'Cause of Death',
+          label_hi: 'मृत्यु का कारण',
+          options: [
+            { value: 'Accidental', label_en: 'Accidental', label_hi: 'दुर्घटना' },
+            { value: 'Natural', label_en: 'Natural', label_hi: 'प्राकृतिक' },
+            { value: 'Suicide', label_en: 'Suicide', label_hi: 'आत्महत्या' },
+            { value: 'Murder', label_en: 'Murder', label_hi: 'हत्या' },
+            { value: 'Unknown', label_en: 'Unknown', label_hi: 'अज्ञात' }
+          ],
+          validation_rules: { required: false }
+        },
+        {
+          field_key: 'deceased_father_husband_name',
+          field_type: 'TEXT',
+          label_en: "Deceased's Father / Husband Name",
+          label_hi: 'मृतक के पिता / पति का नाम',
+          validation_rules: { required: false }
+        }
       ]
     },
     {

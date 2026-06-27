@@ -15,8 +15,7 @@ import {
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 
-import ReportBuilder from './ReportBuilder';
-import useAuthStore from '../../store/authStore.js';
+import CustomExcelBuilder from './CustomExcelBuilder';
 
 export const ReportsPage = () => {
   const { t } = useTranslation();
@@ -335,8 +334,8 @@ export const ReportsPage = () => {
           },
           {
             key: '2',
-            label: 'Customize Report',
-            children: <ReportBuilder />
+            label: 'Custom Excel Export',
+            children: <CustomExcelBuilder />
           }
         ]}
       />
