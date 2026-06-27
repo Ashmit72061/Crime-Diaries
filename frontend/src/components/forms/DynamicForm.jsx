@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertTriangle, AlertCircle, Search, Calendar, User, Check, Database, ChevronLeft, ChevronRight, Plus, X, Bookmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useFormSchema } from '../../hooks/useFormSchema.js';
@@ -339,6 +339,7 @@ export default function DynamicForm({
 
                             if (row.isBackend) {
                               const matched = (casesData || []).find(c => {
+                                if (!c) return false;
                                 const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
                                 return firNo === row.fir_no;
                               });
@@ -542,10 +543,560 @@ export default function DynamicForm({
             </div>
           </div>
         )}
-
       </div>
     );
   };
+
+  const renderArrestGeneralInfoStep = () => {
+    const isWritten = values.type_of_information !== 'Oral';
+    const acts = values.act_name ? values.act_name.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const secs = values.sections ? values.sections.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const maxLen = Math.max(acts.length, secs.length);
+
+    const chosenActObj = actsSectionsRegistry.find(item => item.act === newAct);
+    const availableSections = chosenActObj ? chosenActObj.sections : [];
+
+    const renderReadOnlyRow = (label, val, isLast = false) => (
+      <React.Fragment>
+        <div className={`bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center min-h-[40px] ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          {label}
+        </div>
+        <div className={`px-3 py-1 bg-white text-slate-700 text-[12px] flex items-center min-h-[40px] ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          {val || '—'}
+        </div>
+      </React.Fragment>
+    );
+
+    return (
+      <div className="space-y-4">
+        {/* Top card fields */}
+        <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'सामान्य जानकारी' : 'General Information'}
+          </legend>
+
+          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+            {renderReadOnlyRow(lang === 'hi' ? 'रिकॉर्ड यूआईडी (UID)' : 'Record UID', values.uid || 'NEW_DRAFT_PENDING')}
+            {renderReadOnlyRow(lang === 'hi' ? 'जिला' : 'District', values.district || user?.district)}
+            {renderReadOnlyRow(lang === 'hi' ? 'थाना' : 'Police Station', values.police_station || user?.police_station)}
+            {renderReadOnlyRow(lang === 'hi' ? 'प्रस्तुति स्थिति' : 'Submission Status', values.status || 'DRAFT')}
+            
+            {/* Case Type field */}
+            <React.Fragment>
+              <div className="bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center border-b border-[#c7d8ea] min-h-[40px]">
+                {lang === 'hi' ? 'मामले का प्रकार' : 'CASE TYPE'}
+              </div>
+              <div className="px-3 py-1 bg-white flex items-center border-b border-[#c7d8ea] min-h-[40px]">
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  value={values.case_type || ''}
+                  onChange={(e) => handleChange('case_type', e.target.value)}
+                  className="w-full max-w-md h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
+                />
+              </div>
+            </React.Fragment>
+
+            {/* GD Number, Date & Time */}
+            <React.Fragment>
+              <div className="bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center min-h-[40px]">
+                {lang === 'hi' ? 'जीडी नंबर, दिनांक और समय *' : 'GD Number, Date & Time *'}
+              </div>
+              <div className="px-3 py-1 bg-white flex items-center gap-2 min-h-[40px] relative">
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  value={values.gd_no || ''}
+                  onChange={(e) => handleChange('gd_no', e.target.value)}
+                  className="w-24 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
+                  placeholder="GD Number"
+                />
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  value={values.gd_date_time || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    handleChange('gd_date_time', val);
+                    const parts = val.split(' ');
+                    if (parts[0]) handleChange('gd_date', parts[0]);
+                    if (parts[1]) handleChange('gd_time', parts[1]);
+                  }}
+                  className="w-48 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
+                  placeholder="DD/MM/YYYY HH:MM"
+                />
+                <button 
+                  ref={searchBtnRef}
+                  type="button" 
+                  className="p-1 text-[#0f52ba] hover:text-blue-700 bg-transparent border-none cursor-pointer flex items-center justify-center"
+                  title="Pick Date & Time"
+                  onClick={() => {
+                    if (!showDatePicker && values.gd_date_time) {
+                      const parts = values.gd_date_time.split(' ');
+                      if (parts[0]) {
+                        const dateParts = parts[0].split('/');
+                        if (dateParts.length === 3) {
+                          setPickerDay(parseInt(dateParts[0], 10) || new Date().getDate());
+                          setPickerMonth((parseInt(dateParts[1], 10) || 1) - 1);
+                          setPickerYear(parseInt(dateParts[2], 10) || new Date().getFullYear());
+                        }
+                      }
+                      if (parts[1]) {
+                        const timeParts = parts[1].split(':');
+                        setPickerHour(parseInt(timeParts[0], 10) || 0);
+                        setPickerMinute(parseInt(timeParts[1], 10) || 0);
+                      }
+                    } else if (!showDatePicker) {
+                      const now = new Date();
+                      setPickerDay(now.getDate());
+                      setPickerMonth(now.getMonth());
+                      setPickerYear(now.getFullYear());
+                      setPickerHour(now.getHours());
+                      setPickerMinute(now.getMinutes());
+                    }
+                    setShowDatePicker(prev => !prev);
+                  }}
+                >
+                  <Search size={15} className="stroke-[2.5]" />
+                </button>
+
+                {/* Datepicker Popup */}
+                {showDatePicker && (() => {
+                  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                  const DAY_LABELS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+                  const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+                  const firstDayOfWeek = new Date(pickerYear, pickerMonth, 1).getDay();
+                  const blanks = Array.from({ length: firstDayOfWeek }, (_, i) => i);
+                  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+                  const handlePrevMonth = () => {
+                    if (pickerMonth === 0) { setPickerMonth(11); setPickerYear(y => y - 1); }
+                    else setPickerMonth(m => m - 1);
+                  };
+                  const handleNextMonth = () => {
+                    if (pickerMonth === 11) { setPickerMonth(0); setPickerYear(y => y + 1); }
+                    else setPickerMonth(m => m + 1);
+                  };
+                  const handleToday = () => {
+                    const now = new Date();
+                    setPickerDay(now.getDate()); setPickerMonth(now.getMonth()); setPickerYear(now.getFullYear());
+                    setPickerHour(now.getHours()); setPickerMinute(now.getMinutes());
+                  };
+                  const handleDone = () => {
+                    const dd = String(pickerDay).padStart(2, '0');
+                    const mm = String(pickerMonth + 1).padStart(2, '0');
+                    const hh = String(pickerHour).padStart(2, '0');
+                    const mi = String(pickerMinute).padStart(2, '0');
+                    const formatted = `${dd}/${mm}/${pickerYear} ${hh}:${mi}`;
+                    handleChange('gd_date_time', formatted);
+                    handleChange('gd_date', `${dd}/${mm}/${pickerYear}`);
+                    handleChange('gd_time', `${hh}:${mi}`);
+                    setShowDatePicker(false);
+                  };
+
+                  return (
+                    <div
+                      ref={datePickerRef}
+                      className="absolute top-full left-0 mt-1 bg-white border border-[#7a9cc5] shadow-2xl rounded-lg p-3 z-50 flex gap-4 text-slate-800 select-none"
+                      style={{ width: 340 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <button type="button" onClick={handlePrevMonth} className="p-0.5 rounded hover:bg-slate-100 text-[#0d2a4a] cursor-pointer bg-transparent border-none">
+                            <ChevronLeft size={16} />
+                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <select
+                              value={pickerMonth}
+                              onChange={(e) => setPickerMonth(Number(e.target.value))}
+                              className="text-[11px] font-bold text-[#0d2a4a] border border-[#7a9cc5] rounded px-1.5 py-0.5 bg-white cursor-pointer outline-none"
+                            >
+                              {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                            </select>
+                            <select
+                              value={pickerYear}
+                              onChange={(e) => setPickerYear(Number(e.target.value))}
+                              className="text-[11px] font-bold text-[#0d2a4a] border border-[#7a9cc5] rounded px-1.5 py-0.5 bg-white cursor-pointer outline-none"
+                            >
+                              {Array.from({ length: 21 }, (_, i) => 2015 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+                          <button type="button" onClick={handleNextMonth} className="p-0.5 rounded hover:bg-slate-100 text-[#0d2a4a] cursor-pointer bg-transparent border-none">
+                            <ChevronRight size={16} />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-0 text-center mb-1">
+                          {DAY_LABELS.map(d => (
+                            <span key={d} className="text-[10px] font-bold text-slate-500 py-0.5">{d}</span>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-0 text-center">
+                          {blanks.map(b => <span key={`b-${b}`} />)}
+                          {days.map(d => (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => setPickerDay(d)}
+                              className={`text-[11px] py-1 rounded cursor-pointer border-none transition-colors ${
+                                d === pickerDay
+                                  ? 'bg-[#0f52ba] text-white font-bold'
+                                  : 'bg-transparent text-slate-700 hover:bg-blue-50'
+                              }`}
+                            >
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
+                          <button type="button" onClick={handleToday} className="text-[10px] font-bold text-[#0f52ba] hover:underline cursor-pointer bg-transparent border-none">
+                            Today
+                          </button>
+                          <button type="button" onClick={handleDone} className="text-[10px] font-bold bg-[#ea580c] hover:bg-[#c2410c] text-white px-3 py-1 rounded cursor-pointer border-none transition-colors shadow-sm">
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-2 border-l border-slate-200 pl-3" style={{ minWidth: 80 }}>
+                        <div className="bg-[#f0f4f8] border border-[#7a9cc5] rounded px-2.5 py-1 text-center">
+                          <span className="text-[12px] font-bold text-[#0d2a4a] font-mono">
+                            {String(pickerHour).padStart(2, '0')}:{String(pickerMinute).padStart(2, '0')}
+                          </span>
+                        </div>
+                        <div className="flex gap-3 items-start" style={{ height: 150 }}>
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-[9px] text-slate-500 font-bold">Hr</span>
+                            <input
+                              type="range"
+                              min={0} max={23}
+                              value={pickerHour}
+                              onChange={(e) => setPickerHour(Number(e.target.value))}
+                              className="datetime-picker-vertical-slider"
+                            />
+                          </div>
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-[9px] text-slate-500 font-bold">Min</span>
+                            <input
+                              type="range"
+                              min={0} max={59}
+                              value={pickerMinute}
+                              onChange={(e) => setPickerMinute(Number(e.target.value))}
+                              className="datetime-picker-vertical-slider"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </React.Fragment>
+          </div>
+        </fieldset>
+
+        {/* Acts, Sections, Major/Minor, Local Head Panels */}
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Left: Acts & Sections */}
+          <fieldset className="flex-1 border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20 min-h-[140px]">
+            <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
+              Acts & Sections
+            </legend>
+
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[#0d2a4a] text-[10px] font-bold opacity-60">Registered List</span>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddRow(true)}
+                  className="bg-[#ea580c] hover:bg-[#c2410c] text-white text-[10px] font-bold px-2 py-0.5 rounded transition shadow-sm flex items-center gap-1 cursor-pointer"
+                >
+                  + Add Acts & Section
+                </button>
+              )}
+            </div>
+
+            <div className="w-full overflow-x-auto">
+              <table className="w-full border-collapse text-[11px]">
+                <thead>
+                  <tr className="bg-[#d0e0f8] text-[#0d2a4a] border-b border-[#7a9cc5]">
+                    <th className="px-2 py-1 text-left font-bold w-12 border-r border-[#7a9cc5]">S.No.</th>
+                    <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Acts</th>
+                    <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Sections</th>
+                    {!readOnly && <th className="px-2 py-1 text-center font-bold w-16">Delete</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {maxLen === 0 ? (
+                    <tr>
+                      <td colSpan={readOnly ? 3 : 4} className="px-2 py-3 text-center text-gray-500 italic">
+                        No Acts & Sections added yet. Click "+ Add Acts & Section" to add.
+                      </td>
+                    </tr>
+                  ) : (
+                    Array.from({ length: maxLen }).map((_, i) => (
+                      <tr key={i} className="border-b border-[#7a9cc5] bg-white">
+                        <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a] font-mono text-center">
+                          {i + 1}
+                        </td>
+                        <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">
+                          {acts[i] || ''}
+                        </td>
+                        <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">
+                          {secs[i] || ''}
+                        </td>
+                        {!readOnly && (
+                          <td className="px-2 py-1 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextActs = acts.filter((_, idx) => idx !== i);
+                                const nextSecs = secs.filter((_, idx) => idx !== i);
+                                handleChange('act_name', nextActs.join(', '));
+                                handleChange('sections', nextSecs.join(', '));
+                              }}
+                              className="text-red-500 hover:text-red-700 font-bold bg-transparent border-none cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </fieldset>
+
+          {/* Right: Major/Minor / Local Head */}
+          <div className="flex-1 flex flex-col gap-3">
+            <fieldset className="border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20 min-h-[140px] flex-1">
+              <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
+                Major / Minor
+              </legend>
+
+              <div className="flex flex-col gap-2 text-[11px]">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[#0d2a4a] font-bold">Major Head</label>
+                  <select
+                    disabled={readOnly}
+                    value={selectedMajorHead}
+                    onChange={(e) => {
+                      setSelectedMajorHead(e.target.value);
+                      setSelectedMinorHead('');
+                    }}
+                    className="w-full h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="">------Select------</option>
+                    {getMajorHeadOptions().map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[#0d2a4a] font-bold">Minor Head</label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      disabled={readOnly || !selectedMajorHead}
+                      value={selectedMinorHead}
+                      onChange={(e) => setSelectedMinorHead(e.target.value)}
+                      className="flex-1 h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                    >
+                      <option value="">------Select------</option>
+                      {getMinorHeadOptions().map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en}
+                        </option>
+                      ))}
+                    </select>
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        onClick={handleAddMajorMinorRow}
+                        disabled={!selectedMajorHead || !selectedMinorHead}
+                        className="bg-[#ea580c] hover:bg-[#c2410c] disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold px-2 py-0.5 rounded transition shadow-sm flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      >
+                        + Add
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="w-full overflow-x-auto mt-1">
+                  <table className="w-full border-collapse text-[11px]">
+                    <thead>
+                      <tr className="bg-[#d0e0f8] text-[#0d2a4a] border-b border-[#7a9cc5]">
+                        <th className="px-2 py-1 text-left font-bold w-10 border-r border-[#7a9cc5]">S.No.</th>
+                        <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Major Head</th>
+                        <th className="px-2 py-1 text-left font-bold border-r border-[#7a9cc5]">Minor Head</th>
+                        {!readOnly && <th className="px-2 py-1 text-center font-bold w-14">Delete</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {majorMinorRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={readOnly ? 3 : 4} className="px-2 py-2 text-center text-gray-500 italic">
+                            No entries added yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        majorMinorRows.map((row, idx) => (
+                          <tr key={idx} className="border-b border-[#7a9cc5] bg-white">
+                            <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a] font-mono text-center">{idx + 1}</td>
+                            <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">{row.majorHead}</td>
+                            <td className="px-2 py-1 border-r border-[#7a9cc5] text-[#0d2a4a]">{row.minorHead}</td>
+                            {!readOnly && (
+                              <td className="px-2 py-1 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMajorMinorRow(idx)}
+                                  className="text-red-600 hover:text-red-800 text-[10px] font-bold underline cursor-pointer"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset className="border border-[#7a9cc5] rounded px-3 py-2 bg-[#f0f4f8]/20 flex-shrink-0">
+              <legend className="text-[#0d2a4a] text-[11px] font-bold px-1.5 uppercase tracking-wide">
+                Local Head
+              </legend>
+              <div className="grid grid-cols-[80px_1fr] gap-x-2 text-[11px] items-center">
+                <span className="text-[#0d2a4a] font-bold">Local Head</span>
+                <select
+                  disabled={readOnly}
+                  value={values.local_head || ''}
+                  onChange={(e) => handleChange('local_head', e.target.value)}
+                  className="w-full h-6 px-1 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="">------Select------</option>
+                  {getLocalHeadOptions().map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {lang === 'hi' ? (opt.label_hi || opt.label_en) : opt.label_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        {/* Modal for adding Act & Section */}
+        {showAddRow && (
+          <>
+            <div 
+              className="fixed inset-0 z-40 bg-black/40" 
+              onClick={() => {
+                setNewAct('');
+                setNewSection('');
+                setShowAddRow(false);
+              }}
+            />
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] bg-white border border-[#7a9cc5] rounded shadow-2xl z-50 p-4 flex flex-col justify-between text-slate-800">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-xs font-bold text-[#0d2a4a] uppercase tracking-wider">
+                    Add Acts & Section
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewAct('');
+                      setNewSection('');
+                      setShowAddRow(false);
+                    }}
+                    className="text-slate-400 hover:text-slate-600 text-sm font-bold bg-transparent border-none cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1 text-[11px] text-left">
+                    <label className="text-[#0d2a4a] font-bold">Act / Law Name</label>
+                    <select
+                      value={newAct}
+                      onChange={(e) => {
+                        setNewAct(e.target.value);
+                        setNewSection('');
+                      }}
+                      className="w-full h-8 px-2 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-[#ea580c] cursor-pointer"
+                      autoFocus
+                    >
+                      <option value="">----select----</option>
+                      {actsSectionsRegistry.map((item) => (
+                        <option key={item.act} value={item.act}>
+                          {item.act}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1 text-[11px] text-left">
+                    <label className="text-[#0d2a4a] font-bold">Section(s)</label>
+                    <select
+                      value={newSection}
+                      onChange={(e) => setNewSection(e.target.value)}
+                      disabled={!newAct}
+                      className="w-full h-8 px-2 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-[#ea580c] cursor-pointer disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">----select----</option>
+                      {availableSections.map((sec) => (
+                        <option key={sec} value={sec}>
+                          {sec}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewAct('');
+                    setNewSection('');
+                    setShowAddRow(false);
+                  }}
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[#0d2a4a] text-[11px] font-bold rounded cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newAct.trim() || newSection.trim()) {
+                      const updatedActs = [...acts, newAct.trim()].join(', ');
+                      const updatedSections = [...secs, newSection.trim()].join(', ');
+                      handleChange('act_name', updatedActs);
+                      handleChange('sections', updatedSections);
+                    }
+                    setNewAct('');
+                    setNewSection('');
+                    setShowAddRow(false);
+                  }}
+                  className="px-3 py-1 bg-[#ea580c] hover:bg-[#c2410c] text-white text-[11px] font-bold rounded cursor-pointer transition-colors shadow-sm"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
 
   const renderActsAndSectionsStep = () => {
     const isWritten = values.type_of_information !== 'Oral';
@@ -2443,6 +2994,836 @@ const renderAccusedStep = () => {
     </div>
   );
 };
+
+const renderPropertyStep = () => {
+  const propertyList = repeaterState?.property_details || [];
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+  const majorCategoryField = allFields.find(f => f.field_key === 'property_major_category');
+
+  const majorCategoryOptions = (() => {
+    if (!majorCategoryField) return [];
+    try {
+      const opts = typeof majorCategoryField.options === 'string'
+        ? JSON.parse(majorCategoryField.options)
+        : majorCategoryField.options;
+      return Array.isArray(opts) ? opts : [];
+    } catch (e) {
+      return Array.isArray(majorCategoryField.options) ? majorCategoryField.options : [];
+    }
+  })();
+
+  const getMinorCategoryOptions = (majorCategory) => {
+    if (!majorCategory) return [];
+    let targetKey = null;
+    const cat = String(majorCategory).toLowerCase().trim();
+    if (cat === 'vehicle') targetKey = 'prop_vehicle_type';
+    else if (cat === 'jewellery' || cat === 'gold/jewellery') targetKey = 'prop_gold_item_type';
+    else if (cat === 'electronics' || cat === 'electronics/gadgets') targetKey = 'prop_elec_device_type';
+    else if (cat === 'documents' || cat === 'official/personal documents') targetKey = 'prop_doc_type';
+    else if (cat === 'drugs' || cat === 'drugs/narcotics') targetKey = 'prop_drug_type';
+    else if (cat === 'arms' || cat === 'arms/ammunition') targetKey = 'prop_arms_type';
+    else if (cat === 'cash') targetKey = 'prop_cash_currency';
+
+    if (targetKey) {
+      const field = allFields.find(f => f.field_key === targetKey);
+      if (field) {
+        try {
+          const opts = typeof field.options === 'string' ? JSON.parse(field.options) : field.options;
+          return Array.isArray(opts) ? opts : [];
+        } catch (e) {
+          return Array.isArray(field.options) ? field.options : [];
+        }
+      }
+    }
+    return [];
+  };
+
+  const addPropertyRow = () => {
+    const list = [...propertyList];
+    list.push({
+      property_major_category: '',
+      property_minor_category: '',
+      property_details: '',
+      property_value_inr: '',
+      property_stolen_recovered: 'Stolen'
+    });
+    setRepeaterState(prev => ({ ...prev, property_details: list }));
+  };
+
+  const clearAllProperties = () => {
+    setRepeaterState(prev => ({ ...prev, property_details: [] }));
+  };
+
+  const deletePropertyRow = (idx) => {
+    const list = propertyList.filter((_, i) => i !== idx);
+    setRepeaterState(prev => ({ ...prev, property_details: list }));
+  };
+
+  const handlePropertyRowChange = (idx, key, val) => {
+    const list = [...propertyList];
+    if (!list[idx]) return;
+    const updatedRow = { ...list[idx], [key]: val };
+    if (key === 'property_major_category') {
+      updatedRow.property_minor_category = '';
+    }
+    list[idx] = updatedRow;
+    setRepeaterState(prev => ({ ...prev, property_details: list }));
+  };
+
+  const renderTypeCell = (row, idx) => {
+    const opts = getMinorCategoryOptions(row.property_major_category);
+    const isDisabled = !row.property_major_category || readOnly;
+
+    if (opts.length > 0) {
+      return (
+        <select
+          value={row.property_minor_category || ''}
+          onChange={(e) => handlePropertyRowChange(idx, 'property_minor_category', e.target.value)}
+          disabled={isDisabled}
+          className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+        >
+          <option value="">{lang === 'hi' ? '---चुनें---' : '---Select---'}</option>
+          {opts.map(o => (
+            <option key={o.value} value={o.value}>
+              {lang === 'hi' ? (o.label_hi || o.label_en) : o.label_en}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        value={row.property_minor_category || ''}
+        onChange={(e) => handlePropertyRowChange(idx, 'property_minor_category', e.target.value)}
+        disabled={isDisabled}
+        placeholder={row.property_major_category ? (lang === 'hi' ? 'विवरण दर्ज करें...' : 'Enter details...') : (lang === 'hi' ? 'श्रेणी चुनें' : 'Select Category')}
+        className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+      />
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Action Buttons bar at the top-right */}
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={addPropertyRow}
+          disabled={readOnly}
+          className="px-4 py-1.5 bg-[#0d2a4a] hover:bg-[#16406d] text-white text-xs font-bold rounded transition-colors cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
+        >
+          {lang === 'hi' ? 'नया जोड़ें' : 'Add New'}
+        </button>
+        <button
+          type="button"
+          onClick={clearAllProperties}
+          disabled={readOnly}
+          className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded transition-colors cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+        >
+          {lang === 'hi' ? 'सभी साफ़ करें' : 'Clear All'}
+        </button>
+      </div>
+
+      {/* Property Repeater Table */}
+      <div className="border border-[#7a9cc5] rounded overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-[#0d2a4a] text-white">
+              <th className="px-3 py-2 text-left w-14 font-semibold">{lang === 'hi' ? 'क्र.सं.' : 'S.No.'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'संपत्ति श्रेणी *' : 'Property Category *'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'संपत्ति का प्रकार *' : 'Type of Property *'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'विवरण' : 'Description'}</th>
+              <th className="px-3 py-2 text-left w-44 font-semibold">{lang === 'hi' ? 'मूल्य (INR में)' : 'Value in INR'}</th>
+              <th className="px-3 py-2 text-center w-16 font-semibold">{lang === 'hi' ? 'हटाएं' : 'Delete'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {propertyList.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-slate-400 italic">
+                  {lang === 'hi' ? 'कोई संपत्ति नहीं जोड़ी गई है।' : 'No property items added yet.'}
+                </td>
+              </tr>
+            ) : (
+              propertyList.map((row, idx) => (
+                <tr key={idx} className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
+                  {/* S.No */}
+                  <td className="px-3 py-2 font-medium">{idx + 1}</td>
+                  
+                  {/* Property Category */}
+                  <td className="px-3 py-2 min-w-[200px]">
+                    <select
+                      value={row.property_major_category || ''}
+                      onChange={(e) => handlePropertyRowChange(idx, 'property_major_category', e.target.value)}
+                      disabled={readOnly}
+                      className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                    >
+                      <option value="">{lang === 'hi' ? '---चुनें---' : '---Select---'}</option>
+                      {majorCategoryOptions.map(o => (
+                        <option key={o.value} value={o.value}>
+                          {lang === 'hi' ? (o.label_hi || o.label_en) : o.label_en}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  {/* Type of Property */}
+                  <td className="px-3 py-2 min-w-[200px]">
+                    {renderTypeCell(row, idx)}
+                  </td>
+
+                  {/* Description */}
+                  <td className="px-3 py-2">
+                    <input
+                      type="text"
+                      value={row.property_details || ''}
+                      onChange={(e) => handlePropertyRowChange(idx, 'property_details', e.target.value)}
+                      disabled={readOnly}
+                      placeholder={lang === 'hi' ? 'संपत्ति का विवरण दर्ज करें...' : 'Enter description details...'}
+                      className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                    />
+                  </td>
+
+                  {/* Value in INR */}
+                  <td className="px-3 py-2">
+                    <input
+                      type="number"
+                      value={row.property_value_inr || ''}
+                      onChange={(e) => handlePropertyRowChange(idx, 'property_value_inr', e.target.value)}
+                      disabled={readOnly}
+                      placeholder={lang === 'hi' ? 'मूल्य दर्ज करें (INR में)' : 'Enter value in INR'}
+                      className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                    />
+                  </td>
+
+                  {/* Delete */}
+                  <td className="px-3 py-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => deletePropertyRow(idx)}
+                      disabled={readOnly}
+                      className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer disabled:text-slate-300 disabled:cursor-not-allowed"
+                    >
+                      ✖
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const renderArrestedStep = () => {
+  const arrestedList = repeaterState?.arrested_info || [];
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+
+  const renderArrestedModalField = (key, customLabel = null, isLast = false, forceReadOnly = false) => {
+    const field = allFields.find(f => f.field_key === key);
+    if (!field) return null;
+    const label = customLabel || (lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en);
+    const rules = parseRules(field.validation_rules);
+    const isRequired = !!rules.required || key === 'arrested_first_name' || key === 'arrested_gender';
+    const isDisabled = forceReadOnly || readOnly || field.readonly === true || field.readonly === 'true';
+
+    return (
+      <React.Fragment key={key}>
+        <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <span>{label}</span>
+          {isRequired && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <FieldRenderer
+            field={field}
+            value={arrestedTempValues[key]}
+            onChange={handleArrestedModalChange}
+            readOnly={isDisabled}
+            hasError={arrestedModalTouched[key] && !!arrestedModalErrors[key]}
+            lang={lang}
+            values={arrestedTempValues}
+          />
+          {arrestedModalTouched[key] && arrestedModalErrors[key] && (
+            <p className="text-red-500 text-[10px] mt-0.5">{arrestedModalErrors[key]}</p>
+          )}
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  const renderArrestedDetailsSubTab = () => {
+    return (
+      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+        <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+          {lang === 'hi' ? 'गिरफ्तारी का विवरण' : 'Arrest Details'}
+        </legend>
+        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+          {renderArrestedModalField('arrest_date')}
+          {renderArrestedModalField('arrest_place', null, true)}
+        </div>
+      </fieldset>
+    );
+  };
+
+  const renderArrestedPersonalInfoSubTab = () => {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          {/* Left Column - Personal Info */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderArrestedModalField('arrested_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
+              {renderArrestedModalField('arrested_first_name')}
+              {renderArrestedModalField('arrested_middle_name')}
+              {renderArrestedModalField('arrested_last_name')}
+              {renderArrestedModalField('nick_name', null, true)}
+            </div>
+          </div>
+
+          {/* Right Column - Gender, Marital Status, Mobile */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderArrestedModalField('arrested_gender')}
+              {renderArrestedModalField('arrested_marital_status')}
+
+              {/* Mobile with country code */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'मोबाइल नंबर' : 'Mobile No.'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-1.5 items-center">
+                  <div className="w-14">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'arrested_mobile_country_code')}
+                      value={arrestedTempValues.arrested_mobile_country_code || '+91'}
+                      onChange={handleArrestedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={arrestedTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'arrested_mobile')}
+                      value={arrestedTempValues.arrested_mobile}
+                      onChange={handleArrestedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={arrestedTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderArrestedModalField('arrested_landline')}
+              {renderArrestedModalField('arrested_email', null, true)}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom fields: relation + age panel */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'रिश्तेदार का विवरण' : 'Relative Details'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderArrestedModalField('arrested_relation_type')}
+              {renderArrestedModalField('arrested_relative_name', null, true)}
+            </div>
+          </div>
+
+          <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'आयु विवरण' : 'Age Panel'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderArrestedModalField('arrested_dob')}
+              {renderArrestedModalField('arrested_age_year')}
+              {renderArrestedModalField('arrested_age_month')}
+              {renderArrestedModalField('arrested_birth_year', null, false, true)}
+              {renderArrestedModalField('arrested_age_range_from')}
+              {renderArrestedModalField('arrested_age_range_to', null, true)}
+            </div>
+          </fieldset>
+        </div>
+      </div>
+    );
+  };
+
+  const renderArrestedParticularDetailsSubTab = () => {
+    return (
+      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+        <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+          {lang === 'hi' ? 'विवरण' : 'Particular Details'}
+        </legend>
+        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+          {renderArrestedModalField('prev_involvement')}
+          {renderArrestedModalField('proclaimed_offender', null, true)}
+        </div>
+      </fieldset>
+    );
+  };
+
+  const renderArrestedAddressSubTab = () => {
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        {/* Present address */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'वर्तमान पता' : 'Present Address'}
+          </legend>
+          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+            {renderArrestedModalField('arrested_present_address')}
+            {renderArrestedModalField('arrested_house_no')}
+            {renderArrestedModalField('arrested_street')}
+            {renderArrestedModalField('arrested_colony')}
+            {renderArrestedModalField('arrested_city_town_village')}
+            {renderArrestedModalField('arrested_tehsil_block_mandal')}
+            {renderArrestedModalField('arrested_country')}
+            {renderArrestedModalField('arrested_state')}
+            {renderArrestedModalField('arrested_district')}
+            {renderArrestedModalField('arrested_police_station')}
+            {renderArrestedModalField('arrested_pincode', null, true)}
+          </div>
+        </fieldset>
+
+        {/* Permanent address */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs flex items-center gap-2">
+            <span>{lang === 'hi' ? 'स्थायी पता' : 'Permanent Address'}</span>
+            <div className="flex items-center gap-1 text-[10px] normal-case font-normal text-slate-600 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                id="arrested_perm_same"
+                disabled={readOnly}
+                checked={arrestedTempValues.arrested_perm_same === true || arrestedTempValues.arrested_perm_same === 'Yes'}
+                onChange={(e) => handleArrestedModalChange('arrested_perm_same', e.target.checked)}
+                className="cursor-pointer"
+              />
+              <label htmlFor="arrested_perm_same" className="cursor-pointer">
+                {lang === 'hi' ? 'वर्तमान पते के समान' : 'Same as Present'}
+              </label>
+            </div>
+          </legend>
+          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+            {renderArrestedModalField('arrested_perm_address')}
+            {renderArrestedModalField('arrested_perm_house_no')}
+            {renderArrestedModalField('arrested_perm_street')}
+            {renderArrestedModalField('arrested_perm_colony')}
+            {renderArrestedModalField('arrested_perm_city_town_village')}
+            {renderArrestedModalField('arrested_perm_tehsil_block_mandal')}
+            {renderArrestedModalField('arrested_perm_country')}
+            {renderArrestedModalField('arrested_perm_state')}
+            {renderArrestedModalField('arrested_perm_district')}
+            {renderArrestedModalField('arrested_perm_police_station')}
+            {renderArrestedModalField('arrested_perm_pincode', null, true)}
+          </div>
+        </fieldset>
+      </div>
+    );
+  };
+
+  const getArrestedName = (v) => [v.arrested_first_name, v.arrested_middle_name, v.arrested_last_name].filter(Boolean).join(' ') || '—';
+  const getArrestedAddress = (v) => [v.arrested_house_no, v.arrested_street, v.arrested_colony, v.arrested_city_town_village, v.arrested_district, v.arrested_state].filter(Boolean).join(', ') || '—';
+
+  return (
+    <div className="space-y-4">
+      {/* Header bar with Add Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-bold text-[#0d2a4a] uppercase tracking-wide">
+          {lang === 'hi' ? `गिरफ्तार व्यक्तियों की सूची (${arrestedList.length})` : `Arrested Persons List (${arrestedList.length})`}
+        </h3>
+        <button
+          type="button"
+          onClick={openArrestedAddModal}
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] transition-colors cursor-pointer"
+        >
+          <span className="text-base leading-none">+</span>
+          {lang === 'hi' ? 'गिरफ्तार व्यक्ति जोड़ें' : 'Add Arrested Person'}
+        </button>
+      </div>
+
+      {/* Summary Table */}
+      <div className="border border-[#7a9cc5] rounded overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-[#0d2a4a] text-white">
+              <th className="px-3 py-2 text-left w-14 font-semibold">{lang === 'hi' ? 'क्र.सं.' : 'S.No.'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'नाम' : 'Name'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'पता' : 'Address'}</th>
+              <th className="px-3 py-2 text-center w-28 font-semibold">{lang === 'hi' ? 'कार्रवाई' : 'Actions'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {arrestedList.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-6 text-center text-slate-400 italic">
+                  {lang === 'hi' ? 'कोई गिरफ्तार व्यक्ति नहीं जोड़ा गया। "+ गिरफ्तार व्यक्ति जोड़ें" पर क्लिक करें।' : 'No arrested persons added yet. Click "+ Add Arrested Person" to add.'}
+                </td>
+              </tr>
+            ) : (
+              arrestedList.map((arr, idx) => (
+                <tr key={idx} className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
+                  <td className="px-3 py-2 font-medium">{idx + 1}</td>
+                  <td className="px-3 py-2">{getArrestedName(arr)}</td>
+                  <td className="px-3 py-2 text-slate-600">{getArrestedAddress(arr)}</td>
+                  <td className="px-3 py-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openArrestedEditModal(idx)}
+                      className="text-[#0d2a4a] hover:text-[#ea580c] font-semibold mr-3 cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'संपादन' : 'Edit'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteArrestedEntry(idx)}
+                      className="text-red-500 hover:text-red-700 font-semibold cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'हटाएं' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal Dialog */}
+      {isArrestedModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between bg-[#0d2a4a] text-white px-5 py-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide">
+                {activeArrestedIndex !== null
+                  ? (lang === 'hi' ? 'गिरफ्तार व्यक्ति की जानकारी संपादित करें' : 'Edit Arrested Person Information')
+                  : (lang === 'hi' ? 'गिरफ्तार व्यक्ति की जानकारी' : 'Arrested Person Information')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsArrestedModalOpen(false)}
+                className="text-white/80 hover:text-white text-2xl leading-none font-bold cursor-pointer transition-colors"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Sub-tabs selectors */}
+            <div className="flex gap-2 border-b border-[#7a9cc5] pb-0 bg-slate-100/50 p-1">
+              {[
+                { id: 'arrest_details', label_en: 'Arrest Details', label_hi: 'गिरफ्तारी का विवरण' },
+                { id: 'person_particulars', label_en: 'Person Particulars', label_hi: 'व्यक्तिगत जानकारी' },
+                { id: 'particular_details', label_en: 'Particular Details', label_hi: 'विवरण' },
+                { id: 'address', label_en: 'Address', label_hi: 'पता' }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setArrestedSubTab(t.id)}
+                  className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+                    arrestedSubTab === t.id
+                      ? 'bg-[#ea580c] text-white'
+                      : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                  }`}
+                >
+                  {lang === 'hi' ? t.label_hi : t.label_en}
+                </button>
+              ))}
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 border border-t-0 border-[#7a9cc5] bg-white">
+              {arrestedSubTab === 'arrest_details' && renderArrestedDetailsSubTab()}
+              {arrestedSubTab === 'person_particulars' && renderArrestedPersonalInfoSubTab()}
+              {arrestedSubTab === 'particular_details' && renderArrestedParticularDetailsSubTab()}
+              {arrestedSubTab === 'address' && renderArrestedAddressSubTab()}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-5 py-3 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={saveArrestedEntry}
+                className="px-6 py-2 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'सहेजें' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsArrestedModalOpen(false)}
+                className="px-6 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded hover:bg-slate-300 cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'बंद करें' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const renderIntimationStep = () => {
+  const intimationList = repeaterState?.intimation_details || [];
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+
+  const renderIntimationModalField = (key, customLabel = null, isLast = false) => {
+    const field = allFields.find(f => f.field_key === key);
+    if (!field) return null;
+    const label = customLabel || (lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en);
+    const rules = parseRules(field.validation_rules);
+    const isRequired = !!rules.required || key === 'intimated_relative_name';
+    const isDisabled = readOnly || field.readonly === true || field.readonly === 'true';
+
+    return (
+      <React.Fragment key={key}>
+        <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <span>{label}</span>
+          {isRequired && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <FieldRenderer
+            field={field}
+            value={intimationTempValues[key]}
+            onChange={handleIntimationModalChange}
+            readOnly={isDisabled}
+            hasError={intimationModalTouched[key] && !!intimationModalErrors[key]}
+            lang={lang}
+            values={intimationTempValues}
+          />
+          {intimationModalTouched[key] && intimationModalErrors[key] && (
+            <p className="text-red-500 text-[10px] mt-0.5">{intimationModalErrors[key]}</p>
+          )}
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header bar with Add Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-bold text-[#0d2a4a] uppercase tracking-wide">
+          {lang === 'hi' ? `सूचना प्राप्तकर्ताओं की सूची (${intimationList.length})` : `Intimation Details List (${intimationList.length})`}
+        </h3>
+        <button
+          type="button"
+          onClick={openIntimationAddModal}
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] transition-colors cursor-pointer"
+        >
+          <span className="text-base leading-none">+</span>
+          {lang === 'hi' ? 'सूचना विवरण जोड़ें' : 'Add Intimation Details'}
+        </button>
+      </div>
+
+      {/* Summary Table */}
+      <div className="border border-[#7a9cc5] rounded overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-[#0d2a4a] text-white">
+              <th className="px-3 py-2 text-left w-14 font-semibold">{lang === 'hi' ? 'क्र.सं.' : 'S.No.'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'नाम' : 'Name'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'पता' : 'Address'}</th>
+              <th className="px-3 py-2 text-center w-28 font-semibold">{lang === 'hi' ? 'कार्रवाई' : 'Actions'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {intimationList.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-6 text-center text-slate-400 italic">
+                  {lang === 'hi' ? 'कोई सूचना विवरण नहीं जोड़ा गया। "+ सूचना विवरण जोड़ें" पर क्लिक करें।' : 'No intimation details added yet. Click "+ Add Intimation Details" to add.'}
+                </td>
+              </tr>
+            ) : (
+              intimationList.map((item, idx) => (
+                <tr key={idx} className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
+                  <td className="px-3 py-2 font-medium">{idx + 1}</td>
+                  <td className="px-3 py-2">{getIntimationName(item)}</td>
+                  <td className="px-3 py-2 text-slate-600">{getIntimationAddress(item)}</td>
+                  <td className="px-3 py-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openIntimationEditModal(idx)}
+                      className="text-[#0d2a4a] hover:text-[#ea580c] font-semibold mr-3 cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'संपादन' : 'Edit'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteIntimationEntry(idx)}
+                      className="text-red-500 hover:text-red-700 font-semibold cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'हटाएं' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal Dialog */}
+      {isIntimationModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between bg-[#0d2a4a] text-white px-5 py-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide">
+                {activeIntimationIndex !== null
+                  ? (lang === 'hi' ? 'सूचना विवरण संपादित करें' : 'Edit Intimation Details')
+                  : (lang === 'hi' ? 'सूचना विवरण' : 'Intimation Details')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsIntimationModalOpen(false)}
+                className="text-white/80 hover:text-white text-2xl leading-none font-bold cursor-pointer transition-colors"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Sub-tabs selectors */}
+            <div className="flex gap-2 border-b border-[#7a9cc5] pb-0 bg-slate-100/50 p-1">
+              {[
+                { id: 'personal', label_en: 'Personal Information', label_hi: 'व्यक्तिगत जानकारी' },
+                { id: 'address', label_en: 'Address', label_hi: 'पता' }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setIntimationSubTab(t.id)}
+                  className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+                    intimationSubTab === t.id
+                      ? 'bg-[#ea580c] text-white'
+                      : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                  }`}
+                >
+                  {lang === 'hi' ? t.label_hi : t.label_en}
+                </button>
+              ))}
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {intimationSubTab === 'personal' ? (
+                <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+                  <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+                    {lang === 'hi' ? 'सूचना विवरण' : 'Intimation Details'}
+                  </legend>
+                  <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+                    {renderIntimationModalField('intimation_date_time')}
+                    {renderIntimationModalField('intimated_relative_name')}
+                    {renderIntimationModalField('intimated_relative_relation')}
+                    {renderIntimationModalField('intimation_mode', null, true)}
+                  </div>
+                </fieldset>
+              ) : (
+                <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+                  <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+                    {lang === 'hi' ? 'पता' : 'Address'}
+                  </legend>
+                  <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+                    {renderIntimationModalField('intimation_house_no')}
+                    {renderIntimationModalField('intimation_street')}
+                    {renderIntimationModalField('intimation_colony')}
+                    {renderIntimationModalField('intimation_city_town_village')}
+                    {renderIntimationModalField('intimation_tehsil_block_mandal')}
+                    {renderIntimationModalField('intimation_country')}
+                    {renderIntimationModalField('intimation_state')}
+                    {renderIntimationModalField('intimation_district')}
+                    {renderIntimationModalField('intimation_police_station')}
+                    {renderIntimationModalField('intimation_pincode', null, true)}
+                  </div>
+                </fieldset>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-slate-100 border-t border-slate-200 px-5 py-3 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsIntimationModalOpen(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'रद्द करें' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={saveIntimationEntry}
+                className="px-4 py-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold rounded cursor-pointer transition-colors shadow-sm"
+              >
+                {lang === 'hi' ? 'सहेजें' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const renderActionTakenStep = () => {
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+  const actionTakenKeys = ['io_rank', 'io_name', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'];
+
+  const activeFields = actionTakenKeys
+    .map(key => allFields.find(f => f.field_key === key))
+    .filter(Boolean);
+
+  const renderFieldWithLabel = (field, index) => {
+    const key = field.field_key;
+    const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+    const rules = parseRules(field.validation_rules);
+    const isRequired = !!rules.required;
+    const isLast = index === activeFields.length - 1;
+    const isDisabled = readOnly || field.readonly === true || field.readonly === 'true';
+
+    return (
+      <React.Fragment key={key}>
+        <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <span>{label}</span>
+          {isRequired && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <FieldRenderer
+            field={field}
+            value={values[key]}
+            onChange={handleChange}
+            readOnly={isDisabled}
+            hasError={touched[key] && !!errors[key]}
+            lang={lang}
+            values={values}
+          />
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+        <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+          {lang === 'hi' ? 'की गई कार्रवाई / जांच अधिकारी' : 'Action Taken / Investigation Officer'}
+        </legend>
+
+        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+          {activeFields.map((field, idx) => renderFieldWithLabel(field, idx))}
+        </div>
+      </fieldset>
+    </div>
+  );
+};
+
   const firOptions = React.useMemo(() => {
     return (casesData || []).map(c => {
       const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
@@ -2513,8 +3894,10 @@ const renderAccusedStep = () => {
           'accused_perm_city_town_village', 'accused_perm_tehsil_block_mandal', 'accused_perm_country',
           'accused_perm_state', 'accused_perm_district', 'accused_perm_police_station', 'accused_perm_pincode'
         ] },
-        { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: ['property_description', 'property_status'] },
-        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
+        { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: [
+          'property_major_category', 'property_minor_category', 'property_details', 'property_stolen_recovered'
+        ], is_repeater: true, entity_type: 'property', section: 'property_details' },
+        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_rank', 'io_name', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
       ];
 
       return tabSpecs.map(spec => {
@@ -2524,30 +3907,188 @@ const renderAccusedStep = () => {
         return {
           title_en: spec.title_en,
           title_hi: spec.title_hi,
-          fields: fields
+          fields: fields,
+          is_repeater: spec.is_repeater,
+          entity_type: spec.entity_type,
+          section: spec.section
         };
       });
     }
 
-    if (recordType === 'ARREST' && caseType === 'against_fir') {
-      const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
-      if (!hasVirtualStep) {
-        const virtualSelectFirStep = {
+    if (recordType === 'ARREST' && (caseType === 'against_fir' || caseType === 'kalandra')) {
+      const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
+      const tabSpecs = [];
+      if (caseType === 'against_fir') {
+        tabSpecs.push({
           title_en: 'Select FIR',
           title_hi: 'प्राथमिकी (FIR) चुनें',
-          fields: [
-            {
-              field_key: 'selected_fir',
-              field_type: 'SELECT',
-              label_en: 'Select FIR Number',
-              label_hi: 'प्राथमिकी (FIR) संख्या चुनें',
-              validation_rules: JSON.stringify({ required: true }),
-              options: finalFirOptions
-            }
-          ]
-        };
-        return [virtualSelectFirStep, ...schema];
+          keys: ['selected_fir'],
+          is_virtual: true
+        });
       }
+      tabSpecs.push(
+        {
+          title_en: 'General Information',
+          title_hi: 'सामान्य जानकारी',
+          keys: [
+            'uid', 'district', 'police_station', 'submission_status', 'case_type',
+            'gd_no', 'gd_date', 'gd_time', 'act_name', 'sections', 'crime_head', 'status', 'linked_fir_dd_no'
+          ]
+        },
+        {
+          title_en: 'Arrested',
+          title_hi: 'गिरफ्तार व्यक्ति',
+          keys: [
+            'arrest_date', 'arrest_place',
+            'nick_name', 'arrested_mobile_country_code', 'arrested_npr', 'arrested_first_name', 'arrested_middle_name', 'arrested_last_name',
+            'arrested_gender', 'arrested_marital_status', 'arrested_relation_type', 'arrested_relative_name', 'arrested_landline', 'arrested_mobile', 'arrested_email',
+            'arrested_dob', 'arrested_age_year', 'arrested_age_month', 'arrested_birth_year', 'arrested_age_range_from', 'arrested_age_range_to',
+            'prev_involvement', 'proclaimed_offender',
+            'arrested_present_address', 'arrested_perm_same', 'arrested_house_no', 'arrested_street', 'arrested_colony', 'arrested_city_town_village',
+            'arrested_tehsil_block_mandal', 'arrested_country', 'arrested_state', 'arrested_district', 'arrested_police_station', 'arrested_pincode',
+            'arrested_perm_address', 'arrested_perm_country', 'arrested_perm_state', 'arrested_perm_district',
+            'arrested_perm_house_no', 'arrested_perm_street', 'arrested_perm_colony', 'arrested_perm_city_town_village', 'arrested_perm_tehsil_block_mandal', 'arrested_perm_police_station', 'arrested_perm_pincode'
+          ],
+          is_repeater: true,
+          entity_type: 'person',
+          person_type: 'ARRESTED',
+          section: 'arrested_info'
+        },
+        {
+          title_en: 'Custody Status',
+          title_hi: 'हिरासत की स्थिति',
+          keys: ['other_status_reason', 'recovery']
+        },
+        {
+          title_en: 'Particulars',
+          title_hi: 'विवरण',
+          keys: allFields.filter(f => f.section === 'property_details').map(f => f.field_key),
+          is_repeater: true,
+          entity_type: 'property',
+          section: 'property_details'
+        },
+        {
+          title_en: 'Intimation Details',
+          title_hi: 'सूचना का विवरण',
+          keys: [
+            'intimation_date_time', 'intimated_relative_name', 'intimated_relative_relation', 'intimation_mode',
+            'intimation_house_no', 'intimation_street', 'intimation_colony', 'intimation_city_town_village', 'intimation_tehsil_block_mandal',
+            'intimation_country', 'intimation_state', 'intimation_district', 'intimation_police_station', 'intimation_pincode'
+          ],
+          is_repeater: true,
+          entity_type: 'person',
+          person_type: 'INTIMATED',
+          section: 'intimation_details'
+        },
+        {
+          title_en: 'Procedural Slips',
+          title_hi: 'प्रक्रियात्मक पर्ची',
+          keys: ['nafis_prepared', 'dossier_prepared', 'arresting_officer_mobile', 'arresting_officer', 'listed_criminal']
+        },
+        {
+          title_en: 'Investigating Officer',
+          title_hi: 'जांच अधिकारी',
+          keys: ['io_rank', 'io_name', 'io_pis', 'io_mobile']
+        }
+      );
+
+      return tabSpecs.map(spec => {
+        if (spec.is_virtual) {
+          return {
+            title_en: spec.title_en,
+            title_hi: spec.title_hi,
+            fields: [
+              {
+                field_key: 'selected_fir',
+                field_type: 'SELECT',
+                label_en: 'Select FIR Number',
+                label_hi: 'प्राथमिकी (FIR) संख्या चुनें',
+                validation_rules: JSON.stringify({ required: true }),
+                options: finalFirOptions
+              }
+            ]
+          };
+        }
+
+        const fields = spec.keys
+          .map(k => {
+            if (k === 'uid' || k === 'district' || k === 'police_station' || k === 'submission_status' || k === 'case_type') {
+              return allFields.find(f => f.field_key === k) || {
+                field_key: k,
+                field_type: 'TEXT',
+                label_en: k.replace('_', ' ').toUpperCase(),
+                label_hi: k,
+                readonly: true
+              };
+            }
+            return allFields.find(f => f.field_key === k);
+          })
+          .filter(Boolean);
+
+        return {
+          title_en: spec.title_en,
+          title_hi: spec.title_hi,
+          fields: fields,
+          is_repeater: spec.is_repeater,
+          entity_type: spec.entity_type,
+          person_type: spec.person_type,
+          section: spec.section
+        };
+      });
+    }
+    if (recordType === 'UIDB') {
+      const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
+      const tabSpecs = [
+        {
+          title_en: 'General Information',
+          title_hi: 'सामान्य जानकारी',
+          keys: [
+            'uid', 'district', 'police_station', 'submission_status', 'case_type',
+            'gd_no', 'gd_date', 'gd_time', 'act_name', 'sections', 'crime_head', 'status'
+          ]
+        },
+        {
+          title_en: 'UIDB Details',
+          title_hi: 'यूआईडीबी विवरण',
+          keys: allFields.filter(f => f.section === 'corpse_desc').map(f => f.field_key)
+        },
+        {
+          title_en: 'Inquest Details',
+          title_hi: 'पूछताछ विवरण',
+          keys: allFields.filter(f => f.section === 'inquest_details').map(f => f.field_key)
+        },
+        {
+          title_en: 'Investigating Officer',
+          title_hi: 'जांच अधिकारी',
+          keys: allFields.filter(f => f.section === 'investigation_officer').map(f => f.field_key)
+        }
+      ];
+
+      return tabSpecs.map(spec => {
+        const fields = spec.keys
+          .map(k => {
+            if (k === 'uid' || k === 'district' || k === 'police_station' || k === 'submission_status' || k === 'case_type') {
+              return allFields.find(f => f.field_key === k) || {
+                field_key: k,
+                field_type: 'TEXT',
+                label_en: k.replace('_', ' ').toUpperCase(),
+                label_hi: k,
+                readonly: true
+              };
+            }
+            return allFields.find(f => f.field_key === k);
+          })
+          .filter(Boolean);
+
+        return {
+          title_en: spec.title_en,
+          title_hi: spec.title_hi,
+          fields: fields,
+          is_repeater: spec.is_repeater,
+          entity_type: spec.entity_type,
+          section: spec.section
+        };
+      });
     }
     return schema;
   }, [schema, recordType, caseType, finalFirOptions]);
@@ -2583,6 +4124,22 @@ const renderAccusedStep = () => {
   const [accusedSubTab, setAccusedSubTab]           = useState('personal');
   const [accusedModalErrors, setAccusedModalErrors] = useState({});
   const [accusedModalTouched, setAccusedModalTouched] = useState({});
+
+  // Arrested Modal state hooks
+  const [isArrestedModalOpen, setIsArrestedModalOpen] = useState(false);
+  const [activeArrestedIndex, setActiveArrestedIndex] = useState(null);
+  const [arrestedTempValues, setArrestedTempValues]   = useState({});
+  const [arrestedSubTab, setArrestedSubTab]           = useState('arrest_details'); // 'arrest_details' | 'person_particulars' | 'particular_details' | 'address'
+  const [arrestedModalErrors, setArrestedModalErrors] = useState({});
+  const [arrestedModalTouched, setArrestedModalTouched] = useState({});
+
+  // Intimation Details tab state
+  const [isIntimationModalOpen, setIsIntimationModalOpen] = useState(false);
+  const [activeIntimationIndex, setActiveIntimationIndex] = useState(null);
+  const [intimationTempValues, setIntimationTempValues]   = useState({});
+  const [intimationSubTab, setIntimationSubTab]           = useState('personal'); // 'personal' | 'address'
+  const [intimationModalErrors, setIntimationModalErrors] = useState({});
+  const [intimationModalTouched, setIntimationModalTouched] = useState({});
 
   /* ── Major / Minor Head state ────────────────────────────────────────────── */
   const [selectedMajorHead, setSelectedMajorHead] = useState('');
@@ -2839,6 +4396,275 @@ const renderAccusedStep = () => {
     setIsAccusedModalOpen(false);
   };
 
+  const openArrestedAddModal = () => {
+    setArrestedTempValues({});
+    setActiveArrestedIndex(null);
+    setArrestedSubTab('arrest_details');
+    setArrestedModalErrors({});
+    setArrestedModalTouched({});
+    setIsArrestedModalOpen(true);
+  };
+
+  const openArrestedEditModal = (idx) => {
+    const list = repeaterState.arrested_info || [];
+    setArrestedTempValues({ ...(list[idx] || {}) });
+    setActiveArrestedIndex(idx);
+    setArrestedSubTab('arrest_details');
+    setArrestedModalErrors({});
+    setArrestedModalTouched({});
+    setIsArrestedModalOpen(true);
+  };
+
+  const deleteArrestedEntry = (idx) => {
+    const list = repeaterState.arrested_info || [];
+    const nextList = list.filter((_, i) => i !== idx);
+    setRepeaterState(prev => ({ ...prev, arrested_info: nextList }));
+  };
+
+  const handleArrestedDobChange = (dobVal, currentTemp) => {
+    if (!dobVal) return currentTemp;
+    const next = { ...currentTemp, arrested_dob: dobVal };
+    const dobDate = new Date(dobVal);
+    if (!isNaN(dobDate.getTime())) {
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const m = today.getMonth() - dobDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
+        age--;
+      }
+      next.arrested_age_year = age >= 0 ? age : '';
+      next.arrested_birth_year = dobDate.getFullYear();
+    }
+    return next;
+  };
+
+  const handleArrestedAgeChange = (ageVal, currentTemp) => {
+    const next = { ...currentTemp, arrested_age_year: ageVal };
+    if (ageVal !== '') {
+      const ageNum = parseInt(ageVal, 10);
+      if (!isNaN(ageNum)) {
+        const today = new Date();
+        next.arrested_birth_year = today.getFullYear() - ageNum;
+        next.arrested_dob = '';
+      }
+    }
+    return next;
+  };
+
+  const syncArrestedPermAddress = (currentTemp) => {
+    if (!currentTemp.arrested_perm_same) return currentTemp;
+    return {
+      ...currentTemp,
+      arrested_perm_house_no: currentTemp.arrested_house_no || '',
+      arrested_perm_street: currentTemp.arrested_street || '',
+      arrested_perm_colony: currentTemp.arrested_colony || '',
+      arrested_perm_city_town_village: currentTemp.arrested_city_town_village || '',
+      arrested_perm_tehsil_block_mandal: currentTemp.arrested_tehsil_block_mandal || '',
+      arrested_perm_country: currentTemp.arrested_country || 'Indian',
+      arrested_perm_state: currentTemp.arrested_state || '',
+      arrested_perm_district: currentTemp.arrested_district || '',
+      arrested_perm_police_station: currentTemp.arrested_police_station || '',
+      arrested_perm_pincode: currentTemp.arrested_pincode || '',
+    };
+  };
+
+  const handleArrestedModalChange = (key, val) => {
+    setArrestedTempValues((prev) => {
+      let next = { ...prev, [key]: val };
+
+      if (key === 'arrested_dob') {
+        next = handleArrestedDobChange(val, next);
+      }
+
+      if (key === 'arrested_age_year') {
+        next = handleArrestedAgeChange(val, next);
+      }
+
+      if (key === 'arrested_perm_same' && (val === true || val === 'Yes')) {
+        next = syncArrestedPermAddress(next);
+      }
+
+      if (next.arrested_perm_same === true || next.arrested_perm_same === 'Yes') {
+        if (key === 'arrested_house_no') next.arrested_perm_house_no = val;
+        if (key === 'arrested_street') next.arrested_perm_street = val;
+        if (key === 'arrested_colony') next.arrested_perm_colony = val;
+        if (key === 'arrested_city_town_village') next.arrested_perm_city_town_village = val;
+        if (key === 'arrested_tehsil_block_mandal') next.arrested_perm_tehsil_block_mandal = val;
+        if (key === 'arrested_country') next.arrested_perm_country = val;
+        if (key === 'arrested_state') next.arrested_perm_state = val;
+        if (key === 'arrested_district') next.arrested_perm_district = val;
+        if (key === 'arrested_police_station') next.arrested_perm_police_station = val;
+        if (key === 'arrested_pincode') next.arrested_perm_pincode = val;
+      }
+
+      if (arrestedModalErrors[key]) {
+        setArrestedModalErrors((e) => { const n = { ...e }; delete n[key]; return n; });
+      }
+
+      return next;
+    });
+  };
+
+  const saveArrestedEntry = () => {
+    const arrestedFields = allSchemaFields.filter(f => f.field_key?.startsWith('arrested_') || f.field_key?.startsWith('arrest_') || f.section === 'arrestee_info' || f.section === 'arrested_personal_info' || f.section === 'arrested_address' || f.section === 'arrest_details');
+    const errs = {};
+    const touchedFields = {};
+
+    arrestedFields.forEach(f => {
+      if (f.show_when) {
+        try {
+          const cond = typeof f.show_when === 'string' ? JSON.parse(f.show_when) : f.show_when;
+          if (cond && cond.field) {
+            const currentValue = String(arrestedTempValues[cond.field] || '').toLowerCase();
+            const allowed = Array.isArray(cond.value)
+              ? cond.value.map(v => String(v).toLowerCase())
+              : [String(cond.value || '').toLowerCase()];
+            if (!allowed.includes(currentValue)) return;
+          }
+        } catch (e) {}
+      }
+
+      const rules = parseRules(f.validation_rules);
+      if (rules.required) {
+        const val = arrestedTempValues[f.field_key];
+        const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+        if (isEmpty) {
+          const label = lang === 'hi' ? (f.label_hi || f.label_en) : f.label_en;
+          errs[f.field_key] = lang === 'hi' ? `${label} आवश्यक है` : `${label} is required`;
+        }
+      }
+    });
+
+    if (!arrestedTempValues.arrested_first_name) {
+      errs.arrested_first_name = lang === 'hi' ? 'पहला नाम आवश्यक है' : 'First Name is required';
+    }
+    if (!arrestedTempValues.arrested_gender) {
+      errs.arrested_gender = lang === 'hi' ? 'लिंग आवश्यक है' : 'Gender is required';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setArrestedModalErrors(errs);
+      arrestedFields.forEach(f => { touchedFields[f.field_key] = true; });
+      setArrestedModalTouched(touchedFields);
+      toast.error(lang === 'hi' ? 'कृपया सभी आवश्यक फ़ील्ड भरें।' : 'Please fill all required fields.');
+      return;
+    }
+
+    const list = [...(repeaterState.arrested_info || [])];
+    if (activeArrestedIndex !== null) {
+      list[activeArrestedIndex] = arrestedTempValues;
+    } else {
+      list.push(arrestedTempValues);
+    }
+
+    setRepeaterState(prev => ({ ...prev, arrested_info: list }));
+    setIsArrestedModalOpen(false);
+  };
+
+  const getIntimationName = (item) => {
+    return item?.intimated_relative_name || '—';
+  };
+
+  const getIntimationAddress = (item) => {
+    const parts = [
+      item?.intimation_house_no,
+      item?.intimation_street,
+      item?.intimation_colony,
+      item?.intimation_city_town_village,
+      item?.intimation_district,
+      item?.intimation_state
+    ].filter(Boolean);
+    return parts.join(', ') || '—';
+  };
+
+  const openIntimationAddModal = () => {
+    setActiveIntimationIndex(null);
+    setIntimationTempValues({});
+    setIntimationModalErrors({});
+    setIntimationModalTouched({});
+    setIntimationSubTab('personal');
+    setIsIntimationModalOpen(true);
+  };
+
+  const openIntimationEditModal = (index) => {
+    const list = repeaterState.intimation_details || [];
+    setActiveIntimationIndex(index);
+    setIntimationTempValues(list[index] || {});
+    setIntimationModalErrors({});
+    setIntimationModalTouched({});
+    setIntimationSubTab('personal');
+    setIsIntimationModalOpen(true);
+  };
+
+  const deleteIntimationEntry = (index) => {
+    const list = repeaterState.intimation_details || [];
+    const nextList = list.filter((_, idx) => idx !== index);
+    setRepeaterState(prev => ({ ...prev, intimation_details: nextList }));
+  };
+
+  const handleIntimationModalChange = (key, val) => {
+    setIntimationTempValues(prev => {
+      const next = { ...prev, [key]: val };
+      if (intimationModalErrors[key]) {
+        setIntimationModalErrors(e => { const n = { ...e }; delete n[key]; return n; });
+      }
+      return next;
+    });
+  };
+
+  const saveIntimationEntry = () => {
+    const intimationFields = allSchemaFields.filter(f => f.field_key?.startsWith('intimation_') || f.field_key?.startsWith('intimated_') || f.section === 'intimation_details');
+    const errs = {};
+    const touchedFields = {};
+
+    intimationFields.forEach(f => {
+      if (f.show_when) {
+        try {
+          const cond = typeof f.show_when === 'string' ? JSON.parse(f.show_when) : f.show_when;
+          if (cond && cond.field) {
+            const currentValue = String(intimationTempValues[cond.field] || '').toLowerCase();
+            const allowed = Array.isArray(cond.value)
+              ? cond.value.map(v => String(v).toLowerCase())
+              : [String(cond.value || '').toLowerCase()];
+            if (!allowed.includes(currentValue)) return;
+          }
+        } catch (e) {}
+      }
+
+      const rules = parseRules(f.validation_rules);
+      if (rules.required) {
+        const val = intimationTempValues[f.field_key];
+        const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+        if (isEmpty) {
+          const label = lang === 'hi' ? (f.label_hi || f.label_en) : f.label_en;
+          errs[f.field_key] = lang === 'hi' ? `${label} आवश्यक है` : `${label} is required`;
+        }
+      }
+    });
+
+    if (!intimationTempValues.intimated_relative_name) {
+      errs.intimated_relative_name = lang === 'hi' ? 'रिश्तेदार का नाम आवश्यक है' : 'Relative Name is required';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setIntimationModalErrors(errs);
+      intimationFields.forEach(f => { touchedFields[f.field_key] = true; });
+      setIntimationModalTouched(touchedFields);
+      toast.error(lang === 'hi' ? 'कृपया सभी आवश्यक फ़ील्ड भरें।' : 'Please fill all required fields.');
+      return;
+    }
+
+    const list = [...(repeaterState.intimation_details || [])];
+    if (activeIntimationIndex !== null) {
+      list[activeIntimationIndex] = intimationTempValues;
+    } else {
+      list.push(intimationTempValues);
+    }
+
+    setRepeaterState(prev => ({ ...prev, intimation_details: list }));
+    setIsIntimationModalOpen(false);
+  };
+
   const saveVictimEntry = () => {
     const victimFields = allSchemaFields.filter(f => f.field_key?.startsWith('victim_') || f.section === 'victim_address' || f.section === 'victim_personal_info');
     const errs = {};
@@ -3059,6 +4885,25 @@ const renderAccusedStep = () => {
     }
   }, [initialPersons, initialProperties, finalSchema.length]);
 
+  // Auto-populate 1 empty row for property details if empty and not read-only
+  useEffect(() => {
+    if (!readOnly && recordType === 'CASE') {
+      const propertyList = repeaterState?.property_details || [];
+      if (propertyList.length === 0) {
+        setRepeaterState(prev => ({
+          ...prev,
+          property_details: [{
+            property_major_category: '',
+            property_minor_category: '',
+            property_details: '',
+            property_value_inr: '',
+            property_stolen_recovered: 'Stolen'
+          }]
+        }));
+      }
+    }
+  }, [repeaterState?.property_details?.length, readOnly, recordType]);
+
   /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
     const seed = initialValues?.data || initialValues || {};
@@ -3136,12 +4981,18 @@ const renderAccusedStep = () => {
     section.fields.forEach((field) => {
       // Skip validating if field is hidden by condition
       if (field.show_when) {
-        const { field: targetField, value: targetValue } = field.show_when;
-        const currentValue = String(currentValues[targetField] || '').toLowerCase();
-        const allowed = Array.isArray(targetValue)
-          ? targetValue.map(v => String(v).toLowerCase())
-          : [String(targetValue || '').toLowerCase()];
-        if (!allowed.includes(currentValue)) return;
+        const isShown = (() => {
+          try {
+            const cond = typeof field.show_when === 'string' ? JSON.parse(field.show_when) : field.show_when;
+            if (!cond || !cond.field) return true;
+            const val = currentValues[cond.field];
+            const checkVals = Array.isArray(cond.value) ? cond.value : [cond.value];
+            return checkVals.some(v => String(v || '').toLowerCase() === String(val || '').toLowerCase());
+          } catch (e) {
+            return true;
+          }
+        })();
+        if (!isShown) return;
       }
 
       const rules = parseRules(field.validation_rules);
@@ -3369,6 +5220,7 @@ const renderAccusedStep = () => {
       const selectedFir = values.selected_fir;
       if (selectedFir) {
         const matchedBackendCase = (casesData || []).find(c => {
+          if (!c) return false;
           const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
           return firNo === selectedFir;
         });
@@ -3445,6 +5297,7 @@ const renderAccusedStep = () => {
       const selectedFir = values.selected_fir;
       if (selectedFir) {
         const matchedBackendCase = (casesData || []).find(c => {
+          if (!c) return false;
           const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
           return firNo === selectedFir;
         });
@@ -3666,6 +5519,12 @@ const renderAccusedStep = () => {
           <form onSubmit={(e) => e.preventDefault()} noValidate>
             {recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0 ? (
               renderFirSearchStep()
+            ) : (recordType === 'ARREST' || recordType === 'UIDB') && activeSection?.title_en === 'General Information' ? (
+              renderArrestGeneralInfoStep()
+            ) : recordType === 'ARREST' && activeSection?.title_en === 'Arrested' ? (
+              renderArrestedStep()
+            ) : recordType === 'ARREST' && activeSection?.title_en === 'Intimation Details' ? (
+              renderIntimationStep()
             ) : recordType === 'CASE' && currentStep === 0 ? (
               renderActsAndSectionsStep()
               ) : recordType === 'CASE' && currentStep === 1 ? ( 
@@ -3676,6 +5535,10 @@ const renderAccusedStep = () => {
                renderVictimStep() 
               ) : recordType === 'CASE' && currentStep === 5 ? ( 
                renderAccusedStep() 
+              ) : recordType === 'CASE' && currentStep === 6 ? ( 
+               renderPropertyStep() 
+              ) : recordType === 'CASE' && currentStep === 7 ? ( 
+               renderActionTakenStep() 
             ) : (
               <FormSection
                 section={activeSection}
