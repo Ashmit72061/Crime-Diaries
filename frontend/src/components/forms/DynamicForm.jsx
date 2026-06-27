@@ -14,6 +14,7 @@ import api from '../../utils/api.js';
 import FormSection from './FormSection.jsx';
 import FormToolbar from './FormToolbar.jsx';
 import FormAutosave from './FormAutosave.jsx';
+import FieldRenderer from './FieldRenderer.jsx';
 
 // Mock registry for Acts & Sections to be loaded dynamically from the backend in the future
 const ACTS_SECTIONS_REGISTRY = [
@@ -1150,6 +1151,29 @@ export default function DynamicForm({
   };
 
 const renderOccurrenceStep = () => {
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+
+  const occurrenceInfoKeys = [
+    'occurrence_time_type',
+    'occurrence_from_date_time',
+    'occurrence_to_date_time',
+    'info_received_at_ps_date_time',
+    'occurrence_place',
+    'local_head'
+  ];
+
+  const occurrencePlaceKeys = [
+    'occurrence_house_no',
+    'occurrence_street',
+    'occurrence_colony',
+    'occurrence_city_town_village',
+    'occurrence_tehsil_block_mandal',
+    'occurrence_pincode',
+    'occurrence_state',
+    'occurrence_district',
+    'occurrence_police_station'
+  ];
+
   return (
     <div className="grid grid-cols-2 gap-4 text-sm">
 
@@ -1163,71 +1187,39 @@ const renderOccurrenceStep = () => {
           </legend>
 
           <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+            {(() => {
+              const activeFields = occurrenceInfoKeys
+                .map(key => allFields.find(f => f.field_key === key))
+                .filter(Boolean);
 
-            {/* Row 1 */}
-            <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium">
-              Occurrence Date
-            </div>
-            <div className="px-2 py-1 border-b">
-              <input
-                type="date"
-                value={values?.occurrence_date || ""}
-                disabled={readOnly}
-                onChange={(e) =>
-                  handleChange("occurrence_date", e.target.value)
-                }
-                className="w-full h-7 border border-[#7a9cc5] px-2"
-              />
-            </div>
+              return activeFields.map((field, index) => {
+                const key = field.field_key;
+                const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+                const rules = parseRules(field.validation_rules);
+                const isRequired = !!rules.required;
+                const isLast = index === activeFields.length - 1;
 
-            {/* Row 2 */}
-            <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium">
-              Time of Occurrence
-            </div>
-            <div className="px-2 py-1 border-b">
-              <input
-                type="time"
-                value={values?.time_of_occurrence || ""}
-                disabled={readOnly}
-                onChange={(e) =>
-                  handleChange("time_of_occurrence", e.target.value)
-                }
-                className="w-full h-7 border border-[#7a9cc5] px-2"
-              />
-            </div>
-
-            {/* Row 3 */}
-            <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium">
-              Occurrence Place
-            </div>
-            <div className="px-2 py-1 border-b">
-              <input
-                type="text"
-                value={values?.occurrence_place || ""}
-                disabled={readOnly}
-                onChange={(e) =>
-                  handleChange("occurrence_place", e.target.value)
-                }
-                className="w-full h-7 border border-[#7a9cc5] px-2"
-              />
-            </div>
-
-            {/* Row 4 */}
-            <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium">
-              Local Head
-            </div>
-            <div className="px-2 py-1">
-              <input
-                type="text"
-                value={values?.local_head || ""}
-                disabled={readOnly}
-                onChange={(e) =>
-                  handleChange("local_head", e.target.value)
-                }
-                className="w-full h-7 border border-[#7a9cc5] px-2"
-              />
-            </div>
-
+                return (
+                  <React.Fragment key={key}>
+                    <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+                      <span>{label}</span>
+                      {isRequired && <span className="text-red-500 font-bold">*</span>}
+                    </div>
+                    <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+                      <FieldRenderer
+                        field={field}
+                        value={values[key]}
+                        onChange={handleChange}
+                        readOnly={readOnly || field.readonly === true || field.readonly === 'true'}
+                        hasError={touched[key] && !!errors[key]}
+                        lang={lang}
+                        values={values}
+                      />
+                    </div>
+                  </React.Fragment>
+                );
+              });
+            })()}
           </div>
         </fieldset>
 
@@ -1272,44 +1264,39 @@ const renderOccurrenceStep = () => {
           </legend>
 
           <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+            {(() => {
+              const activeFields = occurrencePlaceKeys
+                .map(key => allFields.find(f => f.field_key === key))
+                .filter(Boolean);
 
-            {[
-              ["House No.", "house_no"],
-              ["Street Name", "street_name"],
-              ["Colony / Locality / Area", "colony_locality_area"],
-              ["Village / Town / Area", "village_town_area"],
-              ["Tehsil / Block / Mandal", "tehsil_block_mandal"],
-              ["Pincode", "pincode"]
-            ].map(([label, key], index) => (
-              <React.Fragment key={key}>
+              return activeFields.map((field, index) => {
+                const key = field.field_key;
+                const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+                const rules = parseRules(field.validation_rules);
+                const isRequired = !!rules.required;
+                const isLast = index === activeFields.length - 1;
 
-                <div
-                  className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium ${
-                    index !== 5 ? "border-b" : ""
-                  }`}
-                >
-                  {label}
-                </div>
-
-                <div
-                  className={`px-2 py-1 ${
-                    index !== 5 ? "border-b" : ""
-                  }`}
-                >
-                  <input
-                    type="text"
-                    value={values?.[key] || ""}
-                    disabled={readOnly}
-                    onChange={(e) =>
-                      handleChange(key, e.target.value)
-                    }
-                    className="w-full h-7 border border-[#7a9cc5] px-2"
-                  />
-                </div>
-
-              </React.Fragment>
-            ))}
-
+                return (
+                  <React.Fragment key={key}>
+                    <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+                      <span>{label}</span>
+                      {isRequired && <span className="text-red-500 font-bold">*</span>}
+                    </div>
+                    <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+                      <FieldRenderer
+                        field={field}
+                        value={values[key]}
+                        onChange={handleChange}
+                        readOnly={readOnly || field.readonly === true || field.readonly === 'true'}
+                        hasError={touched[key] && !!errors[key]}
+                        lang={lang}
+                        values={values}
+                      />
+                    </div>
+                  </React.Fragment>
+                );
+              });
+            })()}
           </div>
         </fieldset>
 
@@ -1319,6 +1306,1143 @@ const renderOccurrenceStep = () => {
   );
 };
 
+const renderComplainantStep = () => {
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+
+  const renderField = (key) => {
+    const field = allFields.find(f => f.field_key === key);
+    if (!field) return null;
+    return (
+      <FieldRenderer
+        field={field}
+        value={values[key]}
+        onChange={handleChange}
+        readOnly={readOnly || field.readonly === true || field.readonly === 'true'}
+        hasError={touched[key] && !!errors[key]}
+        lang={lang}
+        values={values}
+      />
+    );
+  };
+
+  const renderFieldWithLabel = (key, customLabel = null, isLast = false, forceReadOnly = false) => {
+    const field = allFields.find(f => f.field_key === key);
+    if (!field) return null;
+    const label = customLabel || (lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en);
+    const rules = parseRules(field.validation_rules);
+    const isRequired = !!rules.required;
+    const isDisabled = forceReadOnly || readOnly || field.readonly === true || field.readonly === 'true';
+
+    return (
+      <React.Fragment key={key}>
+        <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <span>{label}</span>
+          {isRequired && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <FieldRenderer
+            field={field}
+            value={values[key]}
+            onChange={handleChange}
+            readOnly={isDisabled}
+            hasError={touched[key] && !!errors[key]}
+            lang={lang}
+            values={values}
+          />
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  const renderPersonalInfoSubTab = () => {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          
+          {/* Left Column - Personal Info (no border outline) */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderFieldWithLabel('complainant_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
+              {renderFieldWithLabel('complainant_first_name')}
+              {renderFieldWithLabel('complainant_middle_name')}
+              {renderFieldWithLabel('complainant_last_name', null, true)}
+            </div>
+          </div>
+
+          {/* Right Column - Gender, Marital Status, Mobile, Email, checkbox */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderFieldWithLabel('complainant_gender')}
+              {renderFieldWithLabel('complainant_marital_status')}
+              
+              {/* Mobile number with country code */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'मोबाइल नंबर' : 'Mobile No.'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-1.5 items-center">
+                  <div className="w-14">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'complainant_mobile_country_code')}
+                      value={values.complainant_mobile_country_code || '+91'}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'complainant_mobile')}
+                      value={values.complainant_mobile}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderFieldWithLabel('complainant_email')}
+              {renderFieldWithLabel('complainant_same_as_victim', null, true)}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom part */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          
+          {/* Relation Details */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'रिश्तेदार का विवरण' : 'Relative Details'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderFieldWithLabel('complainant_relation_type')}
+              {renderFieldWithLabel('complainant_relative_name', null, true)}
+            </div>
+          </div>
+
+          {/* Age Panel */}
+          <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'आयु विवरण' : 'Age Panel'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderFieldWithLabel('complainant_dob')}
+              
+              {/* Age (Year / Month) */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'आयु (वर्ष / महीने)' : 'Age (Year / Month)'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-2">
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'complainant_age_year')}
+                      value={values.complainant_age_year}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'complainant_age_month')}
+                      value={values.complainant_age_month}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderFieldWithLabel('complainant_birth_year')}
+
+              {/* Age Range */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'आयु सीमा (से - तक)' : 'Age Range (From - To)'}</span>
+                </div>
+                <div className="px-2 py-1 flex gap-2">
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'complainant_age_range_from')}
+                      value={values.complainant_age_range_from}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'complainant_age_range_to')}
+                      value={values.complainant_age_range_to}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+            </div>
+          </fieldset>
+
+        </div>
+      </div>
+    );
+  };
+
+  const renderAddressSubTab = () => {
+    const isSame = values.complainant_perm_same === 'Yes' || values.complainant_perm_same === true;
+    return (
+      <div className="space-y-6">
+        
+        {/* PRESENT ADDRESS PANEL */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'वर्तमान पता' : 'Present Address'}
+          </legend>
+
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            
+            {/* Left Box (Present Address granular fields) */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderFieldWithLabel('complainant_house_no')}
+              {renderFieldWithLabel('complainant_street')}
+              {renderFieldWithLabel('complainant_colony')}
+              {renderFieldWithLabel('complainant_city_town_village')}
+              {renderFieldWithLabel('complainant_tehsil_block_mandal', null, true)}
+            </div>
+
+            {/* Right Box (Present Address dropdowns/info) */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderFieldWithLabel('complainant_country')}
+              {renderFieldWithLabel('complainant_state')}
+              {renderFieldWithLabel('complainant_district')}
+              {renderFieldWithLabel('complainant_police_station')}
+              {renderFieldWithLabel('complainant_pincode', null, true)}
+            </div>
+
+          </div>
+        </fieldset>
+
+        {/* PERMANENT ADDRESS PANEL */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'स्थायी पता' : 'Permanent Address'}
+          </legend>
+
+          {/* Same as present toggle */}
+          <div className="bg-[#dfeaf5]/50 border border-[#c7d8ea] px-3 py-2 flex items-center justify-between mb-4 text-xs font-semibold rounded">
+            <span>{lang === 'hi' ? 'क्या स्थायी पता वर्तमान पते के समान है?' : 'Is Permanent Address same as Present Address?'}</span>
+            <div className="w-24">
+              <FieldRenderer
+                field={allFields.find(f => f.field_key === 'complainant_perm_same')}
+                value={values.complainant_perm_same}
+                onChange={handleChange}
+                readOnly={readOnly}
+                lang={lang}
+                values={values}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            
+            {/* Left Box (Permanent Address fields) */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderFieldWithLabel('complainant_perm_house_no', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_street', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_colony', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_city_town_village', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_tehsil_block_mandal', null, true, isSame)}
+            </div>
+
+            {/* Right Box (Permanent Address fields) */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderFieldWithLabel('complainant_perm_country', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_state', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_district', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_police_station', null, false, isSame)}
+              {renderFieldWithLabel('complainant_perm_pincode', null, true, isSame)}
+            </div>
+
+          </div>
+        </fieldset>
+
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-Tab selection bar */}
+      <div className="flex gap-2 border-b border-[#7a9cc5] pb-0 bg-slate-100/50 rounded-t p-1">
+        <button
+          type="button"
+          onClick={() => setComplainantTab('personal')}
+          className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+            complainantTab === 'personal'
+              ? 'bg-[#ea580c] text-white'
+              : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+          }`}
+        >
+          {lang === 'hi' ? 'व्यक्तिगत जानकारी' : 'Personal Information'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setComplainantTab('address')}
+          className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+            complainantTab === 'address'
+              ? 'bg-[#ea580c] text-white'
+              : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+          }`}
+        >
+          {lang === 'hi' ? 'पता' : 'Address'}
+        </button>
+      </div>
+
+      {/* Sub-tab content */}
+      <div className="p-2 border border-t-0 border-[#7a9cc5] rounded-b bg-white">
+        {complainantTab === 'personal' ? renderPersonalInfoSubTab() : renderAddressSubTab()}
+      </div>
+    </div>
+  );
+};
+
+const renderVictimStep = () => {
+  const victims = repeaterState?.PERSON_VICTIM || [];
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+
+  // Helper: render a field inside the modal using victimTempValues
+  const renderVictimModalField = (key, customLabel = null, isLast = false, forceReadOnly = false) => {
+    const field = allFields.find(f => f.field_key === key);
+    if (!field) return null;
+    const label = customLabel || (lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en);
+    const rules = parseRules(field.validation_rules);
+    const isRequired = !!rules.required || key === 'victim_first_name' || key === 'victim_gender';
+    const isDisabled = forceReadOnly || readOnly || field.readonly === true || field.readonly === 'true';
+
+    return (
+      <React.Fragment key={key}>
+        <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <span>{label}</span>
+          {isRequired && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <FieldRenderer
+            field={field}
+            value={victimTempValues[key]}
+            onChange={handleVictimModalChange}
+            readOnly={isDisabled}
+            hasError={victimModalTouched[key] && !!victimModalErrors[key]}
+            lang={lang}
+            values={victimTempValues}
+          />
+          {victimModalTouched[key] && victimModalErrors[key] && (
+            <p className="text-red-500 text-[10px] mt-0.5">{victimModalErrors[key]}</p>
+          )}
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  // ── Personal Information sub-tab inside modal ──
+  const renderVictimPersonalInfoSubTab = () => {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+
+          {/* Left Column - Personal Info (no border outline) */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderVictimModalField('victim_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
+              {renderVictimModalField('victim_first_name')}
+              {renderVictimModalField('victim_middle_name')}
+              {renderVictimModalField('victim_last_name', null, true)}
+            </div>
+          </div>
+
+          {/* Right Column - Gender, Marital Status, Mobile, Email */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderVictimModalField('victim_gender')}
+              {renderVictimModalField('victim_marital_status')}
+
+              {/* Mobile number with country code */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'मोबाइल नंबर' : 'Mobile No.'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-1.5 items-center">
+                  <div className="w-14">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'victim_mobile_country_code')}
+                      value={victimTempValues.victim_mobile_country_code || '+91'}
+                      onChange={handleVictimModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={victimTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'victim_mobile')}
+                      value={victimTempValues.victim_mobile}
+                      onChange={handleVictimModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={victimTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderVictimModalField('victim_email', null, true)}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom part */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+
+          {/* Relation Details */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'रिश्तेदार का विवरण' : 'Relative Details'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderVictimModalField('victim_relation_type')}
+              {renderVictimModalField('victim_relative_name', null, true)}
+            </div>
+          </div>
+
+          {/* Age Panel */}
+          <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'आयु विवरण' : 'Age Panel'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderVictimModalField('victim_dob')}
+
+              {/* Age (Year / Month) */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'आयु (वर्ष / महीने)' : 'Age (Year / Month)'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-2">
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'victim_age_year')}
+                      value={victimTempValues.victim_age_year}
+                      onChange={handleVictimModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={victimTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'victim_age_month')}
+                      value={victimTempValues.victim_age_month}
+                      onChange={handleVictimModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={victimTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderVictimModalField('victim_birth_year')}
+
+              {/* Age Range */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'आयु सीमा (से - तक)' : 'Age Range (From - To)'}</span>
+                </div>
+                <div className="px-2 py-1 flex gap-2">
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'victim_age_range_from')}
+                      value={victimTempValues.victim_age_range_from}
+                      onChange={handleVictimModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={victimTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'victim_age_range_to')}
+                      value={victimTempValues.victim_age_range_to}
+                      onChange={handleVictimModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={victimTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+            </div>
+          </fieldset>
+
+        </div>
+      </div>
+    );
+  };
+
+  // ── Address sub-tab inside modal (mirrors complainant address) ──
+  const renderVictimAddressSubTab = () => {
+    const isSame = victimTempValues.victim_perm_same === 'Yes' || victimTempValues.victim_perm_same === true;
+    return (
+      <div className="space-y-6">
+
+        {/* PRESENT ADDRESS PANEL */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'वर्तमान पता' : 'Present Address'}
+          </legend>
+
+          <div className="grid grid-cols-2 gap-4 mt-2">
+
+            {/* Left Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderVictimModalField('victim_house_no')}
+              {renderVictimModalField('victim_street')}
+              {renderVictimModalField('victim_colony')}
+              {renderVictimModalField('victim_city_town_village')}
+              {renderVictimModalField('victim_tehsil_block_mandal', null, true)}
+            </div>
+
+            {/* Right Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderVictimModalField('victim_country')}
+              {renderVictimModalField('victim_state')}
+              {renderVictimModalField('victim_district')}
+              {renderVictimModalField('victim_police_station')}
+              {renderVictimModalField('victim_pincode', null, true)}
+            </div>
+
+          </div>
+        </fieldset>
+
+        {/* PERMANENT ADDRESS PANEL */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'स्थायी पता' : 'Permanent Address'}
+          </legend>
+
+          {/* Same as present toggle */}
+          <div className="bg-[#dfeaf5]/50 border border-[#c7d8ea] px-3 py-2 flex items-center justify-between mb-4 text-xs font-semibold rounded">
+            <span>{lang === 'hi' ? 'क्या स्थायी पता वर्तमान पते के समान है?' : 'Is Permanent Address same as Present Address?'}</span>
+            <div className="w-24">
+              <FieldRenderer
+                field={allFields.find(f => f.field_key === 'victim_perm_same')}
+                value={victimTempValues.victim_perm_same}
+                onChange={handleVictimModalChange}
+                readOnly={readOnly}
+                lang={lang}
+                values={victimTempValues}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+
+            {/* Left Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderVictimModalField('victim_perm_house_no', null, false, isSame)}
+              {renderVictimModalField('victim_perm_street', null, false, isSame)}
+              {renderVictimModalField('victim_perm_colony', null, false, isSame)}
+              {renderVictimModalField('victim_perm_city_town_village', null, false, isSame)}
+              {renderVictimModalField('victim_perm_tehsil_block_mandal', null, true, isSame)}
+            </div>
+
+            {/* Right Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderVictimModalField('victim_perm_country', null, false, isSame)}
+              {renderVictimModalField('victim_perm_state', null, false, isSame)}
+              {renderVictimModalField('victim_perm_district', null, false, isSame)}
+              {renderVictimModalField('victim_perm_police_station', null, false, isSame)}
+              {renderVictimModalField('victim_perm_pincode', null, true, isSame)}
+            </div>
+
+          </div>
+        </fieldset>
+
+      </div>
+    );
+  };
+
+  // Build name & address strings for the summary table
+  const getVictimName = (v) => [v.victim_first_name, v.victim_middle_name, v.victim_last_name].filter(Boolean).join(' ') || '—';
+  const getVictimAddress = (v) => [v.victim_house_no, v.victim_street, v.victim_colony, v.victim_city_town_village, v.victim_district, v.victim_state].filter(Boolean).join(', ') || '—';
+
+  return (
+    <div className="space-y-4">
+
+      {/* Header bar with "+ Add Victim" button at top-right */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-bold text-[#0d2a4a] uppercase tracking-wide">
+          {lang === 'hi' ? `पीड़ित सूची (${victims.length})` : `Victim List (${victims.length})`}
+        </h3>
+        <button
+          type="button"
+          onClick={openVictimAddModal}
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] transition-colors cursor-pointer"
+        >
+          <span className="text-base leading-none">+</span>
+          {lang === 'hi' ? 'पीड़ित जोड़ें' : 'Add Victim'}
+        </button>
+      </div>
+
+      {/* Summary Table */}
+      <div className="border border-[#7a9cc5] rounded overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-[#0d2a4a] text-white">
+              <th className="px-3 py-2 text-left w-14 font-semibold">{lang === 'hi' ? 'क्र.सं.' : 'S.No.'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'नाम' : 'Name'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'पता' : 'Address'}</th>
+              <th className="px-3 py-2 text-center w-28 font-semibold">{lang === 'hi' ? 'कार्रवाई' : 'Actions'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {victims.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-6 text-center text-slate-400 italic">
+                  {lang === 'hi' ? 'कोई पीड़ित नहीं जोड़ा गया। "+ पीड़ित जोड़ें" पर क्लिक करें।' : 'No victims added yet. Click "+ Add Victim" to add.'}
+                </td>
+              </tr>
+            ) : (
+              victims.map((victim, idx) => (
+                <tr key={idx} className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
+                  <td className="px-3 py-2 font-medium">{idx + 1}</td>
+                  <td className="px-3 py-2">{getVictimName(victim)}</td>
+                  <td className="px-3 py-2 text-slate-600">{getVictimAddress(victim)}</td>
+                  <td className="px-3 py-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openVictimEditModal(idx)}
+                      className="text-[#0d2a4a] hover:text-[#ea580c] font-semibold mr-3 cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'संपादन' : 'Edit'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteVictimEntry(idx)}
+                      className="text-red-500 hover:text-red-700 font-semibold cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'हटाएं' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Victim Modal Dialog ── */}
+      {isVictimModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between bg-[#0d2a4a] text-white px-5 py-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide">
+                {activeVictimIndex !== null
+                  ? (lang === 'hi' ? 'पीड़ित जानकारी संपादित करें' : 'Edit Victim Information')
+                  : (lang === 'hi' ? 'पीड़ित जानकारी' : 'Victim Information')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsVictimModalOpen(false)}
+                className="text-white/80 hover:text-white text-2xl leading-none font-bold cursor-pointer transition-colors"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Sub-tab selection bar */}
+            <div className="flex gap-2 border-b border-[#7a9cc5] pb-0 bg-slate-100/50 p-1">
+              <button
+                type="button"
+                onClick={() => setVictimSubTab('personal')}
+                className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+                  victimSubTab === 'personal'
+                    ? 'bg-[#ea580c] text-white'
+                    : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                }`}
+              >
+                {lang === 'hi' ? 'व्यक्तिगत जानकारी' : 'Personal Information'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setVictimSubTab('address')}
+                className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+                  victimSubTab === 'address'
+                    ? 'bg-[#ea580c] text-white'
+                    : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                }`}
+              >
+                {lang === 'hi' ? 'पता' : 'Address'}
+              </button>
+            </div>
+
+            {/* Modal Body (scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 border border-t-0 border-[#7a9cc5] bg-white">
+              {victimSubTab === 'personal' ? renderVictimPersonalInfoSubTab() : renderVictimAddressSubTab()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-3 px-5 py-3 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={saveVictimEntry}
+                className="px-6 py-2 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'सहेजें' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsVictimModalOpen(false)}
+                className="px-6 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded hover:bg-slate-300 cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'बंद करें' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+const renderAccusedStep = () => {
+  const accusedList = repeaterState?.PERSON_ACCUSED || [];
+  const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
+
+  // Helper: render a field inside the modal using accusedTempValues
+  const renderAccusedModalField = (key, customLabel = null, isLast = false, forceReadOnly = false) => {
+    const field = allFields.find(f => f.field_key === key);
+    if (!field) return null;
+    const label = customLabel || (lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en);
+    const rules = parseRules(field.validation_rules);
+    const isRequired = !!rules.required || key === 'accused_first_name' || key === 'accused_gender';
+    const isDisabled = forceReadOnly || readOnly || field.readonly === true || field.readonly === 'true';
+
+    return (
+      <React.Fragment key={key}>
+        <div className={`bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <span>{label}</span>
+          {isRequired && <span className="text-red-500 font-bold">*</span>}
+        </div>
+        <div className={`px-2 py-1 ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+          <FieldRenderer
+            field={field}
+            value={accusedTempValues[key]}
+            onChange={handleAccusedModalChange}
+            readOnly={isDisabled}
+            hasError={accusedModalTouched[key] && !!accusedModalErrors[key]}
+            lang={lang}
+            values={accusedTempValues}
+          />
+          {accusedModalTouched[key] && accusedModalErrors[key] && (
+            <p className="text-red-500 text-[10px] mt-0.5">{accusedModalErrors[key]}</p>
+          )}
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  // ── Personal Information sub-tab inside modal ──
+  const renderAccusedPersonalInfoSubTab = () => {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+
+          {/* Left Column - Personal Info (no border outline) */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderAccusedModalField('accused_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
+              {renderAccusedModalField('accused_first_name')}
+              {renderAccusedModalField('accused_middle_name')}
+              {renderAccusedModalField('accused_last_name', null, true)}
+            </div>
+          </div>
+
+          {/* Right Column - Gender, Marital Status, Mobile, Email */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
+              {renderAccusedModalField('accused_gender')}
+              {renderAccusedModalField('accused_marital_status')}
+
+              {/* Mobile number with country code */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'मोबाइल नंबर' : 'Mobile No.'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-1.5 items-center">
+                  <div className="w-14">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'accused_mobile_country_code')}
+                      value={accusedTempValues.accused_mobile_country_code || '+91'}
+                      onChange={handleAccusedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={accusedTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'accused_mobile')}
+                      value={accusedTempValues.accused_mobile}
+                      onChange={handleAccusedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={accusedTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderAccusedModalField('accused_email', null, true)}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom part */}
+        <div className="grid grid-cols-2 gap-4 mt-6">
+
+          {/* Relation Details */}
+          <div className="border border-[#7a9cc5] rounded px-2 py-2 self-start">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'रिश्तेदार का विवरण' : 'Relative Details'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderAccusedModalField('accused_relation_type')}
+              {renderAccusedModalField('accused_relative_name', null, true)}
+            </div>
+          </div>
+
+          {/* Age Panel */}
+          <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi' ? 'आयु विवरण' : 'Age Panel'}
+            </legend>
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+              {renderAccusedModalField('accused_dob')}
+
+              {/* Age (Year / Month) */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 border-b text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'आयु (वर्ष / महीने)' : 'Age (Year / Month)'}</span>
+                </div>
+                <div className="px-2 py-1 border-b flex gap-2">
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'accused_age_year')}
+                      value={accusedTempValues.accused_age_year}
+                      onChange={handleAccusedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={accusedTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'accused_age_month')}
+                      value={accusedTempValues.accused_age_month}
+                      onChange={handleAccusedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={accusedTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+
+              {renderAccusedModalField('accused_birth_year')}
+
+              {/* Age Range */}
+              <React.Fragment>
+                <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1">
+                  <span>{lang === 'hi' ? 'आयु सीमा (से - तक)' : 'Age Range (From - To)'}</span>
+                </div>
+                <div className="px-2 py-1 flex gap-2">
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'accused_age_range_from')}
+                      value={accusedTempValues.accused_age_range_from}
+                      onChange={handleAccusedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={accusedTempValues}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'accused_age_range_to')}
+                      value={accusedTempValues.accused_age_range_to}
+                      onChange={handleAccusedModalChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={accusedTempValues}
+                    />
+                  </div>
+                </div>
+              </React.Fragment>
+            </div>
+          </fieldset>
+
+        </div>
+      </div>
+    );
+  };
+
+  // ── Address sub-tab inside modal ──
+  const renderAccusedAddressSubTab = () => {
+    const isSame = accusedTempValues.accused_perm_same === 'Yes' || accusedTempValues.accused_perm_same === true;
+    return (
+      <div className="space-y-6">
+
+        {/* PRESENT ADDRESS PANEL */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'वर्तमान पता' : 'Present Address'}
+          </legend>
+
+          <div className="grid grid-cols-2 gap-4 mt-2">
+
+            {/* Left Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderAccusedModalField('accused_house_no')}
+              {renderAccusedModalField('accused_street')}
+              {renderAccusedModalField('accused_colony')}
+              {renderAccusedModalField('accused_city_town_village')}
+              {renderAccusedModalField('accused_tehsil_block_mandal', null, true)}
+            </div>
+
+            {/* Right Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderAccusedModalField('accused_country')}
+              {renderAccusedModalField('accused_state')}
+              {renderAccusedModalField('accused_district')}
+              {renderAccusedModalField('accused_police_station')}
+              {renderAccusedModalField('accused_pincode', null, true)}
+            </div>
+
+          </div>
+        </fieldset>
+
+        {/* PERMANENT ADDRESS PANEL */}
+        <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            {lang === 'hi' ? 'स्थायी पता' : 'Permanent Address'}
+          </legend>
+
+          {/* Same as present toggle */}
+          <div className="bg-[#dfeaf5]/50 border border-[#c7d8ea] px-3 py-2 flex items-center justify-between mb-4 text-xs font-semibold rounded">
+            <span>{lang === 'hi' ? 'क्या स्थायी पता वर्तमान पते के समान है?' : 'Is Permanent Address same as Present Address?'}</span>
+            <div className="w-24">
+              <FieldRenderer
+                field={allFields.find(f => f.field_key === 'accused_perm_same')}
+                value={accusedTempValues.accused_perm_same}
+                onChange={handleAccusedModalChange}
+                readOnly={readOnly}
+                lang={lang}
+                values={accusedTempValues}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+
+            {/* Left Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderAccusedModalField('accused_perm_house_no', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_street', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_colony', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_city_town_village', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_tehsil_block_mandal', null, true, isSame)}
+            </div>
+
+            {/* Right Box */}
+            <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] self-start">
+              {renderAccusedModalField('accused_perm_country', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_state', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_district', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_police_station', null, false, isSame)}
+              {renderAccusedModalField('accused_perm_pincode', null, true, isSame)}
+            </div>
+
+          </div>
+        </fieldset>
+
+      </div>
+    );
+  };
+
+  // Build name & address strings for the summary table
+  const getAccusedName = (v) => [v.accused_first_name, v.accused_middle_name, v.accused_last_name].filter(Boolean).join(' ') || '—';
+  const getAccusedAddress = (v) => [v.accused_house_no, v.accused_street, v.accused_colony, v.accused_city_town_village, v.accused_district, v.accused_state].filter(Boolean).join(', ') || '—';
+
+  return (
+    <div className="space-y-4">
+
+      {/* Header bar with "+ Add Accused" button at top-right */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-bold text-[#0d2a4a] uppercase tracking-wide">
+          {lang === 'hi' ? `अभियुक्त सूची (${accusedList.length})` : `Accused List (${accusedList.length})`}
+        </h3>
+        <button
+          type="button"
+          onClick={openAccusedAddModal}
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] transition-colors cursor-pointer"
+        >
+          <span className="text-base leading-none">+</span>
+          {lang === 'hi' ? 'अभियुक्त जोड़ें' : 'Add Accused'}
+        </button>
+      </div>
+
+      {/* Summary Table */}
+      <div className="border border-[#7a9cc5] rounded overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-[#0d2a4a] text-white">
+              <th className="px-3 py-2 text-left w-14 font-semibold">{lang === 'hi' ? 'क्र.सं.' : 'S.No.'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'नाम' : 'Name'}</th>
+              <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'पता' : 'Address'}</th>
+              <th className="px-3 py-2 text-center w-28 font-semibold">{lang === 'hi' ? 'कार्रवाई' : 'Actions'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {accusedList.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-6 text-center text-slate-400 italic">
+                  {lang === 'hi' ? 'कोई अभियुक्त नहीं जोड़ा गया। "+ अभियुक्त जोड़ें" पर क्लिक करें।' : 'No accused added yet. Click "+ Add Accused" to add.'}
+                </td>
+              </tr>
+            ) : (
+              accusedList.map((accused, idx) => (
+                <tr key={idx} className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
+                  <td className="px-3 py-2 font-medium">{idx + 1}</td>
+                  <td className="px-3 py-2">{getAccusedName(accused)}</td>
+                  <td className="px-3 py-2 text-slate-600">{getAccusedAddress(accused)}</td>
+                  <td className="px-3 py-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openAccusedEditModal(idx)}
+                      className="text-[#0d2a4a] hover:text-[#ea580c] font-semibold mr-3 cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'संपादन' : 'Edit'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteAccusedEntry(idx)}
+                      className="text-red-500 hover:text-red-700 font-semibold cursor-pointer underline transition-colors"
+                    >
+                      {lang === 'hi' ? 'हटाएं' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Accused Modal Dialog ── */}
+      {isAccusedModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-[1050px] h-[85vh] max-h-[750px] flex flex-col overflow-hidden">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between bg-[#0d2a4a] text-white px-5 py-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide">
+                {activeAccusedIndex !== null
+                  ? (lang === 'hi' ? 'अभियुक्त जानकारी संपादित करें' : 'Edit Accused Information')
+                  : (lang === 'hi' ? 'अभियुक्त जानकारी' : 'Accused Information')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsAccusedModalOpen(false)}
+                className="text-white/80 hover:text-white text-2xl leading-none font-bold cursor-pointer transition-colors"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Sub-tab selection bar */}
+            <div className="flex gap-2 border-b border-[#7a9cc5] pb-0 bg-slate-100/50 p-1">
+              <button
+                type="button"
+                onClick={() => setAccusedSubTab('personal')}
+                className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+                  accusedSubTab === 'personal'
+                    ? 'bg-[#ea580c] text-white'
+                    : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                }`}
+              >
+                {lang === 'hi' ? 'व्यक्तिगत जानकारी' : 'Personal Information'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccusedSubTab('address')}
+                className={`px-4 py-1.5 text-xs font-bold border border-b-0 border-[#7a9cc5] rounded-t cursor-pointer transition-colors ${
+                  accusedSubTab === 'address'
+                    ? 'bg-[#ea580c] text-white'
+                    : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
+                }`}
+              >
+                {lang === 'hi' ? 'पता' : 'Address'}
+              </button>
+            </div>
+
+            {/* Modal Body (scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 border border-t-0 border-[#7a9cc5] bg-white">
+              {accusedSubTab === 'personal' ? renderAccusedPersonalInfoSubTab() : renderAccusedAddressSubTab()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-3 px-5 py-3 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={saveAccusedEntry}
+                className="px-6 py-2 bg-[#0d2a4a] text-white text-xs font-bold rounded hover:bg-[#16406d] cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'सहेजें' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAccusedModalOpen(false)}
+                className="px-6 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded hover:bg-slate-300 cursor-pointer transition-colors"
+              >
+                {lang === 'hi' ? 'बंद करें' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
   const firOptions = React.useMemo(() => {
     return (casesData || []).map(c => {
       const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
@@ -1348,11 +2472,47 @@ const renderOccurrenceStep = () => {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
       const tabSpecs = [
         { title_en: 'Acts & Sections', title_hi: 'अधिनियम और धाराएं', keys: ['uid', 'district', 'police_station', 'submission_status', 'case_type', 'fir_no', 'fir_date', 'gd_no', 'gd_date', 'gd_time', 'beat_no', 'act_name', 'sections'] },
-        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_date', 'time_of_occurrence', 'occurrence_place', 'local_head','house_no','street_name','colony_locality_area','village_town_area','tehsil_block_mandal','pincode','forest_place'] },
-        { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: ['complainant_name', 'complainant_address'] },
+        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'occurrence_place', 'local_head', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
+        { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: [
+          'complainant_npr', 'complainant_first_name', 'complainant_middle_name', 'complainant_last_name',
+          'complainant_gender', 'complainant_marital_status', 'complainant_mobile_country_code', 'complainant_mobile',
+          'complainant_email', 'complainant_same_as_victim', 'complainant_relation_type', 'complainant_relative_name',
+          'complainant_dob', 'complainant_age_year', 'complainant_age_month', 'complainant_birth_year',
+          'complainant_age_range_from', 'complainant_age_range_to',
+          'complainant_house_no', 'complainant_street', 'complainant_colony', 'complainant_city_town_village',
+          'complainant_tehsil_block_mandal', 'complainant_country', 'complainant_state', 'complainant_district',
+          'complainant_police_station', 'complainant_pincode',
+          'complainant_perm_same', 'complainant_perm_house_no', 'complainant_perm_street', 'complainant_perm_colony',
+          'complainant_perm_city_town_village', 'complainant_perm_tehsil_block_mandal', 'complainant_perm_country',
+          'complainant_perm_state', 'complainant_perm_district', 'complainant_perm_police_station', 'complainant_perm_pincode'
+        ] },
         { title_en: 'FIR Contents',    title_hi: 'प्राथमिकी विवरण', keys: ['brief_facts'] },
-        { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [] },
-        { title_en: 'Accused',          title_hi: 'आरोपी', keys: [] },
+        { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [
+          'victim_npr', 'victim_first_name', 'victim_middle_name', 'victim_last_name',
+          'victim_gender', 'victim_marital_status', 'victim_mobile_country_code', 'victim_mobile',
+          'victim_email', 'victim_relation_type', 'victim_relative_name',
+          'victim_dob', 'victim_age_year', 'victim_age_month', 'victim_birth_year',
+          'victim_age_range_from', 'victim_age_range_to',
+          'victim_house_no', 'victim_street', 'victim_colony', 'victim_city_town_village',
+          'victim_tehsil_block_mandal', 'victim_country', 'victim_state', 'victim_district',
+          'victim_police_station', 'victim_pincode', 'victim_present_address',
+          'victim_perm_same', 'victim_perm_house_no', 'victim_perm_street', 'victim_perm_colony',
+          'victim_perm_city_town_village', 'victim_perm_tehsil_block_mandal', 'victim_perm_country',
+          'victim_perm_state', 'victim_perm_district', 'victim_perm_police_station', 'victim_perm_pincode'
+        ] },
+        { title_en: 'Accused',          title_hi: 'आरोपी', keys: [
+          'accused_npr', 'accused_first_name', 'accused_middle_name', 'accused_last_name',
+          'accused_gender', 'accused_marital_status', 'accused_mobile_country_code', 'accused_mobile',
+          'accused_email', 'accused_relation_type', 'accused_relative_name',
+          'accused_dob', 'accused_age_year', 'accused_age_month', 'accused_birth_year',
+          'accused_age_range_from', 'accused_age_range_to',
+          'accused_house_no', 'accused_street', 'accused_colony', 'accused_city_town_village',
+          'accused_tehsil_block_mandal', 'accused_country', 'accused_state', 'accused_district',
+          'accused_police_station', 'accused_pincode', 'accused_present_address',
+          'accused_perm_same', 'accused_perm_house_no', 'accused_perm_street', 'accused_perm_colony',
+          'accused_perm_city_town_village', 'accused_perm_tehsil_block_mandal', 'accused_perm_country',
+          'accused_perm_state', 'accused_perm_district', 'accused_perm_police_station', 'accused_perm_pincode'
+        ] },
         { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: ['property_description', 'property_status'] },
         { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
       ];
@@ -1370,7 +2530,7 @@ const renderOccurrenceStep = () => {
     }
 
     if (recordType === 'ARREST' && caseType === 'against_fir') {
-      const hasVirtualStep = filteredSchema[0]?.fields?.[0]?.field_key === 'selected_fir';
+      const hasVirtualStep = schema[0]?.fields?.[0]?.field_key === 'selected_fir';
       if (!hasVirtualStep) {
         const virtualSelectFirStep = {
           title_en: 'Select FIR',
@@ -1386,7 +2546,7 @@ const renderOccurrenceStep = () => {
             }
           ]
         };
-        return [virtualSelectFirStep, ...filteredSchema];
+        return [virtualSelectFirStep, ...schema];
       }
     }
     return schema;
@@ -1402,10 +2562,27 @@ const renderOccurrenceStep = () => {
   const [touched,      setTouched     ] = useState({});
   const [currentStep,  setCurrentStep ] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [repeaterState, setRepeaterState] = useState({});
   const [showAddRow,   setShowAddRow  ] = useState(false);
   const [newAct,       setNewAct      ] = useState('');
   const [newSection,   setNewSection  ] = useState('');
   const [actsSectionsRegistry, setActsSectionsRegistry] = useState(ACTS_SECTIONS_REGISTRY);
+
+  // Victim Modal state hooks
+  const [isVictimModalOpen, setIsVictimModalOpen] = useState(false);
+  const [activeVictimIndex, setActiveVictimIndex] = useState(null);
+  const [victimTempValues, setVictimTempValues]   = useState({});
+  const [victimSubTab, setVictimSubTab]           = useState('personal');
+  const [victimModalErrors, setVictimModalErrors] = useState({});
+  const [victimModalTouched, setVictimModalTouched] = useState({});
+
+  // Accused Modal state hooks
+  const [isAccusedModalOpen, setIsAccusedModalOpen] = useState(false);
+  const [activeAccusedIndex, setActiveAccusedIndex] = useState(null);
+  const [accusedTempValues, setAccusedTempValues]   = useState({});
+  const [accusedSubTab, setAccusedSubTab]           = useState('personal');
+  const [accusedModalErrors, setAccusedModalErrors] = useState({});
+  const [accusedModalTouched, setAccusedModalTouched] = useState({});
 
   /* ── Major / Minor Head state ────────────────────────────────────────────── */
   const [selectedMajorHead, setSelectedMajorHead] = useState('');
@@ -1419,6 +2596,301 @@ const renderOccurrenceStep = () => {
     if (!schema || schema.length === 0) return [];
     return schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
   }, [schema]);
+
+  const openVictimAddModal = () => {
+    setVictimTempValues({});
+    setActiveVictimIndex(null);
+    setVictimSubTab('personal');
+    setVictimModalErrors({});
+    setVictimModalTouched({});
+    setIsVictimModalOpen(true);
+  };
+
+  const openVictimEditModal = (idx) => {
+    const list = repeaterState.PERSON_VICTIM || [];
+    setVictimTempValues({ ...(list[idx] || {}) });
+    setActiveVictimIndex(idx);
+    setVictimSubTab('personal');
+    setVictimModalErrors({});
+    setVictimModalTouched({});
+    setIsVictimModalOpen(true);
+  };
+
+  const deleteVictimEntry = (idx) => {
+    const list = repeaterState.PERSON_VICTIM || [];
+    const nextList = list.filter((_, i) => i !== idx);
+    setRepeaterState(prev => ({ ...prev, PERSON_VICTIM: nextList }));
+  };
+
+  const handleVictimModalChange = (key, val) => {
+    setVictimTempValues((prev) => {
+      const next = { ...prev, [key]: val };
+
+      // DOB, Age (Years) and Year of Birth interlinking
+      if (key === 'victim_dob') {
+        const dateStr = val;
+        if (dateStr && dateStr.length >= 4) {
+          const dobDate = new Date(dateStr);
+          if (!isNaN(dobDate.getTime())) {
+            const birthY = dobDate.getFullYear();
+            next.victim_birth_year = birthY;
+            const diffMs = Date.now() - dobDate.getTime();
+            const ageY = Math.max(0, Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000)));
+            next.victim_age_year = ageY;
+            const ageM = Math.max(0, Math.floor((diffMs % (365.25 * 24 * 60 * 60 * 1000)) / (30.43 * 24 * 60 * 60 * 1000)));
+            next.victim_age_month = ageM;
+          }
+        } else {
+          next.victim_birth_year = '';
+          next.victim_age_year = '';
+          next.victim_age_month = '';
+        }
+      }
+
+      if (key === 'victim_age_year') {
+        const num = parseInt(val, 10);
+        if (!isNaN(num) && num >= 0) {
+          next.victim_birth_year = new Date().getFullYear() - num;
+        } else {
+          next.victim_birth_year = '';
+        }
+      }
+
+      // Address copying and auto-sync
+      if (key === 'victim_perm_same' && (val === true || val === 'Yes')) {
+        next.victim_perm_house_no = next.victim_house_no || '';
+        next.victim_perm_street = next.victim_street || '';
+        next.victim_perm_colony = next.victim_colony || '';
+        next.victim_perm_city_town_village = next.victim_city_town_village || '';
+        next.victim_perm_tehsil_block_mandal = next.victim_tehsil_block_mandal || '';
+        next.victim_perm_country = next.victim_country || 'Indian';
+        next.victim_perm_state = next.victim_state || '';
+        next.victim_perm_district = next.victim_district || '';
+        next.victim_perm_police_station = next.victim_police_station || '';
+        next.victim_perm_pincode = next.victim_pincode || '';
+      }
+
+      if (next.victim_perm_same === true || next.victim_perm_same === 'Yes') {
+        if (key === 'victim_house_no') next.victim_perm_house_no = val;
+        if (key === 'victim_street') next.victim_perm_street = val;
+        if (key === 'victim_colony') next.victim_perm_colony = val;
+        if (key === 'victim_city_town_village') next.victim_perm_city_town_village = val;
+        if (key === 'victim_tehsil_block_mandal') next.victim_perm_tehsil_block_mandal = val;
+        if (key === 'victim_country') next.victim_perm_country = val;
+        if (key === 'victim_state') next.victim_perm_state = val;
+        if (key === 'victim_district') next.victim_perm_district = val;
+        if (key === 'victim_police_station') next.victim_perm_police_station = val;
+        if (key === 'victim_pincode') next.victim_perm_pincode = val;
+      }
+
+      // Clear error on change
+      if (victimModalErrors[key]) {
+        setVictimModalErrors((e) => { const n = { ...e }; delete n[key]; return n; });
+      }
+
+      return next;
+    });
+  };
+
+  const openAccusedAddModal = () => {
+    setAccusedTempValues({});
+    setActiveAccusedIndex(null);
+    setAccusedSubTab('personal');
+    setAccusedModalErrors({});
+    setAccusedModalTouched({});
+    setIsAccusedModalOpen(true);
+  };
+
+  const openAccusedEditModal = (idx) => {
+    const list = repeaterState.PERSON_ACCUSED || [];
+    setAccusedTempValues({ ...(list[idx] || {}) });
+    setActiveAccusedIndex(idx);
+    setAccusedSubTab('personal');
+    setAccusedModalErrors({});
+    setAccusedModalTouched({});
+    setIsAccusedModalOpen(true);
+  };
+
+  const deleteAccusedEntry = (idx) => {
+    const list = repeaterState.PERSON_ACCUSED || [];
+    const nextList = list.filter((_, i) => i !== idx);
+    setRepeaterState(prev => ({ ...prev, PERSON_ACCUSED: nextList }));
+  };
+
+  const handleAccusedModalChange = (key, val) => {
+    setAccusedTempValues((prev) => {
+      const next = { ...prev, [key]: val };
+
+      // DOB, Age (Years) and Year of Birth interlinking
+      if (key === 'accused_dob') {
+        const dateStr = val;
+        if (dateStr && dateStr.length >= 4) {
+          const dobDate = new Date(dateStr);
+          if (!isNaN(dobDate.getTime())) {
+            const birthY = dobDate.getFullYear();
+            next.accused_birth_year = birthY;
+            const diffMs = Date.now() - dobDate.getTime();
+            const ageY = Math.max(0, Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000)));
+            next.accused_age_year = ageY;
+            const ageM = Math.max(0, Math.floor((diffMs % (365.25 * 24 * 60 * 60 * 1000)) / (30.43 * 24 * 60 * 60 * 1000)));
+            next.accused_age_month = ageM;
+          }
+        } else {
+          next.accused_birth_year = '';
+          next.accused_age_year = '';
+          next.accused_age_month = '';
+        }
+      }
+
+      if (key === 'accused_age_year') {
+        const num = parseInt(val, 10);
+        if (!isNaN(num) && num >= 0) {
+          next.accused_birth_year = new Date().getFullYear() - num;
+        } else {
+          next.accused_birth_year = '';
+        }
+      }
+
+      // Address copying and auto-sync
+      if (key === 'accused_perm_same' && (val === true || val === 'Yes')) {
+        next.accused_perm_house_no = next.accused_house_no || '';
+        next.accused_perm_street = next.accused_street || '';
+        next.accused_perm_colony = next.accused_colony || '';
+        next.accused_perm_city_town_village = next.accused_city_town_village || '';
+        next.accused_perm_tehsil_block_mandal = next.accused_tehsil_block_mandal || '';
+        next.accused_perm_country = next.accused_country || 'Indian';
+        next.accused_perm_state = next.accused_state || '';
+        next.accused_perm_district = next.accused_district || '';
+        next.accused_perm_police_station = next.accused_police_station || '';
+        next.accused_perm_pincode = next.accused_pincode || '';
+      }
+
+      if (next.accused_perm_same === true || next.accused_perm_same === 'Yes') {
+        if (key === 'accused_house_no') next.accused_perm_house_no = val;
+        if (key === 'accused_street') next.accused_perm_street = val;
+        if (key === 'accused_colony') next.accused_perm_colony = val;
+        if (key === 'accused_city_town_village') next.accused_perm_city_town_village = val;
+        if (key === 'accused_tehsil_block_mandal') next.accused_perm_tehsil_block_mandal = val;
+        if (key === 'accused_country') next.accused_perm_country = val;
+        if (key === 'accused_state') next.accused_perm_state = val;
+        if (key === 'accused_district') next.accused_perm_district = val;
+        if (key === 'accused_police_station') next.accused_perm_police_station = val;
+        if (key === 'accused_pincode') next.accused_perm_pincode = val;
+      }
+
+      // Clear error on change
+      if (accusedModalErrors[key]) {
+        setAccusedModalErrors((e) => { const n = { ...e }; delete n[key]; return n; });
+      }
+
+      return next;
+    });
+  };
+
+  const saveAccusedEntry = () => {
+    const accusedFields = allSchemaFields.filter(f => f.field_key?.startsWith('accused_') || f.section === 'accused_address' || f.section === 'accused_personal_info');
+    const errs = {};
+    const touchedFields = {};
+
+    accusedFields.forEach(f => {
+      if (f.show_when) {
+        const { field: targetField, value: targetValue } = f.show_when;
+        const currentValue = String(accusedTempValues[targetField] || '').toLowerCase();
+        const allowed = Array.isArray(targetValue)
+          ? targetValue.map(v => String(v).toLowerCase())
+          : [String(targetValue || '').toLowerCase()];
+        if (!allowed.includes(currentValue)) return;
+      }
+
+      const rules = parseRules(f.validation_rules);
+      if (rules.required) {
+        const val = accusedTempValues[f.field_key];
+        const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+        if (isEmpty) {
+          const label = lang === 'hi' ? (f.label_hi || f.label_en) : f.label_en;
+          errs[f.field_key] = lang === 'hi' ? `${label} आवश्यक है` : `${label} is required`;
+        }
+      }
+    });
+
+    if (!accusedTempValues.accused_first_name) {
+      errs.accused_first_name = lang === 'hi' ? 'पहला नाम आवश्यक है' : 'First Name is required';
+    }
+    if (!accusedTempValues.accused_gender) {
+      errs.accused_gender = lang === 'hi' ? 'लिंग आवश्यक है' : 'Gender is required';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setAccusedModalErrors(errs);
+      accusedFields.forEach(f => { touchedFields[f.field_key] = true; });
+      setAccusedModalTouched(touchedFields);
+      toast.error(lang === 'hi' ? 'कृपया सभी आवश्यक फ़ील्ड भरें।' : 'Please fill all required fields.');
+      return;
+    }
+
+    const list = [...(repeaterState.PERSON_ACCUSED || [])];
+    if (activeAccusedIndex !== null) {
+      list[activeAccusedIndex] = accusedTempValues;
+    } else {
+      list.push(accusedTempValues);
+    }
+
+    setRepeaterState(prev => ({ ...prev, PERSON_ACCUSED: list }));
+    setIsAccusedModalOpen(false);
+  };
+
+  const saveVictimEntry = () => {
+    const victimFields = allSchemaFields.filter(f => f.field_key?.startsWith('victim_') || f.section === 'victim_address' || f.section === 'victim_personal_info');
+    const errs = {};
+    const touchedFields = {};
+
+    victimFields.forEach(f => {
+      if (f.show_when) {
+        const { field: targetField, value: targetValue } = f.show_when;
+        const currentValue = String(victimTempValues[targetField] || '').toLowerCase();
+        const allowed = Array.isArray(targetValue)
+          ? targetValue.map(v => String(v).toLowerCase())
+          : [String(targetValue || '').toLowerCase()];
+        if (!allowed.includes(currentValue)) return;
+      }
+
+      const rules = parseRules(f.validation_rules);
+      if (!rules.required) return;
+
+      const val = victimTempValues[f.field_key];
+      const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+      if (isEmpty) {
+        const label = lang === 'hi' ? (f.label_hi || f.label_en) : f.label_en;
+        errs[f.field_key] = lang === 'hi' ? `${label} आवश्यक है` : `${label} is required`;
+      }
+    });
+
+    if (!victimTempValues.victim_first_name) {
+      errs.victim_first_name = lang === 'hi' ? 'पहला नाम आवश्यक है' : 'First Name is required';
+    }
+    if (!victimTempValues.victim_gender) {
+      errs.victim_gender = lang === 'hi' ? 'लिंग आवश्यक है' : 'Gender is required';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setVictimModalErrors(errs);
+      victimFields.forEach(f => { touchedFields[f.field_key] = true; });
+      setVictimModalTouched(touchedFields);
+      toast.error(lang === 'hi' ? 'कृपया सभी आवश्यक फ़ील्ड भरें।' : 'Please fill all required fields.');
+      return;
+    }
+
+    const list = [...(repeaterState.PERSON_VICTIM || [])];
+    if (activeVictimIndex !== null) {
+      list[activeVictimIndex] = victimTempValues;
+    } else {
+      list.push(victimTempValues);
+    }
+
+    setRepeaterState(prev => ({ ...prev, PERSON_VICTIM: list }));
+    setIsVictimModalOpen(false);
+  };
+
   /**
    * Fetch major-head options from the schema.
    * Looks for fields whose field_key matches the pattern `*_major_head`
@@ -1471,6 +2943,7 @@ const renderOccurrenceStep = () => {
   const [pickerDay,   setPickerDay]   = useState(new Date().getDate());
   const [pickerHour,  setPickerHour]  = useState(new Date().getHours());
   const [pickerMinute,setPickerMinute] = useState(new Date().getMinutes());
+  const [complainantTab, setComplainantTab] = useState('personal');
   const datePickerRef = useRef(null);
   const searchBtnRef  = useRef(null);
 
@@ -1524,6 +2997,7 @@ const renderOccurrenceStep = () => {
       setCurrentStep(finalSchema.length - 1);
     }
   }, [finalSchema.length, currentStep]);
+
 
   const initialValuesStr = JSON.stringify(initialValues || {});
   const userStr = user ? JSON.stringify({
@@ -1794,6 +3268,32 @@ const renderOccurrenceStep = () => {
         if (key === 'arrested_present_address') next.arrested_perm_address = val;
       }
 
+      if (key === 'complainant_perm_same' && (val === true || val === 'Yes')) {
+        next.complainant_perm_house_no = next.complainant_house_no || '';
+        next.complainant_perm_street = next.complainant_street || '';
+        next.complainant_perm_colony = next.complainant_colony || '';
+        next.complainant_perm_city_town_village = next.complainant_city_town_village || '';
+        next.complainant_perm_tehsil_block_mandal = next.complainant_tehsil_block_mandal || '';
+        next.complainant_perm_country = next.complainant_country || 'Indian';
+        next.complainant_perm_state = next.complainant_state || '';
+        next.complainant_perm_district = next.complainant_district || '';
+        next.complainant_perm_police_station = next.complainant_police_station || '';
+        next.complainant_perm_pincode = next.complainant_pincode || '';
+      }
+
+      if (next.complainant_perm_same === true || next.complainant_perm_same === 'Yes') {
+        if (key === 'complainant_house_no') next.complainant_perm_house_no = val;
+        if (key === 'complainant_street') next.complainant_perm_street = val;
+        if (key === 'complainant_colony') next.complainant_perm_colony = val;
+        if (key === 'complainant_city_town_village') next.complainant_perm_city_town_village = val;
+        if (key === 'complainant_tehsil_block_mandal') next.complainant_perm_tehsil_block_mandal = val;
+        if (key === 'complainant_country') next.complainant_perm_country = val;
+        if (key === 'complainant_state') next.complainant_perm_state = val;
+        if (key === 'complainant_district') next.complainant_perm_district = val;
+        if (key === 'complainant_police_station') next.complainant_perm_police_station = val;
+        if (key === 'complainant_pincode') next.complainant_perm_pincode = val;
+      }
+
       // Clear error on change
       if (errors[key]) {
         setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
@@ -1835,12 +3335,14 @@ const renderOccurrenceStep = () => {
   const handleNext = () => {
     const stepErrs = validateSection(currentStep);
     if (Object.keys(stepErrs).length > 0) {
+      console.log('Block handleNext on step:', currentStep, 'Errors:', stepErrs);
       setErrors((prev) => ({ ...prev, ...stepErrs }));
       // Mark all fields in this step as touched
       const section = finalSchema[currentStep];
       const newTouched = {};
       section?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
       setTouched((prev) => ({ ...prev, ...newTouched }));
+      return;
     }
 
     // Auto-populate linked_fir_dd_no and case details when moving from Step 1 (Select FIR)
@@ -1901,61 +3403,63 @@ const renderOccurrenceStep = () => {
   /* ── Jump to a specific step (click step dot / tab) ───────────────────── */
   const handleStepClick = (targetIdx) => {
     if (targetIdx === currentStep) return;
-    let canJump = true;
-    for (let i = currentStep; i < targetIdx; i++) {
-      const errs = validateSection(i);
-      if (Object.keys(errs).length > 0) { setErrors((prev) => ({ ...prev, ...errs })); canJump = false; break; }
-      if (recordType === 'ARREST' && caseType === 'against_fir' && i === 0) {
-        const selectedFir = values.selected_fir;
-        if (selectedFir) {
-          const matchedBackendCase = (casesData || []).find(c => {
-            const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
-            return firNo === selectedFir;
-          });
-          const matchedMockCase = MOCK_FIR_LIST.find(c => c.fir_no === selectedFir);
-          let autofilled = {};
-          if (matchedBackendCase) {
-            const cData = matchedBackendCase.data || {};
-            autofilled = {
-              act_name: cData.act_name || '',
-              sections: cData.sections || '',
-              io_name: cData.io_name || '',
-              io_rank: cData.io_rank || '',
-              io_pis: cData.io_pis || '',
-              io_mobile: cData.io_mobile || '',
-            };
-          } else if (matchedMockCase) {
-            autofilled = {
-              act_name: 'IPC',
-              sections: matchedMockCase.sections || '',
-              io_name: 'Inspector Satish Kumar',
-              io_rank: 'Inspector',
-              io_pis: '28081234',
-              io_mobile: '9876543210',
-            };
-          }
-          setValues(prev => ({
-            ...prev,
-            linked_fir_dd_no: selectedFir,
-            act_name: prev.act_name || autofilled.act_name || '',
-            sections: prev.sections !== undefined ? prev.sections : (autofilled.sections || ''),
-            io_name: prev.io_name || autofilled.io_name || '',
-            io_rank: prev.io_rank || autofilled.io_rank || '',
-            io_pis: prev.io_pis || autofilled.io_pis || '',
-            io_mobile: prev.io_mobile || autofilled.io_mobile || '',
-          }));
-        }
-      }
-      setCompletedSteps((prev) => new Set([...prev, i]));
-    }
 
-    // Auto-populate linked_fir_dd_no if we leave step 0 (Select FIR)
+    // Validate the step we are leaving (currentStep) and store errors
+    const stepErrs = validateSection(currentStep);
+    setErrors((prev) => {
+      const next = { ...prev };
+      // Clear old errors for this step
+      const currentSec = finalSchema[currentStep];
+      currentSec?.fields?.forEach((f) => delete next[f.field_key]);
+      // Add new errors
+      return { ...next, ...stepErrs };
+    });
+
+    // Mark current step fields as touched so warning indicators display
+    const currentSec = finalSchema[currentStep];
+    const newTouched = {};
+    currentSec?.fields?.forEach((f) => { newTouched[f.field_key] = true; });
+    setTouched((prev) => ({ ...prev, ...newTouched }));
+
+    // Autofill case details if we leave step 0 in ARREST against_fir
     if (recordType === 'ARREST' && caseType === 'against_fir' && currentStep === 0) {
       const selectedFir = values.selected_fir;
       if (selectedFir) {
+        const matchedBackendCase = (casesData || []).find(c => {
+          const firNo = c.data?.fir_no || c.fir_no || `FIR No. ${c.id}`;
+          return firNo === selectedFir;
+        });
+        const matchedMockCase = MOCK_FIR_LIST.find(c => c.fir_no === selectedFir);
+        let autofilled = {};
+        if (matchedBackendCase) {
+          const cData = matchedBackendCase.data || {};
+          autofilled = {
+            act_name: cData.act_name || '',
+            sections: cData.sections || '',
+            io_name: cData.io_name || '',
+            io_rank: cData.io_rank || '',
+            io_pis: cData.io_pis || '',
+            io_mobile: cData.io_mobile || '',
+          };
+        } else if (matchedMockCase) {
+          autofilled = {
+            act_name: 'IPC',
+            sections: matchedMockCase.sections || '',
+            io_name: 'Inspector Satish Kumar',
+            io_rank: 'Inspector',
+            io_pis: '28081234',
+            io_mobile: '9876543210',
+          };
+        }
         setValues(prev => ({
           ...prev,
-          linked_fir_dd_no: selectedFir
+          linked_fir_dd_no: selectedFir,
+          act_name: prev.act_name || autofilled.act_name || '',
+          sections: prev.sections !== undefined ? prev.sections : (autofilled.sections || ''),
+          io_name: prev.io_name || autofilled.io_name || '',
+          io_rank: prev.io_rank || autofilled.io_rank || '',
+          io_pis: prev.io_pis || autofilled.io_pis || '',
+          io_mobile: prev.io_mobile || autofilled.io_mobile || '',
         }));
       }
     }
@@ -2073,32 +3577,30 @@ const renderOccurrenceStep = () => {
     <div className="space-y-3" ref={formRef}>
 
       {/* Horizontal Tabs Navigation */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-[#0d2a4a] mb-2 gap-2 pb-0.5 bg-[#f8fafc]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-[#0d2a4a] mb-2 gap-2 pb-1.5 bg-[#f8fafc]">
         {finalSchema.length > 1 ? (
-          <div className="overflow-x-auto flex scrollbar-none py-1">
-            <div className="flex flex-nowrap border border-[#0d2a4a] rounded-lg overflow-hidden shadow-sm">
-              {finalSchema.map((sec, idx) => {
-                const isSelected = idx === currentStep;
-                const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
-                const hasError = stepHasError(idx);
-                
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleStepClick(idx)}
-                    className={`px-2 py-1 text-[10px] font-bold transition-all border-r border-[#0d2a4a]/20 last:border-r-0 cursor-pointer uppercase tracking-tight whitespace-nowrap flex items-center gap-1 select-none ${
-                      isSelected
-                        ? 'bg-[#ea580c] text-white shadow-[inset_0_-2px_0_rgba(0,0,0,0.2)]'
-                        : 'bg-[#0d2a4a] text-white hover:bg-[#16406d]'
-                    }`}
-                  >
-                    {hasError && <AlertCircle size={10} className="text-red-300 animate-pulse" />}
-                    <span>{title}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex flex-wrap gap-1.5 py-1">
+            {finalSchema.map((sec, idx) => {
+              const isSelected = idx === currentStep;
+              const title = lang === 'hi' ? (sec.title_hi || sec.title_en) : sec.title_en;
+              const hasError = stepHasError(idx);
+              
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleStepClick(idx)}
+                  className={`px-3 py-1.5 text-[10px] font-bold transition-all rounded-md cursor-pointer uppercase tracking-tight whitespace-nowrap flex items-center gap-1 select-none border border-[#0d2a4a] ${
+                    isSelected
+                      ? 'bg-[#ea580c] border-[#ea580c] text-white shadow-sm'
+                      : 'bg-[#0d2a4a] border-[#0d2a4a] text-white hover:bg-[#16406d] hover:border-[#16406d]'
+                  }`}
+                >
+                  {hasError && <AlertCircle size={10} className="text-red-300 animate-pulse" />}
+                  <span>{title}</span>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div />
@@ -2149,6 +3651,12 @@ const renderOccurrenceStep = () => {
               renderActsAndSectionsStep()
               ) : recordType === 'CASE' && currentStep === 1 ? ( 
                renderOccurrenceStep() 
+              ) : recordType === 'CASE' && currentStep === 2 ? ( 
+               renderComplainantStep() 
+              ) : recordType === 'CASE' && currentStep === 4 ? ( 
+               renderVictimStep() 
+              ) : recordType === 'CASE' && currentStep === 5 ? ( 
+               renderAccusedStep() 
             ) : (
               <FormSection
                 section={activeSection}
@@ -2163,6 +3671,10 @@ const renderOccurrenceStep = () => {
                 lang={lang}
                 saveStatus={saveStatus}
                 hideHeader={true}
+                entries={repeaterState[activeSection?.section] || []}
+                onEntriesChange={(entries) =>
+                  setRepeaterState(prev => ({ ...prev, [activeSection.section]: entries }))
+                }
               />
             )}
           </form>

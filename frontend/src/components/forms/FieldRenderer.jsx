@@ -13,6 +13,7 @@ import { DISTRICTS_AND_STATIONS } from '../../utils/policeData.js';
 const inputBase = "w-full bg-white border-2 border-slate-200 text-slate-800 text-sm px-3.5 py-2.5 rounded-xl outline-none focus:border-[var(--accent-color)] transition-colors placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
 
 export default function FieldRenderer({ field, value, onChange, readOnly, hasError, lang, values }) {
+  if (!field) return null;
   const key     = field.field_key;
   const type    = (field.field_type || 'TEXT').toUpperCase();
   const status  = hasError ? 'error' : '';

@@ -471,6 +471,7 @@ export default function FormSection({
   readOnly,
   targetFields = [],
   lang = 'en',
+  hideHeader = false,
   // Repeater props (only used when section.is_repeater === true)
   entries,
   onEntriesChange,
