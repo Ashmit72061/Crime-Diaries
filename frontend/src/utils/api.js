@@ -439,6 +439,17 @@ const formSchemas = {
           ],
           validation_rules: { required: true }
         },
+        {
+          field_key: 'is_important',
+          field_type: 'SELECT',
+          label_en: 'Mark as Important Case',
+          label_hi: 'महत्वपूर्ण मामले के रूप में चिह्नित करें',
+          options: [
+            { value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' },
+            { value: 'No', label_en: 'No', label_hi: 'नहीं' }
+          ],
+          validation_rules: { required: false }
+        },
       ]
     },
     {
