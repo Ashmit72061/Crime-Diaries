@@ -182,9 +182,9 @@ export const listRecords = async (recordType, filters, jurisdictionQuery) => {
     'dist.name_en as district_name',
     'u.username as creator_name'
   )
-  .join('hierarchy_nodes as ps', 'records.ps_id', 'ps.id')
-  .join('hierarchy_nodes as dist', 'records.district_id', 'dist.id')
-  .join('users as u', 'records.created_by', 'u.id');
+    .join('hierarchy_nodes as ps', 'records.ps_id', 'ps.id')
+    .join('hierarchy_nodes as dist', 'records.district_id', 'dist.id')
+    .join('users as u', 'records.created_by', 'u.id');
 
   // Apply RBAC geographical boundary filters
   if (jurisdictionQuery.ps_id) {
@@ -510,7 +510,7 @@ export const updateRecord = async (id, user, data, ipAddress, { persons, propert
     const prev_hash = await getPreviousHash(id, trx);
     const changed_at = new Date().toISOString();
     const field_changes = JSON.stringify(diff);
-    
+
     const row_hash = computeRowHash({
       record_id: id,
       revision_number: nextRevNo,
@@ -650,7 +650,7 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
     // 1. Try querying DB config (action stored lowercase in seed)
     let dbRule = await trx('workflow_transitions_config')
       .where({ from_status: fromStatus, action: action.toLowerCase(), is_active: true })
-      .andWhere(function() {
+      .andWhere(function () {
         this.where('record_type', record.record_type).orWhere('record_type', '*');
       })
       .first();
@@ -664,12 +664,12 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       rule = {
         to: dbRule.to_status,
         toLevel: dbRule.to_status === 'DISTRICT_REVIEW' ? 'DISTRICT' :
-                 dbRule.to_status === 'ACP_REVIEW' ? 'ACP' :
-                 dbRule.to_status === 'JCP_REVIEW' ? 'JCP' :
-                 dbRule.to_status === 'SCP_REVIEW' ? 'SCP' :
-                 dbRule.to_status === 'HQ_RECEIVED' ? 'HQ' :
-                 dbRule.to_status === 'ARCHIVED' ? 'HQ' :
-                 dbRule.to_status === 'SENT_BACK' ? 'PS' : 'PS',
+          dbRule.to_status === 'ACP_REVIEW' ? 'ACP' :
+            dbRule.to_status === 'JCP_REVIEW' ? 'JCP' :
+              dbRule.to_status === 'SCP_REVIEW' ? 'SCP' :
+                dbRule.to_status === 'HQ_RECEIVED' ? 'HQ' :
+                  dbRule.to_status === 'ARCHIVED' ? 'HQ' :
+                    dbRule.to_status === 'SENT_BACK' ? 'PS' : 'PS',
         requiresComment: !!dbRule.requires_comment,
         allowedRoles
       };
@@ -677,12 +677,12 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       // 2. Fallback transitions including JCP / SCP review flows
       const FALLBACK_TRANSITIONS = {
         PENDING_SHO: {
-          approve:   { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
-          send_back: { to: 'SENT_BACK',       toLevel: 'PS',       requiresComment: true, allowedRoles: ['SHO'] }
+          approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
+          send_back: { to: 'SENT_BACK', toLevel: 'PS', requiresComment: true, allowedRoles: ['SHO'] }
         },
         DISTRICT_REVIEW: {
-          approve:   { to: 'JCP_REVIEW',  toLevel: 'JCP',      allowedRoles: ['DISTRICT_OFFICER'] },
-          send_back: { to: 'SENT_BACK',   toLevel: 'PS',       requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
+          approve: { to: 'JCP_REVIEW', toLevel: 'JCP', allowedRoles: ['DISTRICT_OFFICER'] },
+          send_back: { to: 'SENT_BACK', toLevel: 'PS', requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
         },
         JCP_REVIEW: {
           approve: { to: 'SCP_REVIEW', toLevel: 'SCP', allowedRoles: ['JCP'] },
@@ -879,13 +879,13 @@ export const checkDuplicateRecord = async (recordType, firNumber, accusedName, d
   if (firNumber && firNumber.trim().length > 0) {
     const client = db.client.config.client;
     let query = db('records').where('record_type', recordType.toUpperCase());
-    
+
     if (client === 'sqlite3') {
       query = query.andWhere('data', 'like', `%fir_no%${firNumber}%`);
     } else {
       query = query.whereRaw("data->>'fir_no' = ?", [firNumber]);
     }
-    
+
     const existing = await query.first();
     if (existing) {
       return { isDuplicate: true, existingId: existing.id };
@@ -897,13 +897,13 @@ export const checkDuplicateRecord = async (recordType, firNumber, accusedName, d
     let query = db('records')
       .where('record_type', recordType.toUpperCase())
       .andWhere('record_date', date);
-      
+
     if (client === 'sqlite3') {
       query = query.andWhere('data', 'like', `%accused_name%${accusedName}%`);
     } else {
       query = query.whereRaw("data->>'accused_name' = ?", [accusedName]);
     }
-    
+
     const existing = await query.first();
     if (existing) {
       return { isDuplicate: true, existingId: existing.id };
@@ -962,7 +962,7 @@ export const removeAttachment = async (recordId, attachmentId, user) => {
 
     const oldData = parseJsonField(record.data);
     const attachments = oldData.attachments || [];
-    
+
     const index = attachments.findIndex(a => a.id === attachmentId);
     if (index === -1) throw new Error('Attachment not found');
 
@@ -1130,7 +1130,7 @@ const VIRTUAL_FIELD_RESOLVERS = {
       .select('records.id')
       .join('workflow_transitions_config as wt', 'wt.from_status', 'records.current_status')
       .whereNotNull('wt.sla_hours');
-    
+
     const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
     if (isPostgres) {
       subquery.whereRaw("records.updated_at + (wt.sla_hours || ' hours')::INTERVAL < NOW()");
@@ -1185,7 +1185,7 @@ export const buildFilterQuery = (builder, spec) => {
     const innerBuilder = this;
     conditions.forEach((cond, index) => {
       const applyFunc = (isOr && index > 0) ? 'orWhere' : 'where';
-      
+
       if (cond.logic && cond.conditions) {
         innerBuilder[applyFunc](function () {
           buildFilterQuery(this, cond);
