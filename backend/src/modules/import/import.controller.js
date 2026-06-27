@@ -23,6 +23,188 @@ const isRequired = (field) => {
   }
 };
 
+const evaluateShowWhen = (showWhen, rowData) => {
+  if (!showWhen) return true;
+  let parsed = showWhen;
+  if (typeof showWhen === 'string') {
+    try {
+      parsed = JSON.parse(showWhen);
+    } catch (e) {
+      return true;
+    }
+  }
+  if (!parsed || !parsed.field) return true;
+
+  const triggerField = parsed.field;
+  const triggerVal = rowData[triggerField];
+  if (triggerVal === undefined || triggerVal === null || triggerVal === '') {
+    return false;
+  }
+
+  const expectedVal = parsed.value;
+  if (Array.isArray(expectedVal)) {
+    return expectedVal.includes(triggerVal);
+  }
+  return expectedVal === triggerVal;
+};
+
+const parseCombinedAddress = (addressStr) => {
+  const result = {
+    house_no: null,
+    street: null,
+    colony: null,
+    city_town_village: null,
+    state: null,
+    country: null,
+    pincode: null
+  };
+
+  if (!addressStr) return result;
+  
+  const cleanStr = String(addressStr).trim();
+  const pinMatch = cleanStr.match(/\b\d{6}\b/);
+  if (pinMatch) {
+    result.pincode = pinMatch[0];
+  }
+
+  // Split by newline, comma, OR two or more spaces
+  const parts = cleanStr.split(/[\n,]+|\s{2,}/).map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return result;
+
+  let remainingParts = [...parts];
+
+  // 1. Identify country
+  const lastPart = remainingParts[remainingParts.length - 1];
+  const countries = ['india', 'nepal', 'bhutan', 'bangladesh', 'pakistan', 'sri lanka', 'myanmar', 'tibetan', 'american', 'british', 'canadian'];
+  if (countries.includes(lastPart.toLowerCase())) {
+    result.country = lastPart;
+    remainingParts.pop();
+  } else {
+    result.country = 'India';
+  }
+
+  // 2. Identify pincode if it is one of the parts
+  if (remainingParts.length > 0) {
+    const lastPart2 = remainingParts[remainingParts.length - 1];
+    if (/^\d{6}$/.test(lastPart2)) {
+      result.pincode = lastPart2;
+      remainingParts.pop();
+    }
+  }
+
+  // 3. Identify state using endsWith check
+  if (remainingParts.length > 0) {
+    const lastPart3 = remainingParts[remainingParts.length - 1];
+    const states = ['delhi', 'haryana', 'uttar pradesh', 'up', 'punjab', 'rajasthan'];
+    const matchedState = states.find(s => lastPart3.toLowerCase().endsWith(s));
+    if (matchedState) {
+      result.state = matchedState.charAt(0).toUpperCase() + matchedState.slice(1);
+      const cleaned = lastPart3.substring(0, lastPart3.toLowerCase().lastIndexOf(matchedState)).trim();
+      if (cleaned) {
+        remainingParts[remainingParts.length - 1] = cleaned;
+      } else {
+        remainingParts.pop();
+      }
+    }
+  }
+
+  // 4. House and City mapping
+  if (remainingParts.length === 1) {
+    const singlePart = remainingParts[0];
+    if (/\d|street|gali|road|house|building|plot|flat|ward/i.test(singlePart)) {
+      result.house_no = singlePart;
+    } else {
+      result.city_town_village = singlePart;
+    }
+  } else if (remainingParts.length > 1) {
+    result.city_town_village = remainingParts.pop();
+    result.house_no = remainingParts[0];
+    if (remainingParts.length > 1) {
+      result.street = remainingParts[1];
+    }
+    if (remainingParts.length > 2) {
+      result.colony = remainingParts.slice(2).join(', ');
+    }
+  }
+
+  return result;
+};
+
+const fillAddressFields = (rowData, prefix) => {
+  const combinedAddr = rowData[`${prefix}_present_address`] || rowData[`${prefix}_address`] || rowData[`name_and_address_of_${prefix}`] || rowData[`${prefix}_place` ];
+  if (!combinedAddr) return;
+
+  const parsed = parseCombinedAddress(combinedAddr);
+  
+  const houseKey = `${prefix}_house_no`;
+  const streetKey = `${prefix}_street`;
+  const colonyKey = `${prefix}_colony`;
+  const cityKey = `${prefix}_city_town_village`;
+  const stateKey = `${prefix}_state`;
+  const countryKey = `${prefix}_country`;
+  const pinKey = `${prefix}_pincode`;
+
+  if (!rowData[houseKey] && parsed.house_no) rowData[houseKey] = parsed.house_no;
+  if (!rowData[streetKey] && parsed.street) rowData[streetKey] = parsed.street;
+  if (!rowData[colonyKey] && parsed.colony) rowData[colonyKey] = parsed.colony;
+  if (!rowData[cityKey] && parsed.city_town_village) rowData[cityKey] = parsed.city_town_village;
+  if (!rowData[stateKey] && parsed.state) rowData[stateKey] = parsed.state;
+  if (!rowData[countryKey] && parsed.country) rowData[countryKey] = parsed.country;
+  if (!rowData[pinKey] && parsed.pincode) rowData[pinKey] = parsed.pincode;
+
+  // For arrested, make permanent address same as present address
+  if (prefix === 'arrested') {
+    rowData.arrested_perm_same = true;
+    rowData.arrested_perm_house_no = rowData.arrested_house_no;
+    rowData.arrested_perm_street = rowData.arrested_street;
+    rowData.arrested_perm_colony = rowData.arrested_colony;
+    rowData.arrested_perm_city_town_village = rowData.arrested_city_town_village;
+    rowData.arrested_perm_state = rowData.arrested_state;
+    rowData.arrested_perm_country = rowData.arrested_country;
+    rowData.arrested_perm_pincode = rowData.arrested_pincode;
+  }
+};
+
+const parseActAndSection = (raw) => {
+  if (!raw) return { section: null, act: null };
+  const clean = String(raw).trim();
+
+  // Try to match a section pattern at the beginning
+  const match = clean.match(/^([\d\w\(\)\/,\-\s]+?)\s+(THE\s+.*|IPC.*|BNS.*|ACT.*|INDIAN.*|BHARATIYA.*)/i);
+  if (match) {
+    return {
+      section: match[1].trim(),
+      act: match[2].trim()
+    };
+  }
+
+  // Fallback: search for first occurrence of common act keywords
+  const index = clean.search(/(THE\s+|BNS|IPC|ACT|INDIAN|BHARATIYA)/i);
+  if (index > 0) {
+    return {
+      section: clean.substring(0, index).replace(/[^a-zA-Z0-9\(\)\/\-\s,]/g, '').trim(),
+      act: clean.substring(index).trim()
+    };
+  }
+
+  return {
+    section: clean,
+    act: null
+  };
+};
+
+const splitName = (fullName) => {
+  if (!fullName) return { first_name: null, last_name: null };
+  const parts = String(fullName).trim().split(/\s+/);
+  if (parts.length === 1) {
+    return { first_name: parts[0], last_name: '' };
+  }
+  return {
+    first_name: parts[0],
+    last_name: parts.slice(1).join(' ')
+  };
+};
+
 // Helper to determine the best record date for insertion
 const getRecordDate = (recordType, rowData) => {
   if (recordType === 'CASE') {
@@ -139,9 +321,14 @@ const buildColumnMap = (worksheet, recordType, registryFields) => {
   let dataStartRow = 4;
 
   if (hasHiddenKeys) {
+    const mappings = recordType === 'CASE' ? CASE_CUSTOM_MAPPINGS : ARREST_CUSTOM_MAPPINGS;
     row1Values.forEach((val, idx) => {
       const colIdx = idx + 1;
-      if (val) colMap[colIdx] = val;
+      if (val) {
+        const cleanVal = String(val).trim();
+        const normVal = cleanVal.toLowerCase().replace(/\s+/g, ' ').trim();
+        colMap[colIdx] = mappings[normVal] || cleanVal;
+      }
     });
   } else {
     let headerRowIdx = 1;
@@ -296,15 +483,27 @@ const coerceTime = (val) => {
 // Split the combined "Name & Address Of Accused" column into name + address.
 // Prefers a newline boundary, falls back to the first comma.
 const splitAccused = (raw) => {
-  const splitVal = String(raw || '');
+  const splitVal = String(raw || '').trim();
+  
+  // Try split by Present/Permanent add:
+  const match = splitVal.match(/(.*?)\s+Present\/Permanent\s+add\s*:\s*(.*)/i);
+  if (match) {
+    return {
+      arrested_name: match[1].trim(),
+      arrested_address: match[2].trim()
+    };
+  }
+
   const lines = splitVal.split('\n');
   if (lines.length > 1) {
     return { arrested_name: lines[0].trim(), arrested_address: lines.slice(1).join('\n').trim() };
   }
+  
   const commas = splitVal.split(',');
   if (commas.length > 1) {
     return { arrested_name: commas[0].trim(), arrested_address: commas.slice(1).join(',').trim() };
   }
+  
   return { arrested_name: splitVal.trim(), arrested_address: '' };
 };
 
@@ -313,13 +512,19 @@ const splitAccused = (raw) => {
 // so the data that is validated is exactly the data that gets stored.
 const extractRowData = (row, colMap, registryFieldsMap, recordType) => {
   const rowData = {};
-  for (const key of Object.keys(registryFieldsMap)) rowData[key] = null;
+  for (const colIdx of Object.keys(colMap)) {
+    const key = colMap[colIdx];
+    if (key) rowData[key] = null;
+  }
+  for (const key of Object.keys(registryFieldsMap)) {
+    if (rowData[key] === undefined) {
+      rowData[key] = null;
+    }
+  }
 
   row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
     const key = colMap[colIdx];
     if (!key) return;
-    const isAccusedCombo = key === 'name_and_address_of_accused';
-    if (!registryFieldsMap[key] && !isAccusedCombo) return;
 
     let cellVal = cell.value;
     if (cellVal && typeof cellVal === 'object' && 'result' in cellVal) cellVal = cellVal.result;
@@ -329,7 +534,7 @@ const extractRowData = (row, colMap, registryFieldsMap, recordType) => {
     }
     if (typeof cellVal === 'string') cellVal = cellVal.trim();
 
-    if (isAccusedCombo) {
+    if (key === 'name_and_address_of_accused') {
       const { arrested_name, arrested_address } = splitAccused(cellVal);
       rowData.arrested_name = arrested_name;
       rowData.arrested_address = arrested_address;
@@ -340,9 +545,59 @@ const extractRowData = (row, colMap, registryFieldsMap, recordType) => {
     if (field) {
       if (field.field_type === 'DATE') cellVal = coerceDate(cellVal);
       else if (field.field_type === 'TIME') cellVal = coerceTime(cellVal);
+    } else {
+      if (key.includes('date')) cellVal = coerceDate(cellVal);
+      else if (key.includes('time')) cellVal = coerceTime(cellVal);
     }
     rowData[key] = cellVal;
   });
+
+  // Name split mapping
+  if (rowData.complainant_name && !rowData.complainant_first_name) {
+    const { first_name, last_name } = splitName(rowData.complainant_name);
+    rowData.complainant_first_name = first_name;
+    rowData.complainant_last_name = last_name;
+  }
+  if (rowData.accused_name && !rowData.accused_first_name) {
+    const { first_name, last_name } = splitName(rowData.accused_name);
+    rowData.accused_first_name = first_name;
+    rowData.accused_last_name = last_name;
+  }
+  if (rowData.victim_name && !rowData.victim_first_name) {
+    const { first_name, last_name } = splitName(rowData.victim_name);
+    rowData.victim_first_name = first_name;
+    rowData.victim_last_name = last_name;
+  }
+  if (rowData.arrested_name && !rowData.arrested_first_name) {
+    const { first_name, last_name } = splitName(rowData.arrested_name);
+    rowData.arrested_first_name = first_name;
+    rowData.arrested_last_name = last_name;
+  }
+
+  // Address parsing
+  if (recordType === 'CASE') {
+    fillAddressFields(rowData, 'occurrence');
+    fillAddressFields(rowData, 'complainant');
+    fillAddressFields(rowData, 'accused');
+    fillAddressFields(rowData, 'victim');
+    
+    if (!rowData.occurrence_from_date_time && rowData.occurrence_date) {
+      rowData.occurrence_from_date_time = rowData.occurrence_date;
+    }
+  } else if (recordType === 'ARREST') {
+    fillAddressFields(rowData, 'arrested');
+  }
+
+  // Act and Section parsing
+  if (rowData.sections) {
+    const parsedActSection = parseActAndSection(rowData.sections);
+    if (parsedActSection.act) {
+      if (!rowData.act_name) {
+        rowData.act_name = parsedActSection.act;
+      }
+      rowData.sections = parsedActSection.section;
+    }
+  }
 
   if (recordType === 'CASE' && (rowData.status === null || rowData.status === undefined || rowData.status === '')) {
     rowData.status = 'Open';
@@ -731,19 +986,21 @@ export const validateImportBatch = async (req, res) => {
       rowsToProcess.push({ row, rowIdx });
     });
 
+    const mappedKeys = new Set(Object.values(colMap));
+
     for (const { row, rowIdx } of rowsToProcess) {
       let rowHasErrors = false;
       const rowData = extractRowData(row, colMap, registryFieldsMap, recordType);
 
-      // Bulk legacy import is intentionally lenient: dates/times are coerced in
-      // extractRowData and free-form / out-of-enum values are stored as-is so that
-      // real-world legacy sheets (30k+ rows with inconsistent formats) import cleanly.
-      // Only genuinely required fields block a row.
       for (const field of registryFields) {
         const key = field.field_key;
         const val = rowData[key];
 
-        if (isRequired(field) && (val === null || val === undefined || val === '')) {
+        if (field.show_when && !evaluateShowWhen(field.show_when, rowData)) {
+          continue;
+        }
+
+        if (isRequired(field) && mappedKeys.has(key) && (val === null || val === undefined || val === '')) {
           errors.push({
             row: rowIdx,
             field_key: key,
@@ -957,6 +1214,8 @@ export const confirmImportBatch = async (req, res) => {
       const recordsBatch = [];
       const revisionsBatch = [];
       const auditBatch = [];
+      const personsBatch = [];
+      const propertiesBatch = [];
 
       for (const rowData of chunk) {
         let recordDate = getRecordDate(batch.record_type, rowData) || new Date().toISOString().split('T')[0];
@@ -1035,6 +1294,180 @@ export const confirmImportBatch = async (req, res) => {
           ip_address: ipAddress
         });
 
+        const truncate = (val, maxLen) => {
+          if (val === null || val === undefined) return null;
+          const str = String(val);
+          if (str.length <= maxLen) return str;
+          return str.substring(0, maxLen);
+        };
+
+        // Extract and structure Child Records (PERSONS & PROPERTIES)
+        if (batch.record_type === 'CASE') {
+          // Complainant
+          if (rowData.complainant_first_name) {
+            const compData = {};
+            for (const key of Object.keys(rowData)) {
+              if (key.startsWith('complainant_')) {
+                compData[key] = rowData[key];
+              }
+            }
+            personsBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              person_type: 'COMPLAINANT',
+              first_name: truncate(rowData.complainant_first_name, 100),
+              last_name: truncate(rowData.complainant_last_name, 100) || null,
+              mobile: truncate(rowData.complainant_mobile, 20) || null,
+              city: truncate(rowData.complainant_city_town_village, 100) || null,
+              district: truncate(rowData.complainant_district, 100) || null,
+              data: JSON.stringify(compData),
+              sort_order: personsBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+          // Accused
+          if (rowData.accused_first_name) {
+            const accData = {};
+            for (const key of Object.keys(rowData)) {
+              if (key.startsWith('accused_')) {
+                accData[key] = rowData[key];
+              }
+            }
+            personsBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              person_type: 'ACCUSED',
+              first_name: truncate(rowData.accused_first_name, 100),
+              last_name: truncate(rowData.accused_last_name, 100) || null,
+              mobile: truncate(rowData.accused_mobile, 20) || null,
+              city: truncate(rowData.accused_city_town_village, 100) || null,
+              district: truncate(rowData.accused_district, 100) || null,
+              data: JSON.stringify(accData),
+              sort_order: personsBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+          // Victim
+          if (rowData.victim_first_name) {
+            const vicData = {};
+            for (const key of Object.keys(rowData)) {
+              if (key.startsWith('victim_')) {
+                vicData[key] = rowData[key];
+              }
+            }
+            personsBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              person_type: 'VICTIM',
+              first_name: truncate(rowData.victim_first_name, 100),
+              last_name: truncate(rowData.victim_last_name, 100) || null,
+              mobile: truncate(rowData.victim_mobile, 20) || null,
+              city: truncate(rowData.victim_city_town_village, 100) || null,
+              district: truncate(rowData.victim_district, 100) || null,
+              data: JSON.stringify(vicData),
+              sort_order: personsBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+          // Properties
+          // 1. General Property
+          if (rowData.property_major_category || rowData.property_details) {
+            let details = rowData.property_details || '';
+            if (rowData.property_major_category === 'Mobile Phone') {
+              const phoneParts = [];
+              if (rowData.phone_make) phoneParts.push(`Make: ${rowData.phone_make}`);
+              if (rowData.phone_model) phoneParts.push(`Model: ${rowData.phone_model}`);
+              if (rowData.phone_imei) phoneParts.push(`IMEI: ${rowData.phone_imei}`);
+              if (rowData.phone_color) phoneParts.push(`Color: ${rowData.phone_color}`);
+              if (rowData.property_phone_number) phoneParts.push(`Phone No: ${rowData.property_phone_number}`);
+              if (phoneParts.length > 0) {
+                if (details) details += '\n';
+                details += phoneParts.join(', ');
+              }
+            }
+            propertiesBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              major_category: truncate(rowData.property_major_category, 50) || null,
+              minor_category: truncate(rowData.property_minor_category, 100) || null,
+              status: truncate(rowData.property_status || rowData.property_stolen_recovered || 'Stolen', 20),
+              details: details || null,
+              sort_order: propertiesBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+          // 2. Stolen Property Description (flat column)
+          if (rowData.property_description && !rowData.property_details) {
+            propertiesBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              major_category: null,
+              minor_category: null,
+              status: 'Stolen',
+              details: rowData.property_description,
+              sort_order: propertiesBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+          // 3. Recovered Property (flat column)
+          if (rowData.recovered_property) {
+            propertiesBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              major_category: null,
+              minor_category: null,
+              status: truncate(rowData.recovered_property_status || 'Recovered', 20),
+              details: rowData.recovered_property,
+              sort_order: propertiesBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+        } else if (batch.record_type === 'ARREST') {
+          // Arrested Person
+          const arrestedFirstName = rowData.arrested_first_name || rowData.arrested_name;
+          if (arrestedFirstName) {
+            const arrData = {};
+            for (const key of Object.keys(rowData)) {
+              if (key.startsWith('arrested_') || ['parents_name', 'nick_name', 'prev_involvement', 'age_gender', 'bc_or_not', 'bad_character', 'proclaimed_offender', 'listed_criminal', 'is_po'].includes(key)) {
+                arrData[key] = rowData[key];
+              }
+            }
+            personsBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              person_type: 'ARRESTED',
+              first_name: truncate(arrestedFirstName, 100),
+              last_name: truncate(rowData.arrested_last_name, 100) || null,
+              mobile: truncate(rowData.arrested_mobile, 20) || null,
+              city: truncate(rowData.arrested_city_town_village, 100) || null,
+              district: truncate(rowData.arrested_district, 100) || null,
+              data: JSON.stringify(arrData),
+              sort_order: personsBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+
+          // Property
+          if (rowData.recovery || rowData.property_major_category || rowData.property_details) {
+            propertiesBatch.push({
+              id: uuidv4(),
+              record_id: recordId,
+              major_category: truncate(rowData.property_major_category, 50) || null,
+              minor_category: truncate(rowData.property_minor_category, 100) || null,
+              status: truncate(rowData.property_stolen_recovered || 'Recovered', 20),
+              details: rowData.property_details || rowData.recovery || null,
+              sort_order: propertiesBatch.filter(p => p.record_id === recordId).length,
+              created_at: now
+            });
+          }
+        }
+
         newlyInsertedRecords.push({ id: recordId, data: finalData });
         importedRowsCount++;
       }
@@ -1043,6 +1476,12 @@ export const confirmImportBatch = async (req, res) => {
         await trx('records').insert(recordsBatch);
         await trx('record_revisions').insert(revisionsBatch);
         await trx('audit_logs').insert(auditBatch);
+        if (personsBatch.length > 0) {
+          await trx('record_persons').insert(personsBatch);
+        }
+        if (propertiesBatch.length > 0) {
+          await trx('record_properties').insert(propertiesBatch);
+        }
       });
     }
 
@@ -1135,7 +1574,7 @@ export const confirmImportBatch = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('[ConfirmImport] Database transaction confirm error:', error.message);
+    logger.error('[ConfirmImport] Database transaction confirm error: ' + error.message + '\n' + error.stack);
     // Release the PROCESSING claim so the batch isn't left stuck and can be retried.
     try {
       await db('import_batches')
