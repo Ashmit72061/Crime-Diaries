@@ -500,7 +500,7 @@ export default function FormSection({
   }
 
   return (
-    <div className="bg-white border border-[#7a9cc5] rounded-xl shadow-sm overflow-hidden">
+    <div className={hideHeader ? "bg-transparent overflow-visible" : "bg-white border border-[#7a9cc5] rounded-xl shadow-sm overflow-hidden"}>
       {/* Section header */}
       {!hideHeader && (
         <div className="flex items-center justify-between bg-[#f0f5fa] border-b border-[#7a9cc5] px-6 py-4">
@@ -531,16 +531,18 @@ export default function FormSection({
       )}
 
       {/* Fields grid container */}
-      <div className="p-4">
+      <div className={hideHeader ? "p-0" : "p-4"}>
         {/* Enclose standard fields inside the styled blue border grid box */}
-        <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
-          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
-            {lang === 'hi'
-              ? (section.title_hi || section.title_en)
-              : section.title_en}
-          </legend>
+        <fieldset className={hideHeader ? "border-none p-0 bg-transparent" : "border border-[#7a9cc5] rounded px-3 py-3 bg-white"}>
+          {!hideHeader && (
+            <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+              {lang === 'hi'
+                ? (section.title_hi || section.title_en)
+                : section.title_en}
+            </legend>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] border border-[#c7d8ea]">
+          <div className={hideHeader ? "grid grid-cols-1 md:grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden" : "grid grid-cols-1 md:grid-cols-[220px_1fr] border border-[#c7d8ea]"}>
             {(() => {
               // Filter out keys we should skip
               const keysToSkip = [

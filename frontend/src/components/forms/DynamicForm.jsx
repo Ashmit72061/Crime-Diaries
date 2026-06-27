@@ -570,12 +570,7 @@ export default function DynamicForm({
     return (
       <div className="space-y-4">
         {/* Top card fields */}
-        <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
-          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
-            {lang === 'hi' ? 'सामान्य जानकारी' : 'General Information'}
-          </legend>
-
-          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
             {renderReadOnlyRow(lang === 'hi' ? 'रिकॉर्ड यूआईडी (UID)' : 'Record UID', values.uid || 'NEW_DRAFT_PENDING')}
             {renderReadOnlyRow(lang === 'hi' ? 'जिला' : 'District', values.district || user?.district)}
             {renderReadOnlyRow(lang === 'hi' ? 'थाना' : 'Police Station', values.police_station || user?.police_station)}
@@ -792,7 +787,6 @@ export default function DynamicForm({
               </div>
             </React.Fragment>
           </div>
-        </fieldset>
 
         {/* Acts, Sections, Major/Minor, Local Head Panels */}
         <div className="flex flex-col md:flex-row gap-3">
@@ -2162,7 +2156,7 @@ const renderComplainantStep = () => {
       </div>
 
       {/* Sub-tab content */}
-      <div className="p-2 border border-t-0 border-[#7a9cc5] rounded-b bg-white">
+      <div className="p-2 border border-t-0 border-[#7a9cc5] rounded-b bg-transparent">
         {complainantTab === 'personal' ? renderPersonalInfoSubTab() : renderAddressSubTab()}
       </div>
     </div>
@@ -3257,11 +3251,11 @@ const renderArrestedStep = () => {
 
   const renderArrestedDetailsSubTab = () => {
     return (
-      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+      <fieldset className="bg-white">
         <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
           {lang === 'hi' ? 'गिरफ्तारी का विवरण' : 'Arrest Details'}
         </legend>
-        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
           {renderArrestedModalField('arrest_date')}
           {renderArrestedModalField('arrest_place', null, true)}
         </div>
@@ -3357,11 +3351,11 @@ const renderArrestedStep = () => {
 
   const renderArrestedParticularDetailsSubTab = () => {
     return (
-      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+      <fieldset className="bg-white">
         <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
           {lang === 'hi' ? 'विवरण' : 'Particular Details'}
         </legend>
-        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
           {renderArrestedModalField('prev_involvement')}
           {renderArrestedModalField('proclaimed_offender', null, true)}
         </div>
@@ -3716,11 +3710,11 @@ const renderIntimationStep = () => {
             {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {intimationSubTab === 'personal' ? (
-                <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+                <fieldset className="bg-white">
                   <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
                     {lang === 'hi' ? 'सूचना विवरण' : 'Intimation Details'}
                   </legend>
-                  <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+                  <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
                     {renderIntimationModalField('intimation_date_time')}
                     {renderIntimationModalField('intimated_relative_name')}
                     {renderIntimationModalField('intimated_relative_relation')}
@@ -3728,11 +3722,11 @@ const renderIntimationStep = () => {
                   </div>
                 </fieldset>
               ) : (
-                <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+                <fieldset className="bg-white">
                   <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
                     {lang === 'hi' ? 'पता' : 'Address'}
                   </legend>
-                  <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+                  <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
                     {renderIntimationModalField('intimation_house_no')}
                     {renderIntimationModalField('intimation_street')}
                     {renderIntimationModalField('intimation_colony')}
@@ -3811,15 +3805,9 @@ const renderActionTakenStep = () => {
 
   return (
     <div className="space-y-4">
-      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
-        <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
-          {lang === 'hi' ? 'की गई कार्रवाई / जांच अधिकारी' : 'Action Taken / Investigation Officer'}
-        </legend>
-
-        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
-          {activeFields.map((field, idx) => renderFieldWithLabel(field, idx))}
-        </div>
-      </fieldset>
+      <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden">
+        {activeFields.map((field, idx) => renderFieldWithLabel(field, idx))}
+      </div>
     </div>
   );
 };
@@ -4107,6 +4095,7 @@ const renderActionTakenStep = () => {
   const [showAddRow,   setShowAddRow  ] = useState(false);
   const [newAct,       setNewAct      ] = useState('');
   const [newSection,   setNewSection  ] = useState('');
+  const [newSectionVal, setNewSectionVal] = useState('');
   const [actsSectionsRegistry, setActsSectionsRegistry] = useState(ACTS_SECTIONS_REGISTRY);
 
   // Victim Modal state hooks
