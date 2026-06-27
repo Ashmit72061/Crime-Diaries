@@ -88,6 +88,7 @@ export const getPreview = async (req, res, next) => {
 export const exportExcel = async (req, res, next) => {
   try {
     const date = getValidatedDate(req);
+    const { fromDate, toDate } = req.query;
     const scope = resolveScope(req.user, req.query);
     const tableNames = req.query.tableNames ? req.query.tableNames.split(',') : null;
     const dateTo = req.query.dateTo || null;

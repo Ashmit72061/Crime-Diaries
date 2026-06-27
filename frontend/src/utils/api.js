@@ -1875,6 +1875,36 @@ api.interceptors.request.use(
       });
     }
 
+    // Acts & Sections list endpoint
+    if (url.includes('/acts-sections') && method === 'GET') {
+      const mockActsSections = [
+        {
+          act: "Indian Penal Code (IPC)",
+          sections: ["379", "302", "323", "406", "506", "354", "411"]
+        },
+        {
+          act: "Arms Act",
+          sections: ["25", "27", "30"]
+        },
+        {
+          act: "NDPS Act",
+          sections: ["15", "18", "20", "21", "22"]
+        },
+        {
+          act: "Motor Vehicles Act",
+          sections: ["181", "184", "185"]
+        },
+        {
+          act: "Information Technology Act (IT Act)",
+          sections: ["66", "66C", "66D", "67"]
+        }
+      ];
+      return Promise.reject({
+        isMock: true,
+        response: createMockResponse(mockActsSections)
+      });
+    }
+
     // Fields Form Schema definitions
     if (url.match(/\/fields\/form\/([A-Z_]+)/)) {
       const recordType = url.match(/\/fields\/form\/([A-Z_]+)/)[1];

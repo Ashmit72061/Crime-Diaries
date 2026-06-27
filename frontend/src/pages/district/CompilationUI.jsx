@@ -119,8 +119,8 @@ export default function CompilationUI() {
 
   // Create Compilation Mutation
   const createCompMutation = useMutation({
-    mutationFn: async (date) => {
-      const res = await api.post('/compilations', { period: date });
+    mutationFn: async ({ period, fromDate, toDate }) => {
+      const res = await api.post('/compilations', { period, fromDate, toDate });
       return res.data.data;
     },
     onSuccess: (data) => {
@@ -259,7 +259,7 @@ export default function CompilationUI() {
   };
 
   return (
-    <div className="space-y-6 w-full theme-district-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
+    <div className="space-y-6 w-full theme-district-page p-5 rounded-2xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* Back Header */}
       <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
         <button
@@ -285,47 +285,52 @@ export default function CompilationUI() {
  
       {/* Date trigger card */}
       <div className="border border-slate-200 bg-white rounded-xl p-5 shadow-sm space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 font-display">
           <Calendar size={14} className="text-[var(--accent-color)]" />
-          <span>Select Target Compilation Date</span>
+          <span>Select Compilation Date Range</span>
         </h3>
  
         <p className="text-xs text-slate-500 font-medium">
           This will bundle all records currently at <span className="text-[var(--accent-color)] font-semibold">DISTRICT_REVIEW</span> status in your district into a single compilation packet.
         </p>
  
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
-          {/* Date range: From (required) + To (optional) */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-0.5">From</label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
-              />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-0.5">
-                To <span className="text-slate-400 normal-case font-normal">(optional)</span>
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                min={dateFrom}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row gap-3 items-end relative">
+          <div className="flex flex-col gap-1 shrink-0 w-full sm:w-auto">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar size={10} className="text-slate-400" />
+              <span>From Date</span>
+            </span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1 shrink-0 w-full sm:w-auto">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar size={10} className="text-slate-400" />
+              <span>To Date</span>
+            </span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
+            />
           </div>
  
           {/* POLICE STATION DROPDOWN */}
-          <div ref={psDropRef} className="relative flex-1 min-w-[200px]">
+          <div ref={psDropRef} className="relative flex-1 min-w-[200px] w-full flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <Shield size={10} className="text-slate-400" />
+              <span>Police Station</span>
+            </span>
             <button
               type="button"
               onClick={() => setPsDropOpen(!psDropOpen)}
-              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer h-full font-semibold"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold"
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <Shield size={14} className="text-[var(--accent-color)] shrink-0" />
@@ -413,11 +418,15 @@ export default function CompilationUI() {
           </div>
  
           {/* REPORTS DROPDOWN */}
-          <div ref={reportsDropRef} className="relative flex-1 min-w-[200px]">
+          <div ref={reportsDropRef} className="relative flex-1 min-w-[200px] w-full flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <FileText size={10} className="text-slate-400" />
+              <span>Select Reports</span>
+            </span>
             <button
               type="button"
               onClick={() => setReportsDropOpen(!reportsDropOpen)}
-              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer h-full font-semibold"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold"
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText size={14} className="text-[var(--accent-color)] shrink-0" />
@@ -502,6 +511,7 @@ export default function CompilationUI() {
               )}
             </div>
   
+          <div className="w-full sm:w-auto shrink-0 flex flex-col justify-end">
             <button
               onClick={handleCompileTrigger}
               disabled={exporting || selectedFields.size === 0}
@@ -521,6 +531,7 @@ export default function CompilationUI() {
             </button>
           </div>
         </div>
+      </div>
   
         {/* Compiled Records List */}
         <div className="space-y-4">

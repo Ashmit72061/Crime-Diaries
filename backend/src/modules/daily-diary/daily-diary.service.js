@@ -45,7 +45,12 @@ const getRawRecords = async (date, psId, districtId, subDivId, dateTo = null) =>
   } else if (isRange) {
     query = query.whereBetween('records.record_date', [date, dateTo]);
   } else {
-    query = query.where('records.record_date', date);
+    if (fromDate && toDate) {
+      query = query.where('records.record_date', '>=', fromDate)
+                   .where('records.record_date', '<=', toDate);
+    } else {
+      query = query.where('records.record_date', date);
+    }
   }
 
   if (psId) {

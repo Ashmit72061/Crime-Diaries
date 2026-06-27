@@ -133,7 +133,7 @@ export default function Users() {
   };
 
   return (
-    <div className="space-y-6 theme-admin-page p-6 rounded-3xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
+    <div className="space-y-6 theme-admin-page p-5 rounded-2xl bg-[var(--bg-page-main)] border border-slate-200 shadow-sm">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

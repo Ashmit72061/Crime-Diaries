@@ -113,9 +113,9 @@ export default function HomePage() {
                     className="hologram-crest"
                   />
                   <div className="hologram-text-block">
-                    <span className="hologram-title">Delhi Police</span>
+                    <span className="hologram-title glow-text">PRISM</span>
                     <div className="hologram-line" />
-                    <span className="hologram-subtitle">Official Portal</span>
+                    <span className="text-sm font-bold">Police Report Intelligence & Management System</span>
                   </div>
                 </div>
 

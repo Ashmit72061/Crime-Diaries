@@ -124,6 +124,53 @@ const mergeConditionalFields = (data) => {
     }
   }
 
+  // Handle occurrence_from_date_time extraction for database/report compatibility
+  if (data.occurrence_from_date_time) {
+    const parts = data.occurrence_from_date_time.split('T');
+    if (parts[0]) data.occurrence_date = parts[0];
+    if (parts[1]) data.occurrence_time = parts[1];
+  }
+
+  // Construct complainant_name and complainant_address from granular fields for backward compatibility
+  if (data.complainant_first_name) {
+    data.complainant_name = [
+      data.complainant_first_name,
+      data.complainant_middle_name,
+      data.complainant_last_name
+    ].filter(Boolean).join(' ');
+  }
+  if (data.complainant_relation_type && data.complainant_relative_name) {
+    if (['Father', 'Husband'].includes(data.complainant_relation_type)) {
+      data.complainant_father_husband_name = data.complainant_relative_name;
+    }
+  }
+  if (data.complainant_house_no || data.complainant_street || data.complainant_colony || data.complainant_city_town_village) {
+    data.complainant_address = [
+      data.complainant_house_no ? `House No. ${data.complainant_house_no}` : '',
+      data.complainant_street,
+      data.complainant_colony,
+      data.complainant_city_town_village,
+      data.complainant_tehsil_block_mandal,
+      data.complainant_district,
+      data.complainant_state,
+      data.complainant_pincode
+    ].filter(Boolean).join(', ');
+  }
+
+  // Handle auto-sync for permanent address if same toggled
+  if (data.complainant_perm_same === 'Yes' || data.complainant_perm_same === true) {
+    data.complainant_perm_house_no = data.complainant_house_no;
+    data.complainant_perm_street = data.complainant_street;
+    data.complainant_perm_colony = data.complainant_colony;
+    data.complainant_perm_city_town_village = data.complainant_city_town_village;
+    data.complainant_perm_tehsil_block_mandal = data.complainant_tehsil_block_mandal;
+    data.complainant_perm_country = data.complainant_country;
+    data.complainant_perm_state = data.complainant_state;
+    data.complainant_perm_district = data.complainant_district;
+    data.complainant_perm_police_station = data.complainant_police_station;
+    data.complainant_perm_pincode = data.complainant_pincode;
+  }
+
   return data;
 };
 
