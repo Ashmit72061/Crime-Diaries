@@ -80,8 +80,15 @@ const STATUS_BAR = {
 };
 
 export default function AnalyticsDashboard() {
-  const { user } = useAuthStore();
+  const { user, jurisdiction } = useAuthStore();
   const [period, setPeriod] = useState('weekly');
+
+  const getDistrictName = () => {
+    const isHq = user?.role === 'HQ' || user?.role === 'HQ_ANALYST' || user?.role === 'HQ_ADMIN' || user?.role === 'SYSTEM_ADMIN';
+    if (isHq) return "DELHI POLICE";
+    const rawName = jurisdiction?.district?.name_en || user?.districtKey || "Delhi Police";
+    return rawName.replace(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+  };
 
   const getThemeClass = () => {
     const role = user?.role;
@@ -198,7 +205,7 @@ export default function AnalyticsDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/80 backdrop-blur-sm">
               <BarChart3 size={12} className="text-amber-400" />
-              DELHI POLICE · OPERATIONAL ANALYTICS
+              {getDistrictName()} · OPERATIONAL ANALYTICS
             </span>
             <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1.5 backdrop-blur-sm">
               <Radio size={11} className="animate-pulse text-emerald-400" />

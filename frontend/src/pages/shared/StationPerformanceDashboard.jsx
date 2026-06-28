@@ -339,7 +339,7 @@ export default function StationPerformanceDashboard() {
     <div className={`min-h-screen ${getThemeClass()} page-bg text-[var(--text-main-theme)] font-sans`}>
 
       {/* ══════════════ HERO GRADIENT HEADER ══════════════ */}
-      <div className="relative hero-banner-gradient px-8 pt-8 pb-16 overflow-hidden">
+      <div className="relative hero-banner-gradient px-8 pt-5 pb-12 overflow-hidden">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-12 left-1/4 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
@@ -352,15 +352,9 @@ export default function StationPerformanceDashboard() {
               "repeating-linear-gradient(0deg,white 0,white 1px,transparent 1px,transparent 48px),repeating-linear-gradient(90deg,white 0,white 1px,transparent 1px,transparent 48px)",
           }}
         />
-
-        <div className="relative z-10 mx-auto max-w-screen-xl">
+        <div className="relative z-10 mx-auto max-w-screen-xl w-full">
           {/* Top badge row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 text-xs font-semibold text-white/80 backdrop-blur-sm tracking-wide">
-              <Shield size={12} className="text-amber-400" />
-              {isHq ? "DELHI POLICE · HQ CONSOLIDATED COMMAND" : "DELHI POLICE · DISTRICT COMMAND CENTER"}
-            </span>
-
+          <div className="flex flex-wrap items-center justify-end gap-3 mb-2">
             {/* Live data pill */}
             <div className="flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-400/30 px-4 py-1.5 backdrop-blur-sm">
               <Radio size={11} className="text-emerald-400 animate-pulse" />
@@ -385,10 +379,10 @@ export default function StationPerformanceDashboard() {
 
               {/* Breadcrumb location chips */}
               <div className="mt-5 flex flex-wrap items-center gap-2 font-semibold">
-                <div className="flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
+                {/* <div className="flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
                   <MapPin size={11} className="text-white/50" />
                   <span className="text-xs text-white/70">Delhi, India</span>
-                </div>
+                </div> */}
                 {isHq ? (
                   <div className="flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
                     <Users size={11} className="text-white/50" />
@@ -495,7 +489,7 @@ export default function StationPerformanceDashboard() {
               </div>
 
               {/* Metric legend pills */}
-              <div className="flex flex-wrap gap-2">
+              {/* <div className="flex flex-wrap gap-2">
                 <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 shadow-sm">
                   <Clock3 size={12} className="text-amber-700" />
                   <span className="text-xs font-bold text-amber-700">{calculatedData.summary.totalCases} Cases</span>
@@ -508,7 +502,7 @@ export default function StationPerformanceDashboard() {
                   <Radio size={12} className="text-blue-700" />
                   <span className="text-xs font-bold text-blue-700">{calculatedData.summary.totalPcr} PCR</span>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 

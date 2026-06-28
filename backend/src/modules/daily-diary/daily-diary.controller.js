@@ -1,5 +1,4 @@
 import * as dailyDiaryService from './daily-diary.service.js';
-import db from '../../config/db.js';
 import { logger } from '../../utils/logger.js';
 
 // Helper to validate and default date
@@ -88,6 +87,7 @@ export const getPreview = async (req, res, next) => {
 export const exportExcel = async (req, res, next) => {
   try {
     const date = getValidatedDate(req);
+    const { fromDate, toDate } = req.query;
     const scope = resolveScope(req.user, req.query);
     const tableNames = req.query.tableNames ? req.query.tableNames.split(',') : null;
     const dateTo = req.query.dateTo || null;
@@ -101,33 +101,6 @@ export const exportExcel = async (req, res, next) => {
       tableNames,
       dateTo
     );
-
-    // Process in Node.js immediately — no Python/RabbitMQ required.
-    setImmediate(async () => {
-      try {
-        const job = await db('report_jobs').where({ id: jobId }).first();
-        if (!job) return;
-        const def = JSON.parse(job.custom_definition || '{}');
-        await dailyDiaryService.buildDailyDiaryExcel(
-          def.sheets,
-          def.reports,
-          def.report_columns,
-          job.file_path,
-          def.column_labels  // undefined falls back to module-level COLUMN_LABELS
-        );
-        await db('report_jobs').where({ id: jobId }).update({
-          status: 'READY',
-          updated_at: new Date().toISOString(),
-        });
-        logger.info(`[DailyDiary] Job ${jobId} completed — file written to ${job.file_path}`);
-      } catch (err) {
-        logger.error(`[DailyDiary] Job ${jobId} failed: ${err.message}`);
-        await db('report_jobs').where({ id: jobId }).update({
-          status: 'FAILED',
-          updated_at: new Date().toISOString(),
-        }).catch(() => {});
-      }
-    });
 
     return res.status(202).json({
       status: 'accepted',

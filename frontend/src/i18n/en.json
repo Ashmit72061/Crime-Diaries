@@ -37,14 +37,32 @@
     "COMPILED": "Compiled",
     "HQ_RECEIVED": "HQ Received",
     "ARCHIVED": "Sealed & Archived",
+    "SENT_BACK": "Returned for Correction",
     "SENT_BACK_HC": "Returned to HC"
   },
   "recordTypes": {
     "CASE": "Cases (FIR) Master",
     "ARREST": "Arrest Person Master",
-    "PCR_CALL": "PCR / Kalandra Call",
+    "PCR_CALL": "PCR",
     "UIDB": "UIDB Unidentified Bodies",
     "MISSING": "Missing Persons Register"
+  },
+  "roles": {
+    "HC": "Head Constable",
+    "SHO": "Station House Officer",
+    "ACP": "Assistant Commissioner of Police",
+    "DISTRICT_OFFICER": "Deputy Commissioner of Police",
+    "HQ_ANALYST": "HQ Analyst",
+    "HQ_ADMIN": "HQ Admin",
+    "SYSTEM_ADMIN": "System Administrator"
+  },
+  "views": {
+    "SYSTEM_ADMIN": "SYSTEM ADMIN",
+    "HQ": "HQ VIEW",
+    "PS": "PS VIEW",
+    "SUB_DIVISION": "SUB-DIV",
+    "DISTRICT": "DISTRICT",
+    "UNKNOWN": "UNKNOWN"
   },
   "common": {
     "loading": "Loading secure terminal...",
@@ -53,6 +71,8 @@
     "success": "Success",
     "selected": "selected",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "settings": "System Settings",
+    "signOut": "Sign Out Session"
   }
 }

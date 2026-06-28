@@ -45,22 +45,29 @@ export const getCompilation = async (id) => {
  * Create a new DRAFT compilation for a district + period.
  * Gathers all records in DISTRICT_REVIEW status for the district.
  */
-export const createCompilation = async (districtId, period, userId) => {
+export const createCompilation = async (districtId, period, userId, fromDate, toDate) => {
   if (!districtId || !period) {
     throw new Error('districtId and period are required');
   }
 
-  // Find all records at DISTRICT_REVIEW level for this district
-  const records = await db('records')
-    .where({ district_id: districtId, current_status: 'DISTRICT_REVIEW' })
-    .select('id', 'record_type');
+  // Find all records at DISTRICT_REVIEW level for this district, optionally scoped by date range
+  let query = db('records')
+    .where({ district_id: districtId, current_status: 'DISTRICT_REVIEW' });
+
+  if (fromDate) {
+    query = query.where('record_date', '>=', fromDate);
+  }
+  if (toDate) {
+    query = query.where('record_date', '<=', toDate);
+  }
+
+  const records = await query.select('id', 'record_type');
 
   const recordIds = records.map(r => r.id);
 
+  // Allow empty compilations — non-zero records are enforced only at submit time
   if (recordIds.length === 0) {
-    throw new Error(
-      'No records pending district review found. Records must be approved by SHO and reach DISTRICT_REVIEW status before compilation.'
-    );
+    logger.info(`[Compilation] No DISTRICT_REVIEW records found for district ${districtId} on period ${period}. Creating empty compilation.`);
   }
 
   // Build summary breakdown by record type
@@ -122,6 +129,13 @@ export const submitCompilation = async (id, userId) => {
   const compilation = await db('compilations').where({ id }).first();
   if (!compilation) throw new Error('Compilation not found');
   if (compilation.status !== 'DRAFT') throw new Error('Only DRAFT compilations can be submitted to HQ');
+
+  const precheck = typeof compilation.record_ids === 'string'
+    ? JSON.parse(compilation.record_ids)
+    : (compilation.record_ids || []);
+  if (!precheck || precheck.length === 0) {
+    throw new Error('Cannot submit an empty compilation — no DISTRICT_REVIEW records were bundled.');
+  }
 
   const [updatedCompilation] = await db('compilations')
     .where({ id })

@@ -25,17 +25,26 @@ call npm run db:seed
 echo.
 
 echo [4.5/6] Seeding dev test data (fresh dummy records)...
-call node scripts/seed-test-data.js
+node scripts/seed-test-data.js
 echo.
 
 echo [5/6] Starting frontend in a new terminal...
-start "PHAROS Frontend" cmd /k "cd ../frontend && npm run dev"
+start "PHAROS Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 echo.
 
-echo [5.5/6] Starting Python report worker in a new terminal...
-start "PHAROS Python Worker" cmd /k "cd ../python_worker && pip install -r requirements.txt && python main.py"
+echo [5.5/6] Installing Python dependencies and starting report worker...
+cd /d %~dp0python_worker
+pip install -r requirements.txt
+start "PHAROS Python Worker" cmd /k "cd /d %~dp0python_worker && python main.py"
+cd /d %~dp0
 echo.
 
-echo [6/6] Launching local backend server...
-echo Server running on http://localhost:5000
-npm run dev
+echo [6/6] Starting backend server in a new terminal...
+start "PHAROS Backend" cmd /k "cd /d %~dp0backend && npm run dev"
+echo.
+
+echo ===================================================
+echo  PHAROS is starting up!
+echo  Backend:  http://localhost:3000
+echo  Frontend: http://localhost:5173
+echo ===================================================

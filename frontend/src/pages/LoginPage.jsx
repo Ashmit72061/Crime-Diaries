@@ -4,6 +4,7 @@ import { Shield, Lock, User, BadgeCheck, ChevronRight, Fingerprint } from 'lucid
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import LanguageToggle from '../components/ui/LanguageToggle.jsx';
 
 export const LoginPage = () => {
   const { login } = useAuth();
@@ -52,6 +53,7 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 font-sans">
+      <LanguageToggle variant="badge" />
 
       {/* ════════════════════════════════════════════════════════════════════════
           LEFT PANEL — dark command aesthetic

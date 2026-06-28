@@ -598,6 +598,7 @@ DAILY_DIARY_PARALLEL_TEMPLATE_IDS = {
     'dd-fir-goswara-summary', 'dd-financial-fraud-arrest', 'dd-ndps-action',
 }
 
+# Maps each template ID to the subset of table_names it covers (None = all sheets)
 TEMPLATE_TO_TABLE_NAMES = {
     'daily-diary': None,
     'dd-manual-fir': ['excel_1manual_fir'],
@@ -611,111 +612,96 @@ TEMPLATE_TO_TABLE_NAMES = {
     'dd-arrested-24hrs': ['excel_13arrested_24_hrs_list'],
     'dd-missing-uidb': ['excel_18missing_persons', 'excel_19uidb', 'excel_20abandoned_persons', 'excel_21traced_persons'],
     'dd-women-children-missing': ['excel_22women_missing', 'excel_23children_missing'],
-    'dd-preventive-action': ['excel_24preventive_action'],
+    'dd-preventive-action': [],
     'dd-inquest-registered': ['excel_25inquest_registered', 'excel_26inquest_acpsdm_disposal'],
-    'dd-important-cases': ['excel_27important_cases'],
+    'dd-important-cases': [],
     'dd-fir-goswara-summary': ['excel_28fir_goswara_summary'],
-    'dd-financial-fraud-arrest': ['excel_29financial_fraud_arrest'],
-    'dd-ndps-action': ['excel_31ndps_action'],
+    'dd-financial-fraud-arrest': [],
+    'dd-ndps-action': [],
 }
 
-def generate_daily_diary_workbook(custom_definition):
+from registry import map_all_sheets, SHEETS as REGISTRY_SHEETS
+from builder import build_workbook
+
+
+def _fetch_records(filters):
+    """Query records + hierarchy join for daily-diary generation."""
+    date = filters.get('date')
+    date_to = filters.get('date_to') or filters.get('dateTo') or date
+    ps_id = filters.get('ps_id') or filters.get('psId')
+    district_id = filters.get('district_id') or filters.get('districtId')
+    sub_div_id = filters.get('sub_div_id') or filters.get('subDivId')
+
+    # Daily diary is date-based, not workflow-status-based.
+    # Include all records for the date; DRAFT records are still police activity that happened.
+    conditions = ["r.record_date BETWEEN :date_from AND :date_to"]
+    params = {'date_from': date, 'date_to': date_to}
+
+    if ps_id:
+        if isinstance(ps_id, list):
+            placeholders = ', '.join(f':ps_{i}' for i in range(len(ps_id)))
+            conditions.append(f'r.ps_id IN ({placeholders})')
+            for i, p in enumerate(ps_id):
+                params[f'ps_{i}'] = str(p)
+        elif isinstance(ps_id, str) and ',' in ps_id:
+            ps_list = [p.strip() for p in ps_id.split(',')]
+            placeholders = ', '.join(f':ps_{i}' for i in range(len(ps_list)))
+            conditions.append(f'r.ps_id IN ({placeholders})')
+            for i, p in enumerate(ps_list):
+                params[f'ps_{i}'] = p
+        else:
+            conditions.append('r.ps_id = :ps_id')
+            params['ps_id'] = str(ps_id)
+    elif district_id:
+        conditions.append('r.district_id = :district_id')
+        params['district_id'] = str(district_id)
+    elif sub_div_id:
+        conditions.append('r.sub_div_id = :sub_div_id')
+        params['sub_div_id'] = str(sub_div_id)
+
+    where = ' AND '.join(conditions)
+    sql = f"""
+        SELECT r.*,
+               ps.name_en   AS ps_name,
+               ps.code      AS ps_code,
+               dist.name_en AS district_name,
+               dist.code    AS district_code
+        FROM records r
+        LEFT JOIN hierarchy_nodes ps   ON r.ps_id       = ps.id
+        LEFT JOIN hierarchy_nodes dist ON r.district_id = dist.id
+        WHERE {where}
+        ORDER BY r.created_at ASC
     """
-    Build the daily diary Excel workbook from pre-classified data.
-    custom_definition must contain: type='DAILY_DIARY', date, reports, report_columns, sheets.
-    Node.js classifies; Python formats — no DB queries needed here.
-    """
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-    reports = custom_definition.get('reports', [])
-    report_columns = custom_definition.get('report_columns', {})
-    sheets_data = custom_definition.get('sheets', {})
-    date = custom_definition.get('date', '')
+    with engine.connect() as conn:
+        result = conn.execute(text(sql), params)
+        rows = result.mappings().all()
 
-    header_fill = PatternFill(start_color='1F3864', end_color='1F3864', fill_type='solid')
-    header_font = Font(name='Arial', size=9, bold=True, color='FFFFFF')
-    header_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    data_font = Font(name='Arial', size=9)
-    data_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
-    zebra_fill = PatternFill(start_color='EBF3FA', end_color='EBF3FA', fill_type='solid')
-    thin_border = Border(
-        left=Side(style='thin', color='D9D9D9'),
-        right=Side(style='thin', color='D9D9D9'),
-        top=Side(style='thin', color='D9D9D9'),
-        bottom=Side(style='thin', color='D9D9D9'),
-    )
+    records = []
+    for row in rows:
+        r = dict(row)
+        raw_data = r.get('data')
+        if isinstance(raw_data, str):
+            try:
+                r['data'] = json.loads(raw_data)
+            except Exception:
+                r['data'] = {}
+        elif raw_data is None:
+            r['data'] = {}
+        records.append(r)
 
-    wb = openpyxl.Workbook()
-    wb.remove(wb.active)
+    return records
 
-    for rep in reports:
-        table_name = rep['tableName']
-        label = rep['label']
-        num = rep['num']
 
-        # Sheet title: "1. Manual FIR"
-        sheet_title = f"{num}. {label}"
-        for bad_char in ':\\/?*[]':
-            sheet_title = sheet_title.replace(bad_char, '')
-        sheet_title = sheet_title[:31]
-
-        ws = wb.create_sheet(title=sheet_title)
-
-        # Title row
-        ws.append([f"PHAROS Daily Diary — {label}"])
-        ws.append([f"Date: {date}"])
-        ws.append([])  # spacer
-
-        col_keys = report_columns.get(table_name, [])
-        col_headers = [k.replace('_', ' ').title() for k in col_keys]
-
-        # Header row
-        ws.append(col_headers if col_headers else ['No Data'])
-        header_row_idx = ws.max_row
-        ws.row_dimensions[header_row_idx].height = 22
-        for ci in range(1, len(col_headers) + 1):
-            cell = ws.cell(row=header_row_idx, column=ci)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = header_align
-            cell.border = thin_border
-
-        # Title style
-        ws.cell(row=1, column=1).font = Font(name='Arial', size=11, bold=True, color='1F3864')
-        ws.cell(row=2, column=1).font = Font(name='Arial', size=9, italic=True, color='595959')
-
-        # Data rows
-        rows = sheets_data.get(table_name, [])
-        for row_idx_offset, row_obj in enumerate(rows, start=1):
-            row_values = [row_obj.get(k, '') for k in col_keys]
-            ws.append(row_values)
-            actual_row = header_row_idx + row_idx_offset
-            ws.row_dimensions[actual_row].height = 18
-            use_zebra = (row_idx_offset % 2 == 0)
-            for ci, val in enumerate(row_values, start=1):
-                cell = ws.cell(row=actual_row, column=ci)
-                cell.font = data_font
-                cell.alignment = data_align
-                cell.border = thin_border
-                if use_zebra:
-                    cell.fill = zebra_fill
-
-        if not rows:
-            ws.append(['No records for this date.'])
-
-        # Auto-fit column widths (capped at 45)
-        for col_cells in ws.columns:
-            max_len = 10
-            for cell in col_cells:
-                if cell.row < header_row_idx:
-                    continue
-                val_str = str(cell.value or '')
-                if len(val_str) > max_len:
-                    max_len = len(val_str)
-            col_letter = openpyxl.utils.get_column_letter(col_cells[0].column)
-            ws.column_dimensions[col_letter].width = min(max_len + 3, 45)
-
-    return wb
+def _classify_records(records):
+    """Split raw records into type buckets expected by sheet functions."""
+    return {
+        'cases':   [r for r in records if r.get('record_type') in ('CASE', 'CASES')],
+        'arrests': [r for r in records if r.get('record_type') == 'ARREST'],
+        'missing': [r for r in records if r.get('record_type') == 'MISSING'],
+        'uidb':    [r for r in records if r.get('record_type') == 'UIDB'],
+        'records': records,
+    }
 
 
 def generate_report(job_id):
@@ -786,20 +772,29 @@ def generate_report(job_id):
         df.to_csv(file_path, index=False)
 
     elif format_type in ['EXCEL', 'XLSX']:
-        if not template and custom_definition and custom_definition.get('type') == 'DAILY_DIARY':
-            wb = generate_daily_diary_workbook(custom_definition)
-            wb.save(file_path)
-        elif template_id in DAILY_DIARY_PARALLEL_TEMPLATE_IDS:
-            import subprocess
-            table_names = TEMPLATE_TO_TABLE_NAMES.get(template_id)
-            cli_filters = dict(filters) if filters else {}
-            if table_names:
-                cli_filters['tableNames'] = table_names
-            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend/scripts/dev/generate_parallel_report_cli.js'))
-            filters_json = json.dumps(cli_filters)
-            cmd = ['node', script_path, job_id, filters_json, file_path]
-            print(f"[Worker] Delegating to Node.js parallel engine for template: {template_id}")
-            subprocess.run(cmd, check=True)
+        is_daily_diary = (
+            (not template and custom_definition and custom_definition.get('type') == 'DAILY_DIARY')
+            or template_id in DAILY_DIARY_PARALLEL_TEMPLATE_IDS
+        )
+        if is_daily_diary:
+            print(f"[Worker] Running Python daily-diary engine for template: {template_id}")
+            records = _fetch_records(filters or {})
+            classified = _classify_records(records)
+            # Resolve active table names: per-template override → filter param → all
+            active_tables = TEMPLATE_TO_TABLE_NAMES.get(template_id) if template_id else None
+            if active_tables is None:
+                raw_tnames = (filters or {}).get('table_names') or (filters or {}).get('tableNames')
+                if isinstance(raw_tnames, str):
+                    active_tables = [t.strip() for t in raw_tnames.split(',') if t.strip()]
+                elif isinstance(raw_tnames, list):
+                    active_tables = raw_tnames
+            # Empty list from TEMPLATE_TO_TABLE_NAMES means no sheets defined yet → use all
+            if active_tables is not None and len(active_tables) == 0:
+                active_tables = None
+            date_label = (filters or {}).get('date', '')
+            sheets_data = map_all_sheets(classified, active_tables)
+            active_sheet_defs = [s for s in REGISTRY_SHEETS if active_tables is None or s['table_name'] in active_tables]
+            build_workbook(sheets_data, active_sheet_defs, file_path, date=date_label)
         elif template_type == 'LINKED':
             wb = generate_linked_workbook(definition, filters, engine)
             wb.save(file_path)
