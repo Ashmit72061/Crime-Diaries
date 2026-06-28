@@ -3098,6 +3098,86 @@ const renderPropertyStep = () => {
     return [];
   };
 
+  // ── Extra detail field helpers ─────────────────────────────────────────────
+  const BASE_PROP_KEYS = new Set([
+    'property_major_category', 'property_minor_category',
+    'property_details', 'property_stolen_recovered',
+  ]);
+  // These supply options for the "Type of Property" column — skip in detail panel
+  const TYPE_COL_KEYS = new Set([
+    'prop_vehicle_type', 'prop_gold_item_type', 'prop_elec_device_type',
+    'prop_doc_type', 'prop_drug_type', 'prop_arms_type', 'prop_cash_currency',
+  ]);
+
+  const evalPropCond = (cond, row) => {
+    if (!cond) return true;
+    if (cond.and) return cond.and.every(c => evalPropCond(c, row));
+    const { field: tf, value: tv, operator } = cond;
+    const cv = row[tf];
+    if (operator === 'filled') return cv !== undefined && cv !== null && String(cv).trim() !== '';
+    return Array.isArray(tv)
+      ? tv.map(v => String(v || '').toLowerCase()).includes(String(cv || '').toLowerCase())
+      : String(cv || '').toLowerCase() === String(tv || '').toLowerCase();
+  };
+
+  const getExtraFields = (row) =>
+    allFields.filter(f => {
+      if (!f.repeater_entity || f.repeater_entity.toUpperCase() !== 'PROPERTY') return false;
+      if (BASE_PROP_KEYS.has(f.field_key)) return false;
+      if (TYPE_COL_KEYS.has(f.field_key)) return false;
+      const cond = f.show_when
+        ? (typeof f.show_when === 'string' ? JSON.parse(f.show_when) : f.show_when)
+        : null;
+      return evalPropCond(cond, row);
+    });
+
+  const renderExtraDetailRow = (row, idx) => {
+    const extraFields = getExtraFields(row);
+    if (!row.property_major_category || extraFields.length === 0) return null;
+    const cls = 'w-full px-2 py-1.5 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400';
+    return (
+      <tr key={`${idx}-extra`} className="border-t border-[#dce9f4] bg-[#f3f8fd]">
+        <td colSpan={7} className="px-4 py-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {extraFields.map(field => {
+              const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+              const fieldVal = row[field.field_key] || '';
+              const wrapCls = `flex flex-col gap-1${field.full_width ? ' col-span-full' : ''}`;
+              const labelEl = <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{label}</label>;
+              if (field.field_type === 'SELECT') {
+                const opts = (() => { try { return typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || []); } catch { return []; } })();
+                return (
+                  <div key={field.field_key} className={wrapCls}>
+                    {labelEl}
+                    <select value={fieldVal} onChange={e => handlePropertyRowChange(idx, field.field_key, e.target.value)} disabled={readOnly} className={cls}>
+                      <option value="">---{lang === 'hi' ? 'चुनें' : 'Select'}---</option>
+                      {opts.map(o => <option key={o.value ?? o} value={o.value ?? o}>{lang === 'hi' ? (o.label_hi || o.label_en || o) : (o.label_en || o.value || o)}</option>)}
+                    </select>
+                  </div>
+                );
+              }
+              if (field.field_type === 'TEXTAREA') {
+                return (
+                  <div key={field.field_key} className={wrapCls}>
+                    {labelEl}
+                    <textarea value={fieldVal} onChange={e => handlePropertyRowChange(idx, field.field_key, e.target.value)} disabled={readOnly} rows={2} className={`${cls} resize-none`} />
+                  </div>
+                );
+              }
+              return (
+                <div key={field.field_key} className={wrapCls}>
+                  {labelEl}
+                  <input type={field.field_type === 'NUMBER' ? 'number' : 'text'} value={fieldVal} onChange={e => handlePropertyRowChange(idx, field.field_key, e.target.value)} disabled={readOnly} className={cls} />
+                </div>
+              );
+            })}
+          </div>
+        </td>
+      </tr>
+    );
+  };
+  // ── End extra detail field helpers ─────────────────────────────────────────
+
   const addPropertyRow = () => {
     const list = [...propertyList];
     list.push({
@@ -3124,6 +3204,9 @@ const renderPropertyStep = () => {
     if (!list[idx]) return;
     const updatedRow = { ...list[idx], [key]: val };
     if (key === 'property_major_category') {
+      // Clear minor category and any category-specific extra detail fields
+      const KEEP = new Set(['property_major_category', 'property_minor_category', 'property_details', 'property_stolen_recovered', 'property_value_inr']);
+      Object.keys(updatedRow).forEach(k => { if (!KEEP.has(k)) delete updatedRow[k]; });
       updatedRow.property_minor_category = '';
     }
     list[idx] = updatedRow;
@@ -3194,6 +3277,7 @@ const renderPropertyStep = () => {
               <th className="px-3 py-2 text-left w-14 font-semibold">{lang === 'hi' ? 'क्र.सं.' : 'S.No.'}</th>
               <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'संपत्ति श्रेणी *' : 'Property Category *'}</th>
               <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'संपत्ति का प्रकार *' : 'Type of Property *'}</th>
+              <th className="px-3 py-2 text-left w-32 font-semibold">{lang === 'hi' ? 'स्थिति' : 'Status'}</th>
               <th className="px-3 py-2 text-left font-semibold">{lang === 'hi' ? 'विवरण' : 'Description'}</th>
               <th className="px-3 py-2 text-left w-44 font-semibold">{lang === 'hi' ? 'मूल्य (INR में)' : 'Value in INR'}</th>
               <th className="px-3 py-2 text-center w-16 font-semibold">{lang === 'hi' ? 'हटाएं' : 'Delete'}</th>
@@ -3202,74 +3286,96 @@ const renderPropertyStep = () => {
           <tbody>
             {propertyList.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-400 italic">
+                <td colSpan={7} className="px-3 py-6 text-center text-slate-400 italic">
                   {lang === 'hi' ? 'कोई संपत्ति नहीं जोड़ी गई है।' : 'No property items added yet.'}
                 </td>
               </tr>
             ) : (
               propertyList.map((row, idx) => (
-                <tr key={idx} className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
-                  {/* S.No */}
-                  <td className="px-3 py-2 font-medium">{idx + 1}</td>
-                  
-                  {/* Property Category */}
-                  <td className="px-3 py-2 min-w-[200px]">
-                    <select
-                      value={row.property_major_category || ''}
-                      onChange={(e) => handlePropertyRowChange(idx, 'property_major_category', e.target.value)}
-                      disabled={readOnly}
-                      className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
-                    >
-                      <option value="">{lang === 'hi' ? '---चुनें---' : '---Select---'}</option>
-                      {majorCategoryOptions.map(o => (
-                        <option key={o.value} value={o.value}>
-                          {lang === 'hi' ? (o.label_hi || o.label_en) : o.label_en}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+                <React.Fragment key={idx}>
+                  <tr className={`border-t border-[#c7d8ea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f0f5fa]'}`}>
+                    {/* S.No */}
+                    <td className="px-3 py-2 font-medium">{idx + 1}</td>
 
-                  {/* Type of Property */}
-                  <td className="px-3 py-2 min-w-[200px]">
-                    {renderTypeCell(row, idx)}
-                  </td>
+                    {/* Property Category */}
+                    <td className="px-3 py-2 min-w-[200px]">
+                      <select
+                        value={row.property_major_category || ''}
+                        onChange={(e) => handlePropertyRowChange(idx, 'property_major_category', e.target.value)}
+                        disabled={readOnly}
+                        className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                      >
+                        <option value="">{lang === 'hi' ? '---चुनें---' : '---Select---'}</option>
+                        {majorCategoryOptions.map(o => (
+                          <option key={o.value} value={o.value}>
+                            {lang === 'hi' ? (o.label_hi || o.label_en) : o.label_en}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
 
-                  {/* Description */}
-                  <td className="px-3 py-2">
-                    <input
-                      type="text"
-                      value={row.property_details || ''}
-                      onChange={(e) => handlePropertyRowChange(idx, 'property_details', e.target.value)}
-                      disabled={readOnly}
-                      placeholder={lang === 'hi' ? 'संपत्ति का विवरण दर्ज करें...' : 'Enter description details...'}
-                      className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
-                    />
-                  </td>
+                    {/* Type of Property */}
+                    <td className="px-3 py-2 min-w-[180px]">
+                      {renderTypeCell(row, idx)}
+                    </td>
 
-                  {/* Value in INR */}
-                  <td className="px-3 py-2">
-                    <input
-                      type="number"
-                      value={row.property_value_inr || ''}
-                      onChange={(e) => handlePropertyRowChange(idx, 'property_value_inr', e.target.value)}
-                      disabled={readOnly}
-                      placeholder={lang === 'hi' ? 'मूल्य दर्ज करें (INR में)' : 'Enter value in INR'}
-                      className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
-                    />
-                  </td>
+                    {/* Status (Stolen / Recovered / Involved / Seized) */}
+                    <td className="px-3 py-2 w-32">
+                      <select
+                        value={row.property_stolen_recovered || 'Stolen'}
+                        onChange={(e) => handlePropertyRowChange(idx, 'property_stolen_recovered', e.target.value)}
+                        disabled={readOnly}
+                        className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                      >
+                        {[
+                          { value: 'Stolen',    en: 'Stolen',    hi: 'चोरी हुई' },
+                          { value: 'Recovered', en: 'Recovered', hi: 'बरामद' },
+                          { value: 'Involved',  en: 'Involved',  hi: 'शामिल' },
+                          { value: 'Seized',    en: 'Seized',    hi: 'जब्त' },
+                        ].map(o => (
+                          <option key={o.value} value={o.value}>{lang === 'hi' ? o.hi : o.en}</option>
+                        ))}
+                      </select>
+                    </td>
 
-                  {/* Delete */}
-                  <td className="px-3 py-2 text-center">
-                    <button
-                      type="button"
-                      onClick={() => deletePropertyRow(idx)}
-                      disabled={readOnly}
-                      className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer disabled:text-slate-300 disabled:cursor-not-allowed"
-                    >
-                      ✖
-                    </button>
-                  </td>
-                </tr>
+                    {/* Description */}
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={row.property_details || ''}
+                        onChange={(e) => handlePropertyRowChange(idx, 'property_details', e.target.value)}
+                        disabled={readOnly}
+                        placeholder={lang === 'hi' ? 'संपत्ति का विवरण दर्ज करें...' : 'Enter description details...'}
+                        className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                      />
+                    </td>
+
+                    {/* Value in INR */}
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={row.property_value_inr || ''}
+                        onChange={(e) => handlePropertyRowChange(idx, 'property_value_inr', e.target.value)}
+                        disabled={readOnly}
+                        placeholder={lang === 'hi' ? 'मूल्य दर्ज करें (INR में)' : 'Enter value in INR'}
+                        className="w-full px-2 py-1 text-xs border border-[#c7d8ea] rounded bg-white focus:outline-none focus:border-[#0d2a4a] disabled:bg-slate-50 disabled:text-slate-400 font-semibold"
+                      />
+                    </td>
+
+                    {/* Delete */}
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => deletePropertyRow(idx)}
+                        disabled={readOnly}
+                        className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer disabled:text-slate-300 disabled:cursor-not-allowed"
+                      >
+                        ✖
+                      </button>
+                    </td>
+                  </tr>
+                  {renderExtraDetailRow(row, idx)}
+                </React.Fragment>
               ))
             )}
           </tbody>
@@ -3834,11 +3940,29 @@ const renderIntimationStep = () => {
 
 const renderActionTakenStep = () => {
   const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
-  const actionTakenKeys = ['io_name', 'io_rank', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'];
+  const actionTakenKeys = [
+    'io_rank', 'io_name', 'io_pis', 'io_mobile',
+    'status', 'rc_no', 'disposal_type', 'transfer_to',
+    'remarks', 'cctns_flag', 'zero_fir_flag',
+  ];
+
+  const evalActionCond = (cond, vals) => {
+    if (!cond) return true;
+    const parsed = typeof cond === 'string' ? JSON.parse(cond) : cond;
+    if (parsed.and) return parsed.and.every(c => evalActionCond(c, vals));
+    const { field: tf, value: tv, operator } = parsed;
+    const cv = vals[tf];
+    if (operator === 'filled') return cv !== undefined && cv !== null && String(cv).trim() !== '';
+    return Array.isArray(tv)
+      ? tv.map(v => String(v || '').toLowerCase()).includes(String(cv || '').toLowerCase())
+      : String(cv || '').toLowerCase() === String(tv || '').toLowerCase();
+  };
+
 
   const activeFields = actionTakenKeys
     .map(key => allFields.find(f => f.field_key === key))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(f => evalActionCond(f.show_when, values));
 
   const renderFieldWithLabel = (field, index) => {
     const key = field.field_key;
@@ -3951,7 +4075,7 @@ const renderActionTakenStep = () => {
         { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: [
           'property_major_category', 'property_minor_category', 'property_details', 'property_stolen_recovered'
         ], is_repeater: true, entity_type: 'property', section: 'property_details' },
-        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_rank', 'io_pis', 'io_mobile', 'status', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
+        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_rank', 'io_name', 'io_pis', 'io_mobile', 'status', 'rc_no', 'disposal_type', 'transfer_to', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
       ];
 
       return tabSpecs.map(spec => {

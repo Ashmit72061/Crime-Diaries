@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { generateParallelReport } from '../src/modules/reports/reports.parallel.service.js';
-import db from '../src/config/db.js';
+import { generateParallelReport } from '../../src/modules/reports/reports.parallel.service.js';
+import db from '../../src/config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +36,7 @@ async function main() {
     console.error('[CLI] Error generating report:', error);
     try {
       await db.destroy();
-    } catch (e) {}
+    } catch (e) { }
     process.exit(1);
   }
 }
