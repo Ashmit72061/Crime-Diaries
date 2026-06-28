@@ -88,6 +88,20 @@ const MOCK_FIR_LIST = [
   { fir_no: '92/2026', fir_date: '2026-06-20', complainant_name: 'Priyanka Sen', police_station: 'Mandir Marg', crime_head: 'Snatching', sections: 'Sec 356/379 IPC' },
 ];
 
+// Maps UI act display names -> schema show_when values used in major_head fields
+const ACT_NAME_ALIAS = {
+  'Indian Penal Code (IPC)': 'IPC',
+  'IPC': 'IPC',
+  'Arms Act': 'Arms Act',
+  'Delhi Excise Act': 'Delhi Excise Act',
+  'Gambling Act': 'Gambling Act',
+  'NDPS Act': 'NDPS Act',
+  'Motor Vehicles Act': 'Motor Vehicles Act',
+  'Information Technology Act (IT Act)': 'Other Act',
+  'Other Act': 'Other Act',
+};
+
+
 /**
  * DynamicForm
  *
@@ -570,12 +584,7 @@ export default function DynamicForm({
     return (
       <div className="space-y-4">
         {/* Top card fields */}
-        <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
-          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
-            {lang === 'hi' ? 'सामान्य जानकारी' : 'General Information'}
-          </legend>
-
-          <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
             {renderReadOnlyRow(lang === 'hi' ? 'रिकॉर्ड यूआईडी (UID)' : 'Record UID', values.uid || 'NEW_DRAFT_PENDING')}
             {renderReadOnlyRow(lang === 'hi' ? 'जिला' : 'District', values.district || user?.district)}
             {renderReadOnlyRow(lang === 'hi' ? 'थाना' : 'Police Station', values.police_station || user?.police_station)}
@@ -792,7 +801,6 @@ export default function DynamicForm({
               </div>
             </React.Fragment>
           </div>
-        </fieldset>
 
         {/* Acts, Sections, Major/Minor, Local Head Panels */}
         <div className="flex flex-col md:flex-row gap-3">
@@ -1355,6 +1363,20 @@ export default function DynamicForm({
                     />
                     <span>Oral</span>
                   </label>
+                  <label className="flex items-center gap-1 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      disabled={readOnly}
+                      name="type_of_information"
+                      checked={!isWritten}
+                      onChange={() => {
+                        handleChange('type_of_information', 'Court Order');
+                        handleChange('case_type', 'Court Order');
+                      }}
+                      className="accent-[#0f52ba] cursor-pointer"
+                    />
+                    <span>Court Order</span>
+                  </label>
                 </td>
               </tr>
 
@@ -1392,9 +1414,12 @@ export default function DynamicForm({
                   >
                     <option value="">-----Select-----</option>
                     <option value="PCR Call">PCR Call</option>
-                    <option value="Written Complaint">Written Complaint</option>
+                    <option value="Physical Appearance">Physical Appearance</option>
                     <option value="Public Informant">Public Informant</option>
                     <option value="Police Beat Officer">Police Beat Officer</option>
+                    <option value="Individual/Group/Company,Agency">Individual/Group/Company,Agency </option>
+                    <option value="Court Order">Court Order</option>
+                    <option value="Other">Other</option>
                   </select>
                 </td>
               </tr>
@@ -1709,7 +1734,6 @@ const renderOccurrenceStep = () => {
     'occurrence_from_date_time',
     'occurrence_to_date_time',
     'info_received_at_ps_date_time',
-    'occurrence_place',
     'local_head'
   ];
 
@@ -1720,9 +1744,10 @@ const renderOccurrenceStep = () => {
     'occurrence_city_town_village',
     'occurrence_tehsil_block_mandal',
     'occurrence_pincode',
+    'occurrence_police_station',
+    'Police_district/zone',
+    'occurrence_district' ,
     'occurrence_state',
-    'occurrence_district',
-    'occurrence_police_station'
   ];
 
   return (
@@ -1733,10 +1758,14 @@ const renderOccurrenceStep = () => {
 
         {/* OCCURRENCE INFORMATION */}
         <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
-          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
-            Occurrence Information
+          <legend
+            className="px-2 text-[#0d2a4a] font-bold uppercase text-xs cursor-pointer flex justify-between items-center"
+            onClick={() => setShowOccurrencePlace(!showOccurrencePlace)}>
+            <span>Place of Occurrence</span>
+            <span>{showOccurrencePlace ? "▲" : "▼"}</span>
           </legend>
 
+        {showOccurrencePlace && (
           <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
             {(() => {
               const activeFields = occurrenceInfoKeys
@@ -1772,6 +1801,7 @@ const renderOccurrenceStep = () => {
               });
             })()}
           </div>
+        )}
         </fieldset>
 
         {/* FOREST AREA */}
@@ -1779,25 +1809,55 @@ const renderOccurrenceStep = () => {
           <div className="flex items-center gap-6 text-[12px]">
 
             <span className="font-medium">
-              Is the area of crime a forest place?
+              Area of Crime
             </span>
 
             <label className="flex items-center gap-1">
               <input
                 type="radio"
-                checked={values?.forest_place === "Yes"}
-                onChange={() => handleChange("forest_place", "Yes")}
+                checked={values?.area_of_crime === "Rural"}
+                onChange={() => handleChange("area_of_crime", "Rural")}
               />
-              Yes
+              Rural
             </label>
 
             <label className="flex items-center gap-1">
               <input
                 type="radio"
-                checked={values?.forest_place === "No"}
-                onChange={() => handleChange("forest_place", "No")}
+                checked={values?.area_of_crime === "Urban"}
+                onChange={() => handleChange("area_of_crime", "Urban")}
               />
-              No
+              Urban
+            </label>
+
+            
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={values?.area_of_crime === "Semi-Rural"}
+                onChange={() => handleChange("area_of_crime", "Semi-Rural")}
+              />
+              Semi-Rural
+            </label>
+
+            
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={values?.area_of_crime === "Deserted Area"}
+                onChange={() => handleChange("area_of_crime", "Deserted Area")}
+              />
+              Deserted Area
+            </label>
+
+            
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={values?.area_of_crime === "Forest"}
+                onChange={() => handleChange("area_of_crime", "Forest")}
+              />
+              Forest
             </label>
 
           </div>
@@ -2162,7 +2222,7 @@ const renderComplainantStep = () => {
       </div>
 
       {/* Sub-tab content */}
-      <div className="p-2 border border-t-0 border-[#7a9cc5] rounded-b bg-white">
+      <div className="p-2 border border-t-0 border-[#7a9cc5] rounded-b bg-transparent">
         {complainantTab === 'personal' ? renderPersonalInfoSubTab() : renderAddressSubTab()}
       </div>
     </div>
@@ -3363,11 +3423,11 @@ const renderArrestedStep = () => {
 
   const renderArrestedDetailsSubTab = () => {
     return (
-      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+      <fieldset className="bg-white">
         <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
           {lang === 'hi' ? 'गिरफ्तारी का विवरण' : 'Arrest Details'}
         </legend>
-        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
           {renderArrestedModalField('arrest_date')}
           {renderArrestedModalField('arrest_place', null, true)}
         </div>
@@ -3463,11 +3523,11 @@ const renderArrestedStep = () => {
 
   const renderArrestedParticularDetailsSubTab = () => {
     return (
-      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+      <fieldset className="bg-white">
         <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
           {lang === 'hi' ? 'विवरण' : 'Particular Details'}
         </legend>
-        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
           {renderArrestedModalField('prev_involvement')}
           {renderArrestedModalField('proclaimed_offender', null, true)}
         </div>
@@ -3822,11 +3882,11 @@ const renderIntimationStep = () => {
             {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {intimationSubTab === 'personal' ? (
-                <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+                <fieldset className="bg-white">
                   <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
                     {lang === 'hi' ? 'सूचना विवरण' : 'Intimation Details'}
                   </legend>
-                  <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+                  <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
                     {renderIntimationModalField('intimation_date_time')}
                     {renderIntimationModalField('intimated_relative_name')}
                     {renderIntimationModalField('intimated_relative_relation')}
@@ -3834,11 +3894,11 @@ const renderIntimationStep = () => {
                   </div>
                 </fieldset>
               ) : (
-                <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+                <fieldset className="bg-white">
                   <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
                     {lang === 'hi' ? 'पता' : 'Address'}
                   </legend>
-                  <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea] mt-2">
+                  <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
                     {renderIntimationModalField('intimation_house_no')}
                     {renderIntimationModalField('intimation_street')}
                     {renderIntimationModalField('intimation_colony')}
@@ -3898,6 +3958,7 @@ const renderActionTakenStep = () => {
       : String(cv || '').toLowerCase() === String(tv || '').toLowerCase();
   };
 
+
   const activeFields = actionTakenKeys
     .map(key => allFields.find(f => f.field_key === key))
     .filter(Boolean)
@@ -3934,15 +3995,9 @@ const renderActionTakenStep = () => {
 
   return (
     <div className="space-y-4">
-      <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
-        <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
-          {lang === 'hi' ? 'की गई कार्रवाई / जांच अधिकारी' : 'Action Taken / Investigation Officer'}
-        </legend>
-
-        <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
-          {activeFields.map((field, idx) => renderFieldWithLabel(field, idx))}
-        </div>
-      </fieldset>
+      <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden">
+        {activeFields.map((field, idx) => renderFieldWithLabel(field, idx))}
+      </div>
     </div>
   );
 };
@@ -3976,7 +4031,7 @@ const renderActionTakenStep = () => {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
       const tabSpecs = [
         { title_en: 'Acts & Sections', title_hi: 'अधिनियम और धाराएं', keys: ['uid', 'district', 'police_station', 'submission_status', 'case_type', 'fir_no', 'fir_date', 'gd_no', 'gd_date', 'gd_time', 'beat_no', 'act_name', 'sections'] },
-        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'occurrence_place', 'local_head', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
+        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'local_head', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
         { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: [
           'complainant_npr', 'complainant_first_name', 'complainant_middle_name', 'complainant_last_name',
           'complainant_gender', 'complainant_marital_status', 'complainant_mobile_country_code', 'complainant_mobile',
@@ -4111,7 +4166,7 @@ const renderActionTakenStep = () => {
         {
           title_en: 'Investigating Officer',
           title_hi: 'जांच अधिकारी',
-          keys: ['io_rank', 'io_name', 'io_pis', 'io_mobile']
+          keys: ['io_name', 'io_rank', 'io_pis', 'io_mobile']
         }
       );
 
@@ -4230,7 +4285,9 @@ const renderActionTakenStep = () => {
   const [showAddRow,   setShowAddRow  ] = useState(false);
   const [newAct,       setNewAct      ] = useState('');
   const [newSection,   setNewSection  ] = useState('');
+  const [newSectionVal, setNewSectionVal] = useState('');
   const [actsSectionsRegistry, setActsSectionsRegistry] = useState(ACTS_SECTIONS_REGISTRY);
+  const [showOccurrencePlace, setShowOccurrencePlace] = useState(false);
 
   // Victim Modal state hooks
   const [isVictimModalOpen, setIsVictimModalOpen] = useState(false);
@@ -4842,20 +4899,44 @@ const renderActionTakenStep = () => {
 
   /**
    * Fetch major-head options from the schema.
-   * Looks for fields whose field_key matches the pattern `*_major_head`
-   * and whose show_when condition matches the currently selected act_name.
-   * Returns the options array from the matching field, or [] if none found.
+   * act_name is a comma-separated list of all registered acts.
+   * We split it, normalise each name to the value used in schema show_when,
+   * collect options from every matching major-head schema field, and return
+   * the merged (deduplicated) list.
+   *
+   * Alias map: UI display name -> schema show_when value
    */
+
   const getMajorHeadOptions = useCallback(() => {
-    const currentAct = values.act_name || '';
-    if (!currentAct) return [];
-    const majorField = allSchemaFields.find(
-      f => f.field_key?.includes('major_head') && f.show_when?.value === currentAct
-    );
-    if (majorField?.options && Array.isArray(majorField.options)) {
-      return majorField.options;
+    const actNameRaw = values.act_name || '';
+    if (!actNameRaw) return [];
+
+    // Split comma-separated acts and normalise to schema keys
+    const actKeys = actNameRaw
+      .split(',')
+      .map(a => a.trim())
+      .filter(Boolean)
+      .map(a => ACT_NAME_ALIAS[a] || a);
+
+    // Collect options from all matching major-head schema fields
+    const seen = new Set();
+    const allOptions = [];
+    for (const actKey of actKeys) {
+      const majorFields = allSchemaFields.filter(
+        f => f.field_key?.includes('major_head') && f.show_when?.value === actKey
+      );
+      for (const mf of majorFields) {
+        if (mf.options && Array.isArray(mf.options)) {
+          for (const opt of mf.options) {
+            if (!seen.has(opt.value)) {
+              seen.add(opt.value);
+              allOptions.push(opt);
+            }
+          }
+        }
+      }
     }
-    return [];
+    return allOptions;
   }, [allSchemaFields, values.act_name]);
   /**
    * Fetch minor-head options from the schema.
