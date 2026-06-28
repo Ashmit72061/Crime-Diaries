@@ -26,6 +26,7 @@
     "concurrently": "^9.1.2"
   },
   "dependencies": {
+    "knex": "^3.3.0",
     "tesseract.js": "^7.0.0"
   }
 }
