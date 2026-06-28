@@ -124,6 +124,53 @@ const mergeConditionalFields = (data) => {
     }
   }
 
+  // Handle occurrence_from_date_time extraction for database/report compatibility
+  if (data.occurrence_from_date_time) {
+    const parts = data.occurrence_from_date_time.split('T');
+    if (parts[0]) data.occurrence_date = parts[0];
+    if (parts[1]) data.occurrence_time = parts[1];
+  }
+
+  // Construct complainant_name and complainant_address from granular fields for backward compatibility
+  if (data.complainant_first_name) {
+    data.complainant_name = [
+      data.complainant_first_name,
+      data.complainant_middle_name,
+      data.complainant_last_name
+    ].filter(Boolean).join(' ');
+  }
+  if (data.complainant_relation_type && data.complainant_relative_name) {
+    if (['Father', 'Husband'].includes(data.complainant_relation_type)) {
+      data.complainant_father_husband_name = data.complainant_relative_name;
+    }
+  }
+  if (data.complainant_house_no || data.complainant_street || data.complainant_colony || data.complainant_city_town_village) {
+    data.complainant_address = [
+      data.complainant_house_no ? `House No. ${data.complainant_house_no}` : '',
+      data.complainant_street,
+      data.complainant_colony,
+      data.complainant_city_town_village,
+      data.complainant_tehsil_block_mandal,
+      data.complainant_district,
+      data.complainant_state,
+      data.complainant_pincode
+    ].filter(Boolean).join(', ');
+  }
+
+  // Handle auto-sync for permanent address if same toggled
+  if (data.complainant_perm_same === 'Yes' || data.complainant_perm_same === true) {
+    data.complainant_perm_house_no = data.complainant_house_no;
+    data.complainant_perm_street = data.complainant_street;
+    data.complainant_perm_colony = data.complainant_colony;
+    data.complainant_perm_city_town_village = data.complainant_city_town_village;
+    data.complainant_perm_tehsil_block_mandal = data.complainant_tehsil_block_mandal;
+    data.complainant_perm_country = data.complainant_country;
+    data.complainant_perm_state = data.complainant_state;
+    data.complainant_perm_district = data.complainant_district;
+    data.complainant_perm_police_station = data.complainant_police_station;
+    data.complainant_perm_pincode = data.complainant_pincode;
+  }
+
   return data;
 };
 
@@ -135,9 +182,9 @@ export const listRecords = async (recordType, filters, jurisdictionQuery) => {
     'dist.name_en as district_name',
     'u.username as creator_name'
   )
-  .join('hierarchy_nodes as ps', 'records.ps_id', 'ps.id')
-  .join('hierarchy_nodes as dist', 'records.district_id', 'dist.id')
-  .join('users as u', 'records.created_by', 'u.id');
+    .join('hierarchy_nodes as ps', 'records.ps_id', 'ps.id')
+    .join('hierarchy_nodes as dist', 'records.district_id', 'dist.id')
+    .join('users as u', 'records.created_by', 'u.id');
 
   // Apply RBAC geographical boundary filters
   if (jurisdictionQuery.ps_id) {
@@ -297,6 +344,33 @@ const extractPersonSearchCols = (personType, data) => {
   };
 };
 
+const MAPPED_PROP_KEYS = new Set([
+  'property_major_category', 'property_minor_category',
+  'property_details', 'property_stolen_recovered',
+]);
+
+const buildPropertyRow = (prop, i, recordId, hydratedData) => {
+  const extraData = Object.fromEntries(
+    Object.entries(prop).filter(([k, v]) =>
+      !MAPPED_PROP_KEYS.has(k) && v !== undefined && v !== null && v !== ''
+    )
+  );
+  return {
+    id: uuidv4(),
+    record_id: recordId,
+    uid: hydratedData.uid || null,
+    fir_no: hydratedData.fir_no || null,
+    major_category: prop.property_major_category || null,
+    minor_category: prop.property_minor_category || null,
+    status: prop.property_stolen_recovered || null,
+    details: prop.property_details || null,
+    extra_data: Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
+    sort_order: i,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+};
+
 export const createRecord = async (user, recordType, recordDate, data, ipAddress, { persons = [], properties = [] } = {}) => {
   const mergedData = mergeConditionalFields({ ...data });
   const dbRecord = await db.transaction(async (trx) => {
@@ -383,16 +457,7 @@ export const createRecord = async (user, recordType, recordDate, data, ipAddress
 
     // Persist properties
     if (properties.length > 0) {
-      const propertyRows = properties.map((prop, i) => ({
-        id: uuidv4(),
-        record_id: id,
-        major_category: prop.property_major_category || null,
-        minor_category: prop.property_minor_category || null,
-        status: prop.property_stolen_recovered || 'Stolen',
-        details: prop.property_details || null,
-        sort_order: i,
-        created_at: new Date().toISOString(),
-      }));
+      const propertyRows = properties.map((prop, i) => buildPropertyRow(prop, i, id, hydratedData));
       await trx('record_properties').insert(propertyRows);
     }
 
@@ -445,7 +510,7 @@ export const updateRecord = async (id, user, data, ipAddress, { persons, propert
     const prev_hash = await getPreviousHash(id, trx);
     const changed_at = new Date().toISOString();
     const field_changes = JSON.stringify(diff);
-    
+
     const row_hash = computeRowHash({
       record_id: id,
       revision_number: nextRevNo,
@@ -507,16 +572,7 @@ export const updateRecord = async (id, user, data, ipAddress, { persons, propert
     if (Array.isArray(properties)) {
       await trx('record_properties').where({ record_id: id }).delete();
       if (properties.length > 0) {
-        const propertyRows = properties.map((prop, i) => ({
-          id: uuidv4(),
-          record_id: id,
-          major_category: prop.property_major_category || null,
-          minor_category: prop.property_minor_category || null,
-          status: prop.property_stolen_recovered || 'Stolen',
-          details: prop.property_details || null,
-          sort_order: i,
-          created_at: new Date().toISOString(),
-        }));
+        const propertyRows = properties.map((prop, i) => buildPropertyRow(prop, i, id, hydratedData));
         await trx('record_properties').insert(propertyRows);
       }
     }
@@ -594,7 +650,7 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
     // 1. Try querying DB config (action stored lowercase in seed)
     let dbRule = await trx('workflow_transitions_config')
       .where({ from_status: fromStatus, action: action.toLowerCase(), is_active: true })
-      .andWhere(function() {
+      .andWhere(function () {
         this.where('record_type', record.record_type).orWhere('record_type', '*');
       })
       .first();
@@ -608,12 +664,12 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       rule = {
         to: dbRule.to_status,
         toLevel: dbRule.to_status === 'DISTRICT_REVIEW' ? 'DISTRICT' :
-                 dbRule.to_status === 'ACP_REVIEW' ? 'ACP' :
-                 dbRule.to_status === 'JCP_REVIEW' ? 'JCP' :
-                 dbRule.to_status === 'SCP_REVIEW' ? 'SCP' :
-                 dbRule.to_status === 'HQ_RECEIVED' ? 'HQ' :
-                 dbRule.to_status === 'ARCHIVED' ? 'HQ' :
-                 dbRule.to_status === 'SENT_BACK' ? 'PS' : 'PS',
+          dbRule.to_status === 'ACP_REVIEW' ? 'ACP' :
+            dbRule.to_status === 'JCP_REVIEW' ? 'JCP' :
+              dbRule.to_status === 'SCP_REVIEW' ? 'SCP' :
+                dbRule.to_status === 'HQ_RECEIVED' ? 'HQ' :
+                  dbRule.to_status === 'ARCHIVED' ? 'HQ' :
+                    dbRule.to_status === 'SENT_BACK' ? 'PS' : 'PS',
         requiresComment: !!dbRule.requires_comment,
         allowedRoles
       };
@@ -621,12 +677,12 @@ export const transitionRecord = async (id, user, action, comment, targetFields, 
       // 2. Fallback transitions including JCP / SCP review flows
       const FALLBACK_TRANSITIONS = {
         PENDING_SHO: {
-          approve:   { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
-          send_back: { to: 'SENT_BACK',       toLevel: 'PS',       requiresComment: true, allowedRoles: ['SHO'] }
+          approve: { to: 'DISTRICT_REVIEW', toLevel: 'DISTRICT', allowedRoles: ['SHO'] },
+          send_back: { to: 'SENT_BACK', toLevel: 'PS', requiresComment: true, allowedRoles: ['SHO'] }
         },
         DISTRICT_REVIEW: {
-          approve:   { to: 'JCP_REVIEW',  toLevel: 'JCP',      allowedRoles: ['DISTRICT_OFFICER'] },
-          send_back: { to: 'SENT_BACK',   toLevel: 'PS',       requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
+          approve: { to: 'JCP_REVIEW', toLevel: 'JCP', allowedRoles: ['DISTRICT_OFFICER'] },
+          send_back: { to: 'SENT_BACK', toLevel: 'PS', requiresComment: true, allowedRoles: ['DISTRICT_OFFICER'] }
         },
         JCP_REVIEW: {
           approve: { to: 'SCP_REVIEW', toLevel: 'SCP', allowedRoles: ['JCP'] },
@@ -823,13 +879,13 @@ export const checkDuplicateRecord = async (recordType, firNumber, accusedName, d
   if (firNumber && firNumber.trim().length > 0) {
     const client = db.client.config.client;
     let query = db('records').where('record_type', recordType.toUpperCase());
-    
+
     if (client === 'sqlite3') {
       query = query.andWhere('data', 'like', `%fir_no%${firNumber}%`);
     } else {
       query = query.whereRaw("data->>'fir_no' = ?", [firNumber]);
     }
-    
+
     const existing = await query.first();
     if (existing) {
       return { isDuplicate: true, existingId: existing.id };
@@ -841,13 +897,13 @@ export const checkDuplicateRecord = async (recordType, firNumber, accusedName, d
     let query = db('records')
       .where('record_type', recordType.toUpperCase())
       .andWhere('record_date', date);
-      
+
     if (client === 'sqlite3') {
       query = query.andWhere('data', 'like', `%accused_name%${accusedName}%`);
     } else {
       query = query.whereRaw("data->>'accused_name' = ?", [accusedName]);
     }
-    
+
     const existing = await query.first();
     if (existing) {
       return { isDuplicate: true, existingId: existing.id };
@@ -906,7 +962,7 @@ export const removeAttachment = async (recordId, attachmentId, user) => {
 
     const oldData = parseJsonField(record.data);
     const attachments = oldData.attachments || [];
-    
+
     const index = attachments.findIndex(a => a.id === attachmentId);
     if (index === -1) throw new Error('Attachment not found');
 
@@ -1074,7 +1130,7 @@ const VIRTUAL_FIELD_RESOLVERS = {
       .select('records.id')
       .join('workflow_transitions_config as wt', 'wt.from_status', 'records.current_status')
       .whereNotNull('wt.sla_hours');
-    
+
     const isPostgres = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
     if (isPostgres) {
       subquery.whereRaw("records.updated_at + (wt.sla_hours || ' hours')::INTERVAL < NOW()");
@@ -1129,7 +1185,7 @@ export const buildFilterQuery = (builder, spec) => {
     const innerBuilder = this;
     conditions.forEach((cond, index) => {
       const applyFunc = (isOr && index > 0) ? 'orWhere' : 'where';
-      
+
       if (cond.logic && cond.conditions) {
         innerBuilder[applyFunc](function () {
           buildFilterQuery(this, cond);

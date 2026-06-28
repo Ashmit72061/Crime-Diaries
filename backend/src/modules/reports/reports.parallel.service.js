@@ -1,4 +1,4 @@
-﻿import fs from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
@@ -72,6 +72,238 @@ function applyStylesToRow(row, maxCol) {
     cell.border = thinBorder;
     cell.alignment = alignLeft;
   }
+}
+
+// Runtime analysis of columns inside a template block
+function analyzeBlockColumns(ws, titleRow, colCount = 20) {
+  const row2 = ws.getRow(titleRow + 1);
+  const row3 = ws.getRow(titleRow + 2);
+  
+  const cols = [];
+  for (let c = 1; c <= colCount; c++) {
+    const cell2 = row2.getCell(c);
+    const cell3 = row3.getCell(c);
+    
+    // In exceljs, merged cells have their value stored on the master cell.
+    const val2 = (cell2.isMerged ? cell2.master.value : cell2.value) || '';
+    const val3 = (cell3.isMerged ? cell3.master.value : cell3.value) || '';
+    
+    cols.push({
+      index: c,
+      header: String(val2).trim(),
+      subHeader: String(val3).trim()
+    });
+  }
+  return cols;
+}
+
+// Format Date & Time cleanly (e.g., "11.06.2026 at 22.45 hrs")
+function formatDateTime(dateStr, timeStr) {
+  if (!dateStr) return '';
+  let formattedDate = '';
+  if (dateStr instanceof Date) {
+    const d = dateStr.getDate().toString().padStart(2, '0');
+    const m = (dateStr.getMonth() + 1).toString().padStart(2, '0');
+    const y = dateStr.getFullYear();
+    formattedDate = `${d}.${m}.${y}`;
+  } else {
+    const parts = String(dateStr).split('T')[0].split('-');
+    if (parts.length === 3) {
+      formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+    } else {
+      formattedDate = String(dateStr);
+    }
+  }
+  
+  if (!timeStr) return formattedDate;
+  let formattedTime = String(timeStr);
+  const timeParts = formattedTime.split(':');
+  if (timeParts.length >= 2) {
+    formattedTime = `${timeParts[0]}.${timeParts[1]} hrs`;
+  }
+  
+  return `${formattedDate} at ${formattedTime}`;
+}
+
+// Dynamically map a database query row to Excel columns based on template structure
+function dynamicMapRow(r, cols, rowIndex) {
+  // Extract Complainant fields
+  const compName = r['NAME OF COMPLAINANT'] || r.complainant_name || '';
+  const compParent = r['FATHER/ HUSBAND NAME OF COMPLAINANT'] || r.complainant_parent_name || r.complainant_father_husband_name || r.father_husband_name || '';
+  const compAddress = r['ADDRESS OF COMPLAINANT'] || r.complainant_address || '';
+  
+  // Extract Arrestee / Accused / PO / Juvenile fields
+  const arrName = r['NAME '] || r['NAME / NICK NAME'] || r['Details of Juvenile'] || r['DETAILS OF PO - NAME'] || r['NAME OF CRIMINAL'] || r.arrestee_name || r.arrested_name || r.accused_name || r.name || '';
+  const arrParent = r['FATHER/ HUSBAND NAME '] || r['FATHER NAME/HUSBAND NAME'] || r['DETAILS OF PO - PARENTAL'] || r['FATHJER/ HUSBAND NAME OF JUVENILE'] || r.arrestee_parent_name || r.arrested_father_husband_name || r.accused_parent_name || r.parent || '';
+  const arrAddress = r['ADDRESS '] || r['ADDRESS'] || r['DETAILS OF PO - ADDRESS'] || r['ADDRESS OF JUVENILE'] || r.arrestee_address || r.arrested_address || r.accused_address || r.address || '';
+  const arrAge = r['AGE'] || r['Age'] || r['AGE OF JUVENILE'] || r.arrestee_age || r.arrested_age || r.accused_age || r.age || '';
+  const arrNickname = r.nickname || r.nick_name || '';
+  const arrGender = r.gender || r.sex || r['SEX'] || '';
+  const arrRelationType = r.relation_type || r.relationship || '';
+  
+  // Extract Deceased fields
+  const decName = r['NAME OF DECEASED'] || r.name_of_deceased || r.deceased_name || '';
+  const decParent = r['FATHER/HUSBAND NAME OF DECEASED'] || r.deceased_parent_name || '';
+  const decAddress = r['ADDRESS OF DECEASED'] || r.address_of_deceased || '';
+  const decAge = r['AGE'] || r['Age'] || r.estimated_age || '';
+  const decGender = r['SEX'] || r['Sex'] || r.gender || '';
+  
+  // Extract Missing / Traced fields
+  const misName = r['NAME OF MISSING PERSON'] || r['NAME OF TRACED PERSON'] || r.missing_person_name || r.missing_name || '';
+  const misParent = r['FATHER/HUSBAND NAME OF TRACED PERSON'] || r.missing_person_parent_name || '';
+  const misAddress = r['ADDRESS OF MISSING PERSON'] || r['ADDRESS OF TRACED PERSON'] || r.last_seen_address || r.address_of_missing_person || '';
+
+  // Format combined Complainant
+  let compDetails = '';
+  if (compName) {
+    let parentPart = compParent ? `S/O ${compParent}` : '';
+    let addrPart = compAddress ? `R/O ${compAddress}` : '';
+    compDetails = [compName, parentPart, addrPart].filter(Boolean).join(' ');
+  }
+  
+  // Format combined Arrested / Accused
+  let arrDetails = '';
+  if (arrName) {
+    let namePart = arrName;
+    if (arrNickname) namePart += ` @ ${arrNickname}`;
+    let parentPrefix = 'S/O';
+    if (arrRelationType && String(arrRelationType).toLowerCase() === 'husband') {
+      parentPrefix = 'W/O';
+    } else if (arrGender && String(arrGender).toLowerCase() === 'female') {
+      parentPrefix = 'D/O';
+    }
+    let parentPart = arrParent ? `${parentPrefix} ${arrParent}` : '';
+    let addrPart = arrAddress ? `R/O ${arrAddress}` : '';
+    let agePart = arrAge ? `Age- ${arrAge} yrs` : '';
+    arrDetails = [namePart, parentPart, addrPart, agePart].filter(Boolean).join(' ');
+  }
+  
+  // Format combined Deceased
+  let decDetails = '';
+  if (decName) {
+    let parentPrefix = 'S/O';
+    if (decGender && String(decGender).toLowerCase() === 'female') {
+      parentPrefix = 'D/O';
+    }
+    let parentPart = decParent ? `${parentPrefix} ${decParent}` : '';
+    let addrPart = decAddress ? `R/O ${decAddress}` : '';
+    let agePart = decAge ? `Age- ${decAge} yrs` : '';
+    decDetails = [decName, parentPart, addrPart, agePart].filter(Boolean).join(' ');
+  }
+  
+  // Format combined Missing / Traced
+  let misDetails = '';
+  if (misName) {
+    let parentPart = misParent ? `S/O ${misParent}` : '';
+    let addrPart = misAddress ? `R/O ${misAddress}` : '';
+    misDetails = [misName, parentPart, addrPart].filter(Boolean).join(' ');
+  }
+
+  const rowValues = [];
+  for (const col of cols) {
+    const headerUpper = col.header.toUpperCase();
+    const subHeaderUpper = col.subHeader.toUpperCase();
+    
+    // Check if it's a combined column (indicated by formula keywords)
+    const isCombined = col.subHeader.includes('first_name') || col.subHeader.includes('+') || col.subHeader.includes('S/O') || col.subHeader.includes('R/O');
+    
+    if (isCombined) {
+      if (headerUpper.includes('COMPLAINANT')) {
+        rowValues.push(compDetails);
+      } else if (headerUpper.includes('ARRESTED') || headerUpper.includes('JUVENILE') || headerUpper.includes('PO') || headerUpper.includes('CRIMINAL') || headerUpper.includes('DETAILS')) {
+        rowValues.push(arrDetails);
+      } else if (headerUpper.includes('DECEASED')) {
+        rowValues.push(decDetails);
+      } else if (headerUpper.includes('MISSING') || headerUpper.includes('TRACED')) {
+        rowValues.push(misDetails);
+      } else {
+        rowValues.push('');
+      }
+      continue;
+    }
+    
+    // Complainant columns — always combined into Name column; parent/address get empty
+    if (subHeaderUpper.includes('NAME OF COMPLAINANT') && !subHeaderUpper.includes('FATHER') && !subHeaderUpper.includes('ADDRESS')) {
+      // First sub-column (the Name column): write full combined string
+      rowValues.push(compDetails);
+    } else if (subHeaderUpper.includes('FATHER/ HUSBAND NAME OF COMPLAINANT') || subHeaderUpper.includes('ADDRESS OF COMPLAINANT')) {
+      // Sub-columns: leave empty (data is already in the Name column)
+      rowValues.push('');
+    }
+    // Arrested / Accused columns — always combined into Name/Nick Name column; other sub-cols empty
+    else if (subHeaderUpper === 'NAME' || subHeaderUpper === 'NAME ' || subHeaderUpper.includes('NAME / NICK NAME') || subHeaderUpper === 'NAME OF JUVENILE' || subHeaderUpper === 'DETAILS OF PO - NAME' || subHeaderUpper.includes('NAME OF CRIMINAL')) {
+      // First sub-column: write full combined string
+      rowValues.push(arrDetails);
+    } else if (subHeaderUpper.includes('FATHER/ HUSBAND NAME') || subHeaderUpper.includes('FATHER NAME/HUSBAND NAME') || subHeaderUpper.includes('DETAILS OF PO - PARENTAL') || subHeaderUpper.includes('FATHJER/ HUSBAND NAME OF JUVENILE') || subHeaderUpper === 'ADDRESS' || subHeaderUpper === 'ADDRESS ' || subHeaderUpper.includes('DETAILS OF PO - ADDRESS') || subHeaderUpper.includes('ADDRESS OF JUVENILE') || subHeaderUpper === 'AGE' || subHeaderUpper === 'AGE OF JUVENILE') {
+      // Sub-columns: leave empty
+      rowValues.push('');
+    }
+    // Deceased columns — always combined into Name column
+    else if (subHeaderUpper.includes('NAME OF DECEASED') && !subHeaderUpper.includes('FATHER') && !subHeaderUpper.includes('ADDRESS')) {
+      rowValues.push(decDetails);
+    } else if (subHeaderUpper.includes('FATHER/HUSBAND NAME OF DECEASED') || subHeaderUpper.includes('ADDRESS OF DECEASED')) {
+      rowValues.push('');
+    }
+    // Missing/Traced columns — always combined into Name column
+    else if ((subHeaderUpper.includes('NAME OF MISSING PERSON') || subHeaderUpper.includes('NAME OF TRACED PERSON')) && !subHeaderUpper.includes('FATHER') && !subHeaderUpper.includes('ADDRESS')) {
+      rowValues.push(misDetails);
+    } else if (subHeaderUpper.includes('FATHER/HUSBAND NAME OF TRACED PERSON') || subHeaderUpper.includes('ADDRESS OF MISSING PERSON') || subHeaderUpper.includes('ADDRESS OF TRACED PERSON')) {
+      rowValues.push('');
+    }
+    // Date and Time — always combine into one formatted string; hide separate time column
+    else if (headerUpper.includes('DATE OF OCCURRENCE') || headerUpper.includes('DATE AND TIME') || headerUpper.includes('DATE&TIME') ||
+             subHeaderUpper.includes('DATE OF OCCURRENCE') || subHeaderUpper.includes('DATE AND TIME')) {
+      rowValues.push(formatDateTime(r.date_of_occurrence || r.occurrence_date || r.date_of_arrest || r['DATE OF OCCURRENCE'] || '', r.time_of_occurrence || r['TIME OF OCCURRENCE'] || ''));
+    } else if (headerUpper.includes('TIME OF OCCURRENCE') || subHeaderUpper.includes('TIME OF OCCURRENCE')) {
+      // Time merged into date column — leave empty (column will be hidden)
+      rowValues.push('');
+    }
+    // Serial number
+    else if (subHeaderUpper === 'SR. NO.' || subHeaderUpper === 'S.N.' || subHeaderUpper === 'SR.NO.' || subHeaderUpper === 'S. NO.' || subHeaderUpper === 'SR' ||
+             headerUpper === 'SR. NO.' || headerUpper === 'S.N.' || headerUpper === 'SR.NO.' || headerUpper === 'S. NO.' || headerUpper === 'SR') {
+      rowValues.push(rowIndex);
+    }
+    // Exact or case-insensitive match from database row r
+    else {
+      let matchedVal = '';
+      const rKeys = Object.keys(r);
+      
+      if (r[col.header] !== undefined) {
+        matchedVal = r[col.header];
+      } else if (r[col.subHeader] !== undefined) {
+        matchedVal = r[col.subHeader];
+      } else {
+        const cleanHeader = col.header.replace(/\s+/g, '').toUpperCase();
+        const cleanSub = col.subHeader.replace(/\s+/g, '').toUpperCase();
+        
+        const matchedKey = rKeys.find(k => {
+          const cleanK = k.replace(/\s+/g, '').toUpperCase();
+          return cleanK === cleanHeader || cleanK === cleanSub;
+        });
+        if (matchedKey) {
+          matchedVal = r[matchedKey];
+        }
+      }
+      
+      // Fallbacks
+      if (matchedVal === undefined || matchedVal === null || matchedVal === '') {
+        if (headerUpper.includes('POLICE STATION') || headerUpper === 'P.S.' || headerUpper === 'PS') {
+          matchedVal = r.ps_name || r.ps || '';
+        } else if (headerUpper === 'U/S' || headerUpper.includes('SECTION')) {
+          matchedVal = r.sections || r.under_section || '';
+        } else if (headerUpper.includes('GIST') || headerUpper.includes('BRIEF FACTS')) {
+          matchedVal = r.brief_facts || r.gist || '';
+        } else if (headerUpper.includes('IO NAME') || headerUpper === 'IO' || headerUpper === 'NAME OF IO' || headerUpper.includes('NAME & RANK OF I.O.')) {
+          matchedVal = r.io_name || '';
+        } else if (headerUpper.includes('IO MOBILE NO.') || headerUpper.includes('MOBILE NO. OF IO')) {
+          matchedVal = r.io_mobile_no || '';
+        }
+      }
+      
+      rowValues.push(matchedVal);
+    }
+  }
+  return rowValues;
 }
 
 // Helper to resolve string/UUID psId or districtId into integer database IDs
@@ -186,8 +418,11 @@ async function populateBlockFromView({
     return;
   }
 
-  // Write-in-place strategy: never DELETE rows (DELETE spliceRows corrupts merged
-  // cell ranges in ExcelJS even when processed bottom-to-top). Instead:
+  // Analyze template columns at runtime
+  const titleRow = startRow - 3;
+  const cols = analyzeBlockColumns(ws, titleRow, colCount);
+
+  // Write-in-place strategy: never DELETE rows. Instead:
   //   1. If data > template rows: INSERT only the extra rows with ONE spliceRows call.
   //   2. Overwrite template rows with real data cell-by-cell.
   //   3. Clear any leftover template rows (fewer data rows than template slots).
@@ -197,11 +432,11 @@ async function populateBlockFromView({
 
   if (extraCount > 0) {
     // Insert only the overflow rows right after the last template placeholder row.
-    // Bottom-to-top processing means sections above startRow are unaffected by this.
     const insertAt = startRow + templateRows;
-    const extraRowValues = rows.slice(templateRows).map((r, i) =>
-      colMapping(r, templateRows + i + 1).map((val, idx) => formatCellValue(val, String(idx)))
-    );
+    const extraRowValues = rows.slice(templateRows).map((r, i) => {
+      const mapped = dynamicMapRow(r, cols, templateRows + i + 1);
+      return mapped.map((val, idx) => formatCellValue(val, cols[idx].header));
+    });
     ws.spliceRows(insertAt, 0, ...extraRowValues);
     for (let i = 0; i < extraCount; i++) {
       applyStylesToRow(ws.getRow(insertAt + i), colCount);
@@ -211,7 +446,8 @@ async function populateBlockFromView({
   // Overwrite template rows in-place (up to min(data, template) rows).
   const rowsToWrite = Math.min(rows.length, templateRows);
   for (let i = 0; i < rowsToWrite; i++) {
-    const vals = colMapping(rows[i], i + 1).map((val, idx) => formatCellValue(val, String(idx)));
+    const mapped = dynamicMapRow(rows[i], cols, i + 1);
+    const vals = mapped.map((val, idx) => formatCellValue(val, cols[idx].header));
     const wsRow = ws.getRow(startRow + i);
     for (let j = 0; j < vals.length; j++) {
       wsRow.getCell(j + 1).value = vals[j];
@@ -223,8 +459,54 @@ async function populateBlockFromView({
   // Clear leftover template placeholder rows (when data < template capacity).
   for (let i = rows.length; i < templateRows; i++) {
     const wsRow = ws.getRow(startRow + i);
-    wsRow.eachCell({ includeEmpty: true }, cell => { cell.value = null; });
+    wsRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      if (colNumber <= colCount) cell.value = null;
+    });
     wsRow.commit();
+  }
+
+  // Hide person sub-field columns (parent / address / age) that are now empty
+  // because all details are combined into the Name column.
+  hidePersonSubColumns(ws, cols);
+}
+
+// Hides the now-redundant parent / address / age sub-columns when person details
+// are combined into the Name column. Also hides TIME OF OCCURRENCE since date+time
+// are now merged into a single combined Date and Time column.
+function hidePersonSubColumns(ws, cols) {
+  for (const col of cols) {
+    const sub = col.subHeader.toUpperCase();
+    const hdr = col.header.toUpperCase();
+    const isPersonSubField =
+      sub.includes('FATHER/ HUSBAND NAME OF COMPLAINANT') ||
+      sub.includes('ADDRESS OF COMPLAINANT') ||
+      sub.includes('FATHER/ HUSBAND NAME') ||
+      sub.includes('FATHER NAME/HUSBAND NAME') ||
+      sub.includes('FATHJER/ HUSBAND NAME OF JUVENILE') ||
+      sub === 'ADDRESS' ||
+      sub === 'ADDRESS ' ||
+      sub.includes('ADDRESS OF JUVENILE') ||
+      sub.includes('DETAILS OF PO - PARENTAL') ||
+      sub.includes('DETAILS OF PO - ADDRESS') ||
+      sub === 'AGE' ||
+      sub === 'AGE OF JUVENILE' ||
+      sub.includes('FATHER/HUSBAND NAME OF DECEASED') ||
+      sub.includes('ADDRESS OF DECEASED') ||
+      sub.includes('FATHER/HUSBAND NAME OF TRACED PERSON') ||
+      sub.includes('ADDRESS OF MISSING PERSON') ||
+      sub.includes('ADDRESS OF TRACED PERSON');
+
+    const isTimeColumn =
+      sub.includes('TIME OF OCCURRENCE') ||
+      hdr.includes('TIME OF OCCURRENCE');
+
+    if (isPersonSubField || isTimeColumn) {
+      const wsCol = ws.getColumn(col.index);
+      if (wsCol) {
+        wsCol.hidden = true;
+        wsCol.width = 0.1; // Belt-and-suspenders: zero-width as fallback
+      }
+    }
   }
 }
 
@@ -301,6 +583,87 @@ function findSectionBlocks(ws, prefixes) {
 // ----------------------------------------
 // Custom Scoped Populaters for Merged/Summary Sheets
 // ----------------------------------------
+
+// Helper to map a Sheet 1 case and arrest record to the template columns dynamically
+function mapSheet1Row(c, arr, cols, rowIndex) {
+  // Complainant combined formatting
+  const compName = c.complainant_name || '';
+  const compParent = c.complainant_parent_name || '';
+  const compAddress = c.complainant_address || '';
+  let compDetails = '';
+  if (compName) {
+    let parentPart = compParent ? `S/O ${compParent}` : '';
+    let addrPart = compAddress ? `R/O ${compAddress}` : '';
+    compDetails = [compName, parentPart, addrPart].filter(Boolean).join(' ');
+  }
+
+  // Arrested combined formatting
+  const arrName = arr?.name || '';
+  const arrParent = arr?.parent || '';
+  const arrAddress = arr?.address || '';
+  const arrAge = arr?.age || '';
+  let arrDetails = '';
+  if (arrName) {
+    let parentPart = arrParent ? `S/O ${arrParent}` : '';
+    let addrPart = arrAddress ? `R/O ${arrAddress}` : '';
+    let agePart = arrAge ? `Age- ${arrAge} yrs` : '';
+    arrDetails = [arrName, parentPart, addrPart, agePart].filter(Boolean).join(' ');
+  }
+
+  const rowValues = [];
+  for (const col of cols) {
+    const headerUpper = col.header.toUpperCase();
+    const subHeaderUpper = col.subHeader.toUpperCase();
+    const isCombined = col.subHeader.includes('first_name') || col.subHeader.includes('+') || col.subHeader.includes('S/O') || col.subHeader.includes('R/O');
+    
+    if (isCombined) {
+      if (headerUpper.includes('COMPLAINANT')) {
+        rowValues.push(compDetails);
+      } else if (headerUpper.includes('ARRESTED')) {
+        rowValues.push(arrDetails);
+      } else {
+        rowValues.push('');
+      }
+      continue;
+    }
+    
+    // Complainant columns — always combined into Name column; parent/address get empty
+    if (subHeaderUpper.includes('NAME OF COMPLAINANT') && !subHeaderUpper.includes('FATHER') && !subHeaderUpper.includes('ADDRESS')) {
+      rowValues.push(compDetails);
+    } else if (subHeaderUpper.includes('FATHER/ HUSBAND NAME OF COMPLAINANT') || subHeaderUpper.includes('ADDRESS OF COMPLAINANT')) {
+      rowValues.push('');
+    }
+    // Arrested columns — always combined into Name column; other sub-cols empty
+    else if (subHeaderUpper === 'NAME' || subHeaderUpper === 'NAME ') {
+      rowValues.push(arrDetails);
+    } else if (subHeaderUpper.includes('FATHER/ HUSBAND NAME') || subHeaderUpper.includes('FATHER NAME/HUSBAND NAME') || subHeaderUpper === 'ADDRESS' || subHeaderUpper === 'ADDRESS ' || subHeaderUpper === 'AGE' || subHeaderUpper === 'Age') {
+      rowValues.push('');
+    }
+    // Standard columns
+    else if (headerUpper.includes('POLICE STATION') || headerUpper === 'P.S.' || headerUpper === 'PS') {
+      rowValues.push(c.ps_name || '');
+    } else if (headerUpper === 'FIR NO.' || headerUpper.includes('FIR')) {
+      rowValues.push(c.fir_no || '');
+    } else if (headerUpper === 'U/S' || headerUpper.includes('SECTION')) {
+      rowValues.push(c.sections || '');
+    } else if (headerUpper.includes('PLACE OF OCCURRENCE')) {
+      rowValues.push(c.place_of_occurrence || '');
+    } else if (headerUpper.includes('DATE OF OCCURRENCE') || headerUpper.includes('DATE AND TIME') || headerUpper.includes('DATE&TIME')) {
+      // Always output combined Date and Time
+      rowValues.push(formatDateTime(c.date_of_occurrence, c.time_of_occurrence));
+    } else if (headerUpper.includes('TIME OF OCCURRENCE')) {
+      // Time is merged into the date column — leave empty (column will be hidden)
+      rowValues.push('');
+    } else if (headerUpper.includes('GIST')) {
+      rowValues.push(c.gist || '');
+    } else if (headerUpper.includes('IO NAME') || headerUpper === 'IO' || headerUpper === 'NAME OF IO' || headerUpper.includes('NAME&RANK OF IO')) {
+      rowValues.push(c.io_name || '');
+    } else {
+      rowValues.push('');
+    }
+  }
+  return rowValues;
+}
 
 // 1. Manual FIR Custom populator
 async function populateSheet1_ManualFIR(workbook, date, filters) {
@@ -383,48 +746,22 @@ async function populateSheet1_ManualFIR(workbook, date, filters) {
     }
   }
 
+  const cols = analyzeBlockColumns(ws, 1, 15);
   let rIdx = 5;
   for (const [_, c] of casesMap.entries()) {
     const arrests = c.arrests;
     if (arrests.length === 0) {
       const row = ws.getRow(rIdx);
-      row.values = [
-        c.ps_name,
-        c.fir_no,
-        c.sections,
-        c.complainant_name,
-        c.complainant_parent_name,
-        c.complainant_address,
-        c.place_of_occurrence,
-        c.date_of_occurrence,
-        c.time_of_occurrence,
-        c.gist,
-        '', '', '', '',
-        c.io_name
-      ].map((val, idx) => formatCellValue(val, String(idx)));
+      const mapped = mapSheet1Row(c, null, cols, rIdx - 4);
+      row.values = mapped.map((val, idx) => formatCellValue(val, cols[idx].header));
       applyStylesToRow(row, 15);
       rIdx++;
     } else {
       const startMergeRow = rIdx;
       for (const arr of arrests) {
         const row = ws.getRow(rIdx);
-        row.values = [
-          c.ps_name,
-          c.fir_no,
-          c.sections,
-          c.complainant_name,
-          c.complainant_parent_name,
-          c.complainant_address,
-          c.place_of_occurrence,
-          c.date_of_occurrence,
-          c.time_of_occurrence,
-          c.gist,
-          arr.name,
-          arr.parent,
-          arr.address,
-          arr.age,
-          c.io_name
-        ].map((val, idx) => formatCellValue(val, String(idx)));
+        const mapped = mapSheet1Row(c, arr, cols, rIdx - 4);
+        row.values = mapped.map((val, idx) => formatCellValue(val, cols[idx].header));
         applyStylesToRow(row, 15);
         rIdx++;
       }
@@ -436,6 +773,9 @@ async function populateSheet1_ManualFIR(workbook, date, filters) {
       }
     }
   }
+
+  // Hide now-empty person sub-field columns (parent / address / age)
+  hidePersonSubColumns(ws, cols);
 }
 
 // 14. Women and Children Missing Summary custom populator

@@ -418,8 +418,7 @@ const formSchemas = {
             { value: 'zero FIR', label_en: 'zero FIR', label_hi: 'जीरो एफआईआर' }
           ]
         },
-        { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number', label_hi: 'प्राथमिकी (FIR) संख्या', validation_rules: { required: true } },
-        { field_key: 'fir_date', field_type: 'DATE', label_en: 'FIR Date', label_hi: 'प्राथमिकी की तिथि', validation_rules: { required: true } },
+        { field_key: 'fir_no', field_type: 'TEXT', label_en: 'FIR Number,Date & Time', label_hi: 'प्राथमिकी (FIR) संख्या और दिनांक', validation_rules: { required: true } },
         { field_key: 'gd_no', field_type: 'TEXT', label_en: 'GD Entry Number', label_hi: 'जी.डी. प्रविष्टि संख्या', validation_rules: { required: true } },
         { field_key: 'record_date', field_type: 'DATE', label_en: 'Diary Record Date', label_hi: 'दैनिक डायरी तिथि', validation_rules: { required: true } },
         {
@@ -439,6 +438,13 @@ const formSchemas = {
             { value: 'TRANSFER', label_en: 'TRANSFER', label_hi: 'स्थानांतरण (TRANSFER)' }
           ],
           validation_rules: { required: true }
+        },
+        {
+          field_key: 'is_important',
+          field_type: 'BOOLEAN',
+          label_en: 'Mark as Important Case',
+          label_hi: 'महत्वपूर्ण मामले के रूप में चिह्नित करें',
+          validation_rules: { required: false }
         },
       ]
     },
@@ -1866,6 +1872,36 @@ api.interceptors.request.use(
       return Promise.reject({
         isMock: true,
         response: createMockResponse({ user: defaultUser })
+      });
+    }
+
+    // Acts & Sections list endpoint
+    if (url.includes('/acts-sections') && method === 'GET') {
+      const mockActsSections = [
+        {
+          act: "Indian Penal Code (IPC)",
+          sections: ["379", "302", "323", "406", "506", "354", "411"]
+        },
+        {
+          act: "Arms Act",
+          sections: ["25", "27", "30"]
+        },
+        {
+          act: "NDPS Act",
+          sections: ["15", "18", "20", "21", "22"]
+        },
+        {
+          act: "Motor Vehicles Act",
+          sections: ["181", "184", "185"]
+        },
+        {
+          act: "Information Technology Act (IT Act)",
+          sections: ["66", "66C", "66D", "67"]
+        }
+      ];
+      return Promise.reject({
+        isMock: true,
+        response: createMockResponse(mockActsSections)
       });
     }
 

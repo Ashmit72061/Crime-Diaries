@@ -27,6 +27,7 @@ export const createCompilation = async (req, res, next) => {
     // Resolve district from JWT first (authoritative), fall back to request body for admin overrides
     const districtId = req.user?.district_id || req.user?.districtId || req.body.district_id;
     const period = req.body.period || req.body.date;
+    const { fromDate, toDate } = req.body;
 
     if (!period) {
       return res.status(400).json({ status: 'error', success: false, message: 'period is required' });
@@ -35,7 +36,7 @@ export const createCompilation = async (req, res, next) => {
       return res.status(400).json({ status: 'error', success: false, message: 'User is not bound to a district' });
     }
 
-    const compilation = await compilationService.createCompilation(districtId, period, userId);
+    const compilation = await compilationService.createCompilation(districtId, period, userId, fromDate, toDate);
     res.status(201).json({ status: 'success', success: true, data: compilation });
   } catch (error) {
     // Return 400 for validation errors (no records, bad input), 500 for DB errors

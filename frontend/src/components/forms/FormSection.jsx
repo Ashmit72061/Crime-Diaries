@@ -304,6 +304,21 @@ function isFullWidth(field) {
   return fw.includes((field.field_type || '').toUpperCase()) || field.full_width === true;
 }
 
+function evaluateShowWhen(condition, values) {
+  if (!condition) return true;
+  if (condition.and) {
+    return condition.and.every(c => evaluateShowWhen(c, values));
+  }
+  const { field: targetField, value: targetValue, operator } = condition;
+  const currentValue = values[targetField];
+  if (operator === 'filled') {
+    return currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== '';
+  }
+  return Array.isArray(targetValue)
+    ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
+    : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
+}
+
 function RepeaterSection({
   section,
   currentStep,
@@ -414,7 +429,6 @@ function RepeaterSection({
                 <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                   {section.fields.map((field) => {
                     const key = field.field_key;
-
                     if (field.show_when) {
                       const { field: triggerKey, value: triggerValue, operator } = field.show_when;
                       const currentValue = entry[triggerKey];
@@ -428,6 +442,7 @@ function RepeaterSection({
                       }
                       if (!isMatch) return null;
                     }
+
 
                     const rules = parseRules(field.validation_rules);
                     const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
@@ -467,6 +482,7 @@ function RepeaterSection({
 export default function FormSection({
   section,
   currentStep,
+  totalSteps = 1,
   values,
   errors,
   touched,
@@ -474,6 +490,7 @@ export default function FormSection({
   readOnly,
   targetFields = [],
   lang = 'en',
+  hideHeader = false,
   // Repeater props (only used when section.is_repeater === true)
   entries,
   onEntriesChange,
@@ -494,130 +511,129 @@ export default function FormSection({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-[#7a9cc5] rounded-xl shadow-sm overflow-hidden">
       {/* Section header */}
-      <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[var(--accent-glow)] text-[var(--accent-color)] text-xs font-bold border border-[var(--accent-color)]/20">
-            {currentStep + 1}
-          </span>
-          <h2 className="text-base font-bold text-slate-800 tracking-wide">
+      {!hideHeader && (
+        <div className="flex items-center justify-between bg-[#f0f5fa] border-b border-[#7a9cc5] px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-7 h-7 rounded-md bg-[#dfeaf5] text-[#0d2a4a] text-xs font-bold border border-[#7a9cc5]/40">
+              {currentStep + 1}
+            </span>
+            <h2 className="text-base font-bold text-[#0d2a4a] tracking-wide">
+              {lang === 'hi'
+                ? (section.title_hi || section.title_en)
+                : section.title_en}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <FormAutosave status={saveStatus} lang={lang} />
+            {totalSteps > 1 && (
+              <span className="text-xs font-extrabold text-[#0d2a4a] bg-[#dfeaf5] border border-[#7a9cc5]/20 px-2.5 py-1 rounded-lg">
+                {lang === 'hi' ? `चरण ${currentStep + 1} / ${totalSteps}` : `Step ${currentStep + 1} / ${totalSteps}`}
+              </span>
+            )}
+            {readOnly && (
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
+                {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Fields grid container */}
+      <div className="p-4">
+        {/* Enclose standard fields inside the styled blue border grid box */}
+        <fieldset className="border border-[#7a9cc5] rounded px-3 py-3 bg-white">
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
             {lang === 'hi'
               ? (section.title_hi || section.title_en)
               : section.title_en}
-          </h2>
-        </div>
-        {readOnly && (
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-200 border border-slate-300 px-2 py-0.5 rounded uppercase tracking-wider">
-            {lang === 'hi' ? 'केवल पठन' : 'Read Only'}
-          </span>
-        )}
-      </div>
+          </legend>
 
-      {/* Fields grid */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-          {section.fields.map((field) => {
-            const key          = field.field_key;
+          <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] border border-[#c7d8ea]">
+            {(() => {
+              // Filter out keys we should skip
+              const keysToSkip = [
+                'sections',
+                'ipc_sections', 'excise_sections', 'arms_sections', 'gambling_sections', 'other_sections',
+                'ipc_major_head', 'excise_major_head', 'arms_major_head', 'gambling_major_head', 'other_major_head',
+                'theft_minor_head', 'murder_minor_head', 'hurt_minor_head', 'cheating_minor_head', 'robbery_minor_head',
+                'excise_minor_head', 'arms_minor_head', 'gambling_minor_head', 'other_minor_head'
+              ];
 
-            const keysToSkip = [
-              'sections',
-              'ipc_sections', 'excise_sections', 'arms_sections', 'gambling_sections', 'other_sections',
-              'ipc_major_head', 'excise_major_head', 'arms_major_head', 'gambling_major_head', 'other_major_head',
-              'theft_minor_head', 'murder_minor_head', 'hurt_minor_head', 'cheating_minor_head', 'robbery_minor_head',
-              'excise_minor_head', 'arms_minor_head', 'gambling_minor_head', 'other_minor_head'
-            ];
-            if (keysToSkip.includes(key)) {
-              return null;
-            }
+              const visibleFields = section.fields.filter(f => {
+                if (keysToSkip.includes(f.field_key)) return false;
+                if (!evaluateShowWhen(f.show_when, values)) return false;
+                return true;
+              });
 
-            if (key === 'act_name') {
-              return (
-                <div key="acts-manager-block" className="md:col-span-2">
-                  <ActsAndSectionsManager
-                    values={values}
-                    handleChange={handleChange}
-                    readOnly={readOnly}
-                    lang={lang}
-                  />
-                </div>
-              );
-            }
+              return visibleFields.map((field, index) => {
+                const key = field.field_key;
+                const label = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
+                const rules = parseRules(field.validation_rules);
+                const isRequired = !!rules.required;
+                const isHighlighted = targetFields.includes(key);
+                const error = touched[key] ? errors[key] : null;
+                const isLast = index === visibleFields.length - 1;
 
-            // Conditional field rendering (schema-driven)
-            if (field.show_when) {
-              const { field: targetField, value: targetValue, operator } = field.show_when;
-              const currentValue = values[targetField];
-              let isVisible = false;
-              if (operator === 'filled') {
-                isVisible = currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== '';
-              } else {
-                isVisible = Array.isArray(targetValue)
-                  ? targetValue.map(v => String(v || '').toLowerCase()).includes(String(currentValue || '').toLowerCase())
-                  : String(currentValue || '').toLowerCase() === String(targetValue || '').toLowerCase();
-              }
-              if (!isVisible) {
-                return null;
-              }
-            }
+                if (key === 'act_name') {
+                  return (
+                    <div key="acts-manager-block" className="col-span-1 md:col-span-2 p-2 border-b border-[#c7d8ea]">
+                      <ActsAndSectionsManager
+                        values={values}
+                        handleChange={handleChange}
+                        readOnly={readOnly}
+                        lang={lang}
+                      />
+                    </div>
+                  );
+                }
 
-            const label        = lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en;
-            const rules        = parseRules(field.validation_rules);
-            const isRequired   = !!rules.required;
-            const isHighlighted = targetFields.includes(key);
-            const error        = touched[key] ? errors[key] : null;
-            const fw           = isFullWidth(field);
+                return (
+                  <React.Fragment key={key}>
+                    {/* Left label cell */}
+                    <div className={`bg-[#dfeaf5] px-3 py-2.5 text-[12px] font-semibold text-[#0d2a4a] flex items-center gap-1.5 min-h-[44px]
+                      ${!isLast ? 'border-b border-[#c7d8ea]' : ''}
+                      ${isHighlighted ? 'bg-amber-50 text-amber-900' : ''}
+                    `}>
+                      <span>{label}</span>
+                      {isRequired && <span className="text-red-500 font-bold">*</span>}
+                      {isHighlighted && (
+                        <span className="flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-100 border border-amber-200 px-1 py-0.5 rounded shadow-sm ml-auto">
+                          <AlertTriangle size={8} />
+                          {lang === 'hi' ? 'संशोधन' : 'Fix'}
+                        </span>
+                      )}
+                    </div>
 
-            return (
-              <div
-                key={key}
-                className={`flex flex-col gap-1.5 ${fw ? 'md:col-span-2' : ''}
-                  ${isHighlighted
-                    ? 'p-3 rounded-lg bg-amber-50 border border-amber-200 -mx-3'
-                    : ''
-                  }`}
-              >
-                {/* Label row */}
-                <label
-                  htmlFor={`field-${key}`}
-                  className="flex items-center justify-between gap-2 form-label-custom"
-                >
-                  <span className="flex items-center gap-1">
-                    {label}
-                    {isRequired && (
-                      <span className="text-red-500 font-bold" aria-hidden="true">*</span>
-                    )}
-                  </span>
-                  {isHighlighted && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded shadow-sm">
-                      <AlertTriangle size={10} />
-                      {lang === 'hi' ? 'सुधार आवश्यक' : 'Correction Requested'}
-                    </span>
-                  )}
-                </label>
-
-                {/* Field input */}
-                <FieldRenderer
-                  field={field}
-                  value={values[key]}
-                  onChange={handleChange}
-                  readOnly={readOnly || field.readonly === true || field.readonly === 'true'}
-                  hasError={!!error}
-                  lang={lang}
-                  values={values}
-                />
-
-                {/* Validation error */}
-                {error && (
-                  <span className="flex items-center gap-1 text-xs text-red-500 font-medium mt-1">
-                    <AlertCircle size={12} className="flex-shrink-0" />
-                    {error}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    {/* Right field cell */}
+                    <div className={`px-3 py-2 bg-white flex flex-col justify-center min-h-[44px]
+                      ${!isLast ? 'border-b border-[#c7d8ea]' : ''}
+                      ${isHighlighted ? 'bg-amber-50/30' : ''}
+                    `}>
+                      <FieldRenderer
+                        field={field}
+                        value={values[key]}
+                        onChange={handleChange}
+                        readOnly={readOnly || field.readonly === true || field.readonly === 'true'}
+                        hasError={!!error}
+                        lang={lang}
+                        values={values}
+                      />
+                      {error && (
+                        <span className="flex items-center gap-1 text-xs text-red-500 font-medium mt-1">
+                          <AlertCircle size={12} className="flex-shrink-0" />
+                          {error}
+                        </span>
+                      )}
+                    </div>
+                  </React.Fragment>
+                );
+              });
+            })()}
+          </div>
+        </fieldset>
       </div>
     </div>
   );

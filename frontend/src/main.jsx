@@ -1,7 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, ToastBar, toast } from 'react-hot-toast';
+import { X } from 'lucide-react';
 import './i18n/index.js';
 import App from './App.jsx';
 import './index.css';
@@ -37,7 +38,28 @@ createRoot(document.getElementById('root')).render(
           success: { iconTheme: { primary: '#a78bfa', secondary: '#18181b' } },
           error:   { iconTheme: { primary: '#f87171', secondary: '#18181b' } },
         }}
-      />
+      >
+        {(t) => (
+          <ToastBar toast={t}>
+            {({ icon, message }) => (
+              <>
+                {icon}
+                {message}
+                {t.type !== 'loading' && (
+                  <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="ml-2 p-0.5 rounded-full hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer text-slate-400 hover:text-white flex items-center justify-center"
+                    style={{ outline: 'none' }}
+                    aria-label="Close"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </>
+            )}
+          </ToastBar>
+        )}
+      </Toaster>
     </QueryClientProvider>
   </StrictMode>
 );

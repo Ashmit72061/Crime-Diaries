@@ -45,15 +45,23 @@ export const getCompilation = async (id) => {
  * Create a new DRAFT compilation for a district + period.
  * Gathers all records in DISTRICT_REVIEW status for the district.
  */
-export const createCompilation = async (districtId, period, userId) => {
+export const createCompilation = async (districtId, period, userId, fromDate, toDate) => {
   if (!districtId || !period) {
     throw new Error('districtId and period are required');
   }
 
-  // Find all records at DISTRICT_REVIEW level for this district
-  const records = await db('records')
-    .where({ district_id: districtId, current_status: 'DISTRICT_REVIEW' })
-    .select('id', 'record_type');
+  // Find all records at DISTRICT_REVIEW level for this district, optionally scoped by date range
+  let query = db('records')
+    .where({ district_id: districtId, current_status: 'DISTRICT_REVIEW' });
+
+  if (fromDate) {
+    query = query.where('record_date', '>=', fromDate);
+  }
+  if (toDate) {
+    query = query.where('record_date', '<=', toDate);
+  }
+
+  const records = await query.select('id', 'record_type');
 
   const recordIds = records.map(r => r.id);
 

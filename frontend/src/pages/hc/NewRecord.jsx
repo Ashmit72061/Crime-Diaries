@@ -99,12 +99,12 @@ export default function NewRecord() {
 
   if (type === 'ARREST' && !editId && !caseType) {
     return (
-      <div className="min-h-screen theme-hc-page page-bg -mx-8 -my-6 p-8">
+      <div className="min-h-screen theme-hc-page page-bg py-3 px-2">
         <motion.div 
           variants={pageVariants}
           initial="hidden"
           animate="show"
-          className="space-y-6 w-full police-watermark pb-12"
+          className="space-y-3 w-full police-watermark pb-3"
         >
           {/* Breadcrumb */}
           <motion.nav 
@@ -205,36 +205,36 @@ export default function NewRecord() {
   }
 
   return (
-    <div className="min-h-screen theme-hc-page page-bg -mx-8 -my-6 p-8">
+    <div className="min-h-screen theme-hc-page page-bg py-3 px-2">
       <motion.div 
         variants={pageVariants}
         initial="hidden"
         animate="show"
-        className="space-y-6 w-full police-watermark pb-12"
+        className="space-y-3 w-full police-watermark pb-3"
       >
-        {/* Breadcrumb */}
-        <motion.nav 
-          variants={itemVariants}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500"
-        >
-          <button onClick={() => navigate('/dashboard')} className="hover:text-[var(--accent-color)] transition-colors cursor-pointer border-none bg-transparent">
-            {t('nav.dashboard', 'Dashboard')}
-          </button>
-          <ChevronRight size={12} />
-          <button onClick={() => navigate('/records')} className="hover:text-[var(--accent-color)] transition-colors cursor-pointer border-none bg-transparent">
-            {t('nav.records', 'Records')}
-          </button>
-          <ChevronRight size={12} />
-          <span className="text-slate-800">
-            {editId ? t('actions.edit', 'Edit Record') : `${t('actions.new', 'New')} ${t(`recordTypes.${type}`, type)}`}
-          </span>
-        </motion.nav>
-
-        {/* Page Header */}
+        {/* Simple Page Header with Breadcrumbs */}
         <motion.div 
           variants={itemVariants}
-          className="premium-glass-card p-5 flex items-center gap-3"
+          className="flex items-center justify-between pb-1.5 border-b border-slate-200"
         >
+          <div>
+            <div className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+              <button onClick={() => navigate('/dashboard')} className="hover:text-[var(--accent-color)] transition-colors cursor-pointer border-none bg-transparent font-semibold p-0">
+                Home
+              </button>
+              <span>&gt;</span>
+              <button onClick={() => navigate('/records')} className="hover:text-[var(--accent-color)] transition-colors cursor-pointer border-none bg-transparent font-semibold p-0">
+                Registration
+              </button>
+              <span>&gt;</span>
+              <span className="text-slate-800 font-semibold">Record</span>
+            </div>
+            <h1 className="text-lg font-bold text-[#0d2a4a] mt-0.5 tracking-wide font-display uppercase">
+              {type === 'CASE' || record?.record_type === 'CASE' 
+                ? 'FIR Registration' 
+                : `${editId ? 'Edit' : 'New'} ${type || record?.record_type || ''} Registration`}
+            </h1>
+          </div>
           <button
             onClick={() => {
               if (caseType) {
@@ -243,23 +243,11 @@ export default function NewRecord() {
                 navigate('/records');
               }
             }}
-            className="hover:bg-slate-50 text-slate-500 hover:text-slate-700 p-2 rounded-xl transition-all duration-200 cursor-pointer border border-slate-200 active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 text-[#0d2a4a] hover:text-[#0f52ba] rounded-xl transition-all duration-200 cursor-pointer border border-slate-200 active:scale-95 text-xs font-bold bg-white"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={14} />
+            <span>Back</span>
           </button>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2 tracking-wide font-display">
-              <BookOpen className="text-[var(--accent-color)]" size={18} />
-              <span>
-                {editId
-                  ? `${t('actions.edit', 'Edit')} ${t(`recordTypes.${record?.record_type}`, record?.record_type || '')}`
-                  : `${t('actions.new', 'New')} ${t(`recordTypes.${type}`, type)} ${t('nav.record', 'Entry')}`}
-              </span>
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5 font-semibold">
-              Secure operational entry for Delhi Police Daily General Diary record registry.
-            </p>
-          </div>
         </motion.div>
 
         {/* Send-back feedback banner */}

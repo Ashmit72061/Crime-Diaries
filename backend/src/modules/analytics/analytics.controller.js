@@ -51,9 +51,7 @@ export const getTrends = async (req, res) => {
     return res.status(400).json({ success: false, message: 'recordType query parameter is required' });
   }
 
-  let typeUpper = recordType.toUpperCase();
-  if (typeUpper === 'CASES') typeUpper = 'CASE';
-  if (typeUpper === 'PCR') typeUpper = 'PCR_CALL';
+  const typeUpper = recordType.toUpperCase();
   const classificationKey = typeUpper === 'CASE' ? 'case_head' : (typeUpper === 'ARREST' ? 'crime_head' : 'pcr_head');
 
   try {

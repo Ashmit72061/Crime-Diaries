@@ -19,6 +19,31 @@ import CustomExcelBuilder from './CustomExcelBuilder';
 
 export const ReportsPage = () => {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+
+  const getThemeClass = () => {
+    const role = user?.role;
+    switch (role) {
+      case 'PS':
+      case 'HC':
+        return 'theme-hc-page';
+      case 'SHO':
+        return 'theme-sho-page';
+      case 'ACP':
+        return 'theme-acp-page';
+      case 'DISTRICT':
+      case 'DISTRICT_OFFICER':
+        return 'theme-district-page';
+      case 'HQ':
+      case 'HQ_ANALYST':
+      case 'HQ_ADMIN':
+        return 'theme-hq-page';
+      case 'SYSTEM_ADMIN':
+        return 'theme-admin-page';
+      default:
+        return 'theme-shared-page';
+    }
+  };
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [exportType, setExportType] = useState('CASES');
@@ -151,8 +176,8 @@ export const ReportsPage = () => {
       key: 'name_en',
       render: (text, record) => (
         <div>
-          <span style={{ color: '#fff', fontWeight: 600, display: 'block' }}>{text}</span>
-          <span style={{ color: '#718096', fontSize: 12 }}>{record.name_hi}</span>
+          <span style={{ color: 'var(--text-main-theme)', fontWeight: 600, display: 'block' }}>{text}</span>
+          <span style={{ color: 'var(--text-main-theme)', opacity: 0.65, fontSize: 12 }}>{record.name_hi}</span>
         </div>
       )
     },
@@ -185,7 +210,7 @@ export const ReportsPage = () => {
                 type="primary"
                 onClick={() => handlePdfExport(record.id)}
                 icon={<FileText size={14} />}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#e53e3e', borderColor: '#e53e3e' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-color)', borderColor: 'var(--accent-color)' }}
               >
                 Compile PDF Report
               </Button>
@@ -197,19 +222,28 @@ export const ReportsPage = () => {
   ];
 
   return (
-    <div className="fade-in-up">
-      <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ color: '#fff', margin: 0 }}>
-          {t('nav.reports')}
-        </Title>
-        <Paragraph style={{ color: '#a0aec0', marginTop: 4 }}>
-          Generate district-level PDF diary entries or compile raw operational grids into clean Excel spreadsheets.
-        </Paragraph>
+    <div className={`fade-in-up ${getThemeClass()} page-bg p-6 min-h-screen font-sans`}>
+      {/* Hero Header */}
+      <div className="hero-banner-gradient px-8 py-8 shadow-lg relative overflow-hidden rounded-2xl mb-6">
+        {/* subtle decorative ring */}
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full border border-white/5" />
+        <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full border border-white/5" />
+
+        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="mt-3 text-2xl font-bold text-white flex items-center gap-3 font-display">
+              {/* <FileSpreadsheet className="text-white" size={24} /> */}
+              <span>{t('nav.reports')}</span>
+            </h1>
+            <p className="text-white/60 text-xs mt-1.5 max-w-lg font-semibold">
+              Generate district-level PDF diary entries or compile raw operational grids into clean Excel spreadsheets.
+            </p>
+          </div>
+        </div>
       </div>
 
       <Tabs 
         defaultActiveKey="1"
-        style={{ color: '#fff' }}
         items={[
           {
             key: '1',
@@ -221,15 +255,16 @@ export const ReportsPage = () => {
                   <Card
                     title={
                       <Space>
-                        <FileSpreadsheet size={18} style={{ color: '#10b981' }} />
-                        <span>Operational Sheets Export</span>
+                        <FileSpreadsheet size={18} style={{ color: 'var(--accent-color)' }} />
+                        <span style={{ color: 'var(--text-main-theme)', fontWeight: 600 }}>Operational Sheets Export</span>
                       </Space>
                     }
-                    style={{ background: '#10141d', border: '1px solid #1c2430', height: '100%' }}
+                    style={{ background: 'var(--bg-card-theme)', border: '1px solid var(--border-card-theme)', height: '100%', borderRadius: '16px' }}
+                    headStyle={{ borderBottom: '1px solid var(--border-card-theme)' }}
                   >
                     <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 10 }}>
                       <div>
-                        <span style={{ color: '#a0aec0', display: 'block', marginBottom: 8 }}>Select category spreadsheet:</span>
+                        <span style={{ color: 'var(--text-main-theme)', opacity: 0.7, display: 'block', marginBottom: 8 }}>Select category spreadsheet:</span>
                         <Select
                           value={exportType}
                           onChange={(val) => setExportType(val)}
@@ -246,7 +281,7 @@ export const ReportsPage = () => {
                         description="Contains all fields including full case briefs, dates, names, locations, and audit numbers."
                         type="info"
                         showIcon
-                        style={{ background: '#0c1a30', border: '1px solid #1c3d5a', color: '#93c5fd' }}
+                        style={{ background: 'var(--accent-glow)', border: '1px solid var(--border-card-theme)', color: 'var(--text-main-theme)' }}
                       />
 
                       <Button
@@ -255,8 +290,8 @@ export const ReportsPage = () => {
                         loading={exportLoading}
                         block
                         style={{
-                          background: '#10b981',
-                          borderColor: '#10b981',
+                          background: 'var(--accent-color)',
+                          borderColor: 'var(--accent-color)',
                           height: 40,
                           fontWeight: 600,
                           display: 'flex',
@@ -277,11 +312,12 @@ export const ReportsPage = () => {
                   <Card
                     title={
                       <Space>
-                        <FileText size={18} style={{ color: '#e53e3e' }} />
-                        <span>District Compiled Reporting Templates</span>
+                        <FileText size={18} style={{ color: 'var(--accent-color)' }} />
+                        <span style={{ color: 'var(--text-main-theme)', fontWeight: 600 }}>District Compiled Reporting Templates</span>
                       </Space>
                     }
-                    style={{ background: '#10141d', border: '1px solid #1c2430' }}
+                    style={{ background: 'var(--bg-card-theme)', border: '1px solid var(--border-card-theme)', borderRadius: '16px' }}
+                    headStyle={{ borderBottom: '1px solid var(--border-card-theme)' }}
                   >
                     <Table
                       dataSource={templates}

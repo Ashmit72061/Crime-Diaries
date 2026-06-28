@@ -37,9 +37,7 @@ export async function up(knex) {
 export async function down(knex) {
   await knex('field_registry')
     .whereIn('field_key', ['property_description', 'property_status'])
-    .update({
-      show_when: null
-    });
+    .update({ show_when: null });
 
   const hasShowWhen = await knex.schema.hasColumn('field_registry', 'show_when');
   if (hasShowWhen) {

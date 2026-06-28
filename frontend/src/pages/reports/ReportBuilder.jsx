@@ -144,11 +144,11 @@ export default function ReportBuilder() {
   const availableFormats = selectedTemplate?.output_formats || ['EXCEL', 'PDF'];
 
   return (
-    <div className={`space-y-6 p-6 rounded-3xl bg-[var(--bg-page-main)]/60 border border-[var(--border-card-theme)] backdrop-blur-md shadow-sm font-sans text-[var(--text-main-theme)] ${getThemeClass()}`}>
+    <div className={`space-y-6 p-5 rounded-2xl bg-[var(--bg-page-main)]/60 border border-[var(--border-card-theme)] backdrop-blur-md shadow-sm font-sans text-[var(--text-main-theme)] ${getThemeClass()}`}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-serif font-bold text-[var(--text-main-theme)] flex items-center gap-2.5">
-          <FileSpreadsheet className="text-[var(--accent-color)]" size={26} />
+          <FileSpreadsheet className="text-[var(--accent-color)]" size={20} />
           <span>Excel Export Manager</span>
         </h1>
         <p className="text-[var(--text-main-theme)]/70 text-xs mt-1">
@@ -159,12 +159,12 @@ export default function ReportBuilder() {
       <div className="space-y-6">
         {/* Parameters Card */}
         <div className="bg-[var(--bg-card-theme)] border border-[var(--border-card-theme)] rounded-2xl p-6 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main-theme)] border-b border-[var(--border-card-theme)] pb-2 flex items-center gap-1.5">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-main-theme)] border-b border-[var(--border-card-theme)] pb-2 flex items-center gap-1.5">
             <Calendar size={14} className="text-[var(--accent-color)]" />
             <span>Export Parameters</span>
           </h3>
 
-          <form onSubmit={handleGenerate} className="space-y-4 text-xs">
+          <form onSubmit={handleGenerate} className="space-y-5 text-sm">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               {/* Template Selection */}
               <div className="col-span-1 md:col-span-4 space-y-1.5">
@@ -193,25 +193,48 @@ export default function ReportBuilder() {
               </div>
 
               {/* From Date */}
-              <div className="col-span-1 md:col-span-2 space-y-1.5">
+              <div className="col-span-1 md:col-span-3 space-y-1.5">
                 <label className="text-[var(--text-main-theme)]/80 font-bold">From Date:</label>
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm"
+                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm text-sm"
                 />
               </div>
 
               {/* To Date */}
-              <div className="col-span-1 md:col-span-2 space-y-1.5">
+              <div className="col-span-1 md:col-span-3 space-y-1.5">
                 <label className="text-[var(--text-main-theme)]/80 font-bold">To Date:</label>
                 <input
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm"
+                  className="w-full bg-[var(--bg-page-main)] border border-[var(--border-card-theme)] rounded-xl p-2 text-[var(--text-main-theme)] outline-none focus:border-[var(--accent-color)] transition-all font-semibold shadow-sm text-sm"
                 />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-8 pt-4">
+              {/* Actions button */}
+              <div>
+                <button
+                  type="submit"
+                  disabled={generating}
+                  className="bg-[var(--accent-color)] hover:bg-[var(--accent-color-hover)] text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-sm flex items-center gap-1.5 active:scale-95 text-sm"
+                >
+                  {generating ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      <span>Compiling Registry...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={14} />
+                      <span>Generate Excel Report</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Format selection */}
@@ -274,7 +297,7 @@ export default function ReportBuilder() {
           </h3>
 
           <div className="overflow-x-auto border border-[var(--border-card-theme)]/70 rounded-xl bg-[var(--bg-card-theme)]">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-[var(--bg-page-main)]/50 text-[var(--text-main-theme)]/80 uppercase font-semibold border-b border-[var(--border-card-theme)]/70">
                   <th className="p-3 pl-6 font-bold text-[var(--text-main-theme)]">Export ID</th>

@@ -751,9 +751,9 @@ export default function LegacyDataPage() {
 
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-[10px] font-semibold text-white/80 uppercase tracking-wider">
+            {/* <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-[10px] font-semibold text-white/80 uppercase tracking-wider">
               <Upload size={11} /> Bulk Import
-            </span>
+            </span> */}
             <h1 className="mt-3 text-2xl font-bold text-white flex items-center gap-3 font-display">
               Bulk Import Manager
             </h1>
