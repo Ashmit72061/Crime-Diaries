@@ -2,13 +2,12 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileSpreadsheet, Download, RefreshCw, ChevronDown, Search,
-  X, Link2, AlertTriangle, CheckCircle2
+  X, Link2, AlertTriangle, CheckCircle2, Calendar, Shield,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api.js';
 import useAuthStore from '../../store/authStore.js';
 
-// Maps primary table → available join tables
 const JOIN_OPTIONS = {
   CASE: [
     { value: 'ARREST',  label: 'FIR + Arrests (joined by FIR No.)' },
@@ -27,63 +26,89 @@ const TABLE_LABELS = {
 const today = new Date().toISOString().split('T')[0];
 const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
 
-// Shared input style
-const inputCls = 'w-full bg-[#0d1117] border border-[#1c2430] rounded-xl p-2.5 text-xs text-slate-200 outline-none focus:border-[#e53e3e] transition-all font-semibold shadow-sm';
-const labelCls = 'text-[11px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5';
+const inputCls = [
+  'w-full bg-white border border-slate-200 rounded-lg text-xs text-slate-800',
+  'px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold',
+].join(' ');
+
+const labelCls = 'text-[10px] font-bold text-slate-500 uppercase tracking-wide block mb-1.5';
+
+const SectionCard = ({ children, className = '' }) => (
+  <div
+    className={`rounded-2xl p-5 space-y-4 ${className}`}
+    style={{ background: 'var(--bg-card-theme)', border: '1px solid var(--border-card-theme)' }}
+  >
+    {children}
+  </div>
+);
+
+const SectionTitle = ({ icon: Icon, children }) => (
+  <h3
+    className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 pb-2.5"
+    style={{ borderBottom: '1px solid var(--border-card-theme)', color: 'var(--text-main-theme)', opacity: 0.7 }}
+  >
+    {Icon && <Icon size={13} style={{ color: 'var(--accent-color)' }} />}
+    <span>{children}</span>
+  </h3>
+);
 
 function MultiSelectDropdown({ label, options, selected, onToggle, onSelectAll, search, setSearch, open, setOpen, dropRef }) {
-  const filtered = options.filter(o =>
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+
   return (
     <div ref={dropRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between bg-[#0d1117] border border-[#1c2430] rounded-xl text-xs text-slate-200 px-3 py-2.5 outline-none focus:border-[#e53e3e] transition-all cursor-pointer font-semibold"
+        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all cursor-pointer font-semibold"
       >
         <span className="truncate text-left">{label}</span>
-        <ChevronDown size={13} className="text-slate-500 shrink-0" />
+        <ChevronDown size={13} className="text-slate-400 shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-[#10141d] border border-[#1c2430] rounded-xl shadow-xl overflow-hidden flex flex-col max-h-72">
-          <div className="p-2 border-b border-[#1c2430] flex flex-col gap-1.5 bg-[#0d1117]">
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-72">
+          <div className="p-2 border-b border-slate-100 bg-slate-50 flex flex-col gap-1.5">
             <div className="relative">
-              <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-[#10141d] border border-[#1c2430] rounded-lg pl-6 pr-2 py-1 text-[11px] text-slate-200 outline-none focus:border-[#e53e3e] font-semibold"
+                className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1 text-[11px] text-slate-800 outline-none focus:border-[var(--accent-color)] font-semibold"
               />
             </div>
             <div className="flex items-center justify-between text-[10px] px-0.5 text-slate-500">
-              <button type="button" onClick={onSelectAll} className="hover:text-[#e53e3e] transition-colors font-bold">
+              <button
+                type="button"
+                onClick={onSelectAll}
+                className="hover:text-[var(--accent-color)] transition-colors font-bold cursor-pointer border-none bg-transparent"
+              >
                 {selected.size === options.length ? 'Deselect All' : 'Select All'}
               </button>
               <span>{selected.size} of {options.length} selected</span>
             </div>
           </div>
+
           <div className="overflow-y-auto flex-1 scrollbar-thin">
             {filtered.length === 0 && (
-              <p className="text-[11px] text-slate-600 text-center py-4">No matches</p>
+              <p className="text-[11px] text-slate-400 text-center py-4">No matches</p>
             )}
             {filtered.map(opt => (
               <label
                 key={opt.value}
-                className="flex items-center gap-2 px-3 py-2 text-[11px] hover:bg-[#e53e3e]/5 transition-colors cursor-pointer select-none text-slate-300"
+                className="flex items-center gap-2 px-3 py-2 text-[11px] hover:bg-slate-50 transition-colors cursor-pointer select-none text-slate-700"
               >
                 <input
                   type="checkbox"
                   checked={selected.has(opt.value)}
                   onChange={() => onToggle(opt.value)}
-                  className="rounded border-[#1c2430] w-3.5 h-3.5 cursor-pointer accent-[#e53e3e]"
+                  className="rounded border-slate-200 w-3.5 h-3.5 cursor-pointer accent-[var(--accent-color)]"
                 />
                 <span className="flex-1 font-semibold">{opt.label}</span>
                 {opt.badge && (
-                  <span className="text-[9px] font-bold px-1 py-px rounded border bg-amber-900/30 text-amber-400 border-amber-700/40 shrink-0">
+                  <span className="text-[9px] font-bold px-1 py-px rounded border bg-amber-50 text-amber-600 border-amber-200 shrink-0">
                     {opt.badge}
                   </span>
                 )}
@@ -149,61 +174,27 @@ export default function CustomExcelBuilder() {
         });
       }
       for (const f of (tData.system_fields || [])) {
-        opts.push({
-          value: `${t}.${f.key}`,
-          label: tables.length > 1 ? `[${t}] ${f.label_en}` : f.label_en,
-          badge: null,
-        });
+        opts.push({ value: `${t}.${f.key}`, label: tables.length > 1 ? `[${t}] ${f.label_en}` : f.label_en, badge: null });
       }
     }
     return opts;
   }, [metaRes, table, join]);
 
-  const changeTable = (newTable) => {
-    setTable(newTable);
-    setJoin(null);
-    setSelectedFields(new Set());
-    setFieldSearch('');
-  };
+  const changeTable = (newTable) => { setTable(newTable); setJoin(null); setSelectedFields(new Set()); setFieldSearch(''); };
+  const changeJoin  = (newJoin)  => { setJoin(newJoin || null); setSelectedFields(new Set()); setFieldSearch(''); };
 
-  const changeJoin = (newJoin) => {
-    setJoin(newJoin || null);
-    setSelectedFields(new Set());
-    setFieldSearch('');
-  };
-
-  const toggleField = (val) => {
-    setSelectedFields(prev => {
-      const next = new Set(prev);
-      if (next.has(val)) next.delete(val); else next.add(val);
-      return next;
-    });
-  };
-
-  const toggleAllFields = () => {
-    if (selectedFields.size === fieldOptions.length) {
-      setSelectedFields(new Set());
-    } else {
-      setSelectedFields(new Set(fieldOptions.map(o => o.value)));
-    }
-  };
+  const toggleField    = (val) => setSelectedFields(prev => { const n = new Set(prev); n.has(val) ? n.delete(val) : n.add(val); return n; });
+  const toggleAllFields = () => setSelectedFields(selectedFields.size === fieldOptions.length ? new Set() : new Set(fieldOptions.map(o => o.value)));
 
   const handleExport = async () => {
-    if (selectedFields.size === 0) {
-      toast.error('Select at least one field to export.');
-      return;
-    }
-    if (!dateFrom || !dateTo) {
-      toast.error('Please set a date range.');
-      return;
-    }
+    if (selectedFields.size === 0) { toast.error('Select at least one field to export.'); return; }
+    if (!dateFrom || !dateTo)      { toast.error('Please set a date range.'); return; }
 
     const hasJoin = !!join;
     const fields = Array.from(selectedFields).map(ref => {
       const [t, f] = ref.split('.');
       return hasJoin ? { field: f, table: t } : f;
     });
-
     const conditions = [];
     if (dateFrom) conditions.push({ field: '_record_date', table, operator: 'AFTER',  value: dateFrom });
     if (dateTo)   conditions.push({ field: '_record_date', table, operator: 'BEFORE', value: dateTo });
@@ -225,21 +216,18 @@ export default function CustomExcelBuilder() {
       if (!jobId) throw new Error('No job ID returned');
       setJobState({ status: 'pending', jobId });
 
-      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const token = localStorage.getItem('access_token');
-      const authHeaders = { 'Authorization': token ? `Bearer ${token}` : '' };
       const loadingToastId = toast.loading('Building Excel report…');
 
       let attempts = 0;
       const iv = setInterval(async () => {
         attempts++;
         try {
-          const sr = await fetch(`${BASE_URL}/reports/status/${jobId}`, { headers: authHeaders });
-          const sj = await sr.json();
-          const status = sj?.data?.job?.status || sj?.data?.status;
+          const sr = await api.get(`/reports/status/${jobId}`);
+          const status = sr.data?.data?.job?.status || sr.data?.data?.status;
           if (status === 'READY') {
             clearInterval(iv);
             toast.dismiss(loadingToastId);
+            toast.success('Report ready — click Download to save.');
             setJobState({ status: 'ready', jobId });
           } else if (status === 'FAILED' || attempts > 40) {
             clearInterval(iv);
@@ -260,75 +248,71 @@ export default function CustomExcelBuilder() {
     }
   };
 
+  const fmtDate = iso => {
+    const [y, m, d] = iso.split('-');
+    return `${d}${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]}${y}`;
+  };
+
   const handleDownload = async () => {
     const { jobId } = jobState;
     if (!jobId) return;
-    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const token = localStorage.getItem('access_token');
     try {
-      const res = await fetch(`${BASE_URL}/reports/download/${jobId}`, {
-        headers: { 'Authorization': token ? `Bearer ${token}` : '' },
-      });
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const blob = new Blob([await res.arrayBuffer()], {
+      const res = await api.get(`/reports/download/${jobId}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      const url = URL.createObjectURL(blob);
+      }));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `PHAROS_${table}${join ? `_${join}` : ''}_${dateFrom}_${dateTo}.xlsx`;
+      link.download = `PHAROS_${table}${join ? `_${join}` : ''}_${fmtDate(dateFrom)}_to_${fmtDate(dateTo)}.xlsx`;
       document.body.appendChild(link);
       link.click();
       setTimeout(() => { link.remove(); URL.revokeObjectURL(url); }, 500);
       toast.success('Excel downloaded!');
       setJobState({ status: 'idle', jobId: null });
     } catch (err) {
-      toast.error('Download failed: ' + err.message);
+      toast.error('Download failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const joinOptions = JOIN_OPTIONS[table] || [];
-  const isExporting = jobState.status === 'pending';
+  const joinOptions  = JOIN_OPTIONS[table] || [];
+  const isExporting  = jobState.status === 'pending';
 
   if (metaLoading) {
     return (
-      <div className="flex items-center justify-center h-48 text-slate-500 text-sm">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#e53e3e] mr-3" />
-        Loading field registry…
-      </div>
+      <SectionCard>
+        <div className="flex items-center justify-center h-32 gap-3" style={{ color: 'var(--text-main-theme)', opacity: 0.5 }}>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--accent-color)' }} />
+          <span className="text-sm font-semibold">Loading field registry…</span>
+        </div>
+      </SectionCard>
     );
   }
 
   if (metaError) {
     return (
-      <div className="flex items-center gap-3 p-4 border border-red-800/40 bg-red-950/20 rounded-xl text-sm text-red-400">
-        <AlertTriangle size={16} />
-        <span>Failed to load field metadata. Check that the backend is running.</span>
-      </div>
+      <SectionCard>
+        <div className="flex items-center gap-3 text-sm font-semibold text-red-600">
+          <AlertTriangle size={16} />
+          <span>Failed to load field metadata. Check that the backend is running.</span>
+        </div>
+      </SectionCard>
     );
   }
 
   return (
-    <div className="space-y-5 font-sans text-slate-200">
+    <div className="space-y-5 font-sans">
 
       {/* ── Record Type & Columns ─────────────────────────────────────────── */}
-      <div style={{ background: '#10141d', border: '1px solid #1c2430' }} className="rounded-2xl p-5 space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-[#1c2430] pb-2 flex items-center gap-1.5">
-          <FileSpreadsheet size={13} className="text-[#e53e3e]" />
-          <span>Record Type &amp; Columns</span>
-        </h3>
+      <SectionCard>
+        <SectionTitle icon={FileSpreadsheet}>Record Type &amp; Columns</SectionTitle>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Primary table */}
           <div>
             <label className={labelCls}>Primary Record Type</label>
-            <select
-              value={table}
-              onChange={e => changeTable(e.target.value)}
-              className={inputCls + ' cursor-pointer'}
-            >
+            <select value={table} onChange={e => changeTable(e.target.value)} className={inputCls + ' cursor-pointer'}>
               {Object.entries(TABLE_LABELS).map(([val, lbl]) => (
-                <option key={val} value={val} style={{ background: '#10141d' }}>{lbl}</option>
+                <option key={val} value={val}>{lbl}</option>
               ))}
             </select>
           </div>
@@ -338,7 +322,7 @@ export default function CustomExcelBuilder() {
             <label className={labelCls}>
               <Link2 size={10} className="inline mr-1" />
               Link / Join Table
-              <span className="text-[9px] font-normal normal-case text-slate-600 ml-1">(optional)</span>
+              <span className="text-[9px] font-normal normal-case text-slate-400 ml-1">(optional)</span>
             </label>
             <select
               value={join || ''}
@@ -346,13 +330,11 @@ export default function CustomExcelBuilder() {
               disabled={joinOptions.length === 0}
               className={inputCls + ' cursor-pointer disabled:opacity-40'}
             >
-              <option value="" style={{ background: '#10141d' }}>No join — single table</option>
-              {joinOptions.map(o => (
-                <option key={o.value} value={o.value} style={{ background: '#10141d' }}>{o.label}</option>
-              ))}
+              <option value="">No join — single table</option>
+              {joinOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             {joinOptions.length === 0 && (
-              <p className="text-[10px] text-slate-600 mt-1">No joins available for {table}</p>
+              <p className="text-[10px] text-slate-400 mt-1">No joins available for {table}</p>
             )}
           </div>
 
@@ -389,13 +371,13 @@ export default function CustomExcelBuilder() {
                 <span
                   key={ref}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{ background: 'rgba(229,62,62,0.12)', color: '#e53e3e', border: '1px solid rgba(229,62,62,0.2)' }}
+                  style={{ background: 'var(--accent-glow)', color: 'var(--accent-color)', border: '1px solid var(--accent-color)', borderOpacity: 0.25 }}
                 >
                   {opt?.label || ref}
                   {opt?.badge && (
-                    <span className="text-[8px] font-bold bg-amber-900/30 text-amber-400 rounded px-0.5">{opt.badge}</span>
+                    <span className="text-[8px] font-bold bg-amber-50 text-amber-600 rounded px-0.5">{opt.badge}</span>
                   )}
-                  <button type="button" onClick={() => toggleField(ref)} className="hover:text-red-300 transition-colors cursor-pointer">
+                  <button type="button" onClick={() => toggleField(ref)} className="transition-opacity opacity-60 hover:opacity-100 cursor-pointer border-none bg-transparent p-0">
                     <X size={9} />
                   </button>
                 </span>
@@ -403,20 +385,20 @@ export default function CustomExcelBuilder() {
             })}
           </div>
         )}
-      </div>
+      </SectionCard>
 
       {/* ── Filters ────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#10141d', border: '1px solid #1c2430' }} className="rounded-2xl p-5 space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-[#1c2430] pb-2">
-          Filters
-        </h3>
+      <SectionCard>
+        <SectionTitle icon={Calendar}>Filters</SectionTitle>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className={labelCls}>From Date</label>
             <input
               type="date"
               value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
+              max={dateTo || today}
+              onChange={e => { setDateFrom(e.target.value); if (dateTo < e.target.value) setDateTo(e.target.value); }}
               className={inputCls}
             />
           </div>
@@ -425,6 +407,8 @@ export default function CustomExcelBuilder() {
             <input
               type="date"
               value={dateTo}
+              min={dateFrom}
+              max={today}
               onChange={e => setDateTo(e.target.value)}
               className={inputCls}
             />
@@ -432,23 +416,20 @@ export default function CustomExcelBuilder() {
           {stationsList.length > 0 && (
             <div>
               <label className={labelCls}>
+                <Shield size={10} className="inline mr-1" />
                 Police Station
-                <span className="text-[9px] font-normal normal-case text-slate-600 ml-1">(optional)</span>
+                <span className="text-[9px] font-normal normal-case text-slate-400 ml-1">(optional)</span>
               </label>
-              <select
-                value={psId || ''}
-                onChange={e => setPsId(e.target.value || null)}
-                className={inputCls + ' cursor-pointer'}
-              >
-                <option value="" style={{ background: '#10141d' }}>All Stations</option>
+              <select value={psId || ''} onChange={e => setPsId(e.target.value || null)} className={inputCls + ' cursor-pointer'}>
+                <option value="">All Stations</option>
                 {stationsList.map(ps => (
-                  <option key={ps.id} value={ps.id} style={{ background: '#10141d' }}>{ps.name_en} ({ps.code})</option>
+                  <option key={ps.id} value={ps.id}>{ps.name_en} ({ps.code})</option>
                 ))}
               </select>
             </div>
           )}
         </div>
-      </div>
+      </SectionCard>
 
       {/* ── Export Button & Status ─────────────────────────────────────────── */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -456,8 +437,8 @@ export default function CustomExcelBuilder() {
           type="button"
           onClick={handleExport}
           disabled={isExporting || selectedFields.size === 0}
-          style={{ background: '#e53e3e', borderColor: '#e53e3e' }}
-          className="text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95 hover:brightness-110"
+          style={{ background: 'var(--accent-color)', borderColor: 'var(--accent-color)' }}
+          className="text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95 hover:brightness-110 border"
         >
           {isExporting ? (
             <><RefreshCw size={14} className="animate-spin" /><span>Building Report…</span></>
@@ -467,9 +448,12 @@ export default function CustomExcelBuilder() {
         </button>
 
         {jobState.status === 'ready' && (
-          <div className="flex items-center gap-3 rounded-xl px-4 py-2" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-            <span className="text-xs font-semibold text-emerald-400">Report ready!</span>
+          <div
+            className="flex items-center gap-3 rounded-xl px-4 py-2"
+            style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)' }}
+          >
+            <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+            <span className="text-xs font-semibold text-emerald-600">Report ready!</span>
             <button
               type="button"
               onClick={handleDownload}
@@ -482,14 +466,14 @@ export default function CustomExcelBuilder() {
         )}
 
         {jobState.status === 'failed' && (
-          <div className="flex items-center gap-2 text-red-400 text-xs font-semibold">
+          <div className="flex items-center gap-2 text-xs font-semibold text-red-500">
             <AlertTriangle size={14} />
             <span>Export failed. Try again.</span>
           </div>
         )}
 
-        {selectedFields.size === 0 && (
-          <p className="text-[11px] text-slate-600 font-semibold">
+        {selectedFields.size === 0 && jobState.status === 'idle' && (
+          <p className="text-[11px] text-slate-400 font-semibold">
             Select at least one field to enable export.
           </p>
         )}

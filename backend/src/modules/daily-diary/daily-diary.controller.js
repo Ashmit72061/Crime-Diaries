@@ -1,7 +1,5 @@
 import * as dailyDiaryService from './daily-diary.service.js';
-import db from '../../config/db.js';
 import { logger } from '../../utils/logger.js';
-import { generateParallelReport } from '../reports/reports.parallel.service.js';
 
 // Helper to validate and default date
 const getValidatedDate = (req) => {
@@ -103,38 +101,6 @@ export const exportExcel = async (req, res, next) => {
       tableNames,
       dateTo
     );
-
-    // Process in Node.js immediately — no Python/RabbitMQ required.
-    setImmediate(async () => {
-      try {
-        const job = await db('report_jobs').where({ id: jobId }).first();
-        if (!job) return;
-        const def = JSON.parse(job.custom_definition || '{}');
-        await generateParallelReport(
-          jobId,
-          {
-            date,
-            dateTo,
-            psId: scope.psId,
-            districtId: scope.districtId,
-            subDivId: scope.subDivId
-          },
-          job.file_path,
-          tableNames
-        );
-        await db('report_jobs').where({ id: jobId }).update({
-          status: 'READY',
-          updated_at: new Date().toISOString(),
-        });
-        logger.info(`[DailyDiary] Job ${jobId} completed — file written to ${job.file_path}`);
-      } catch (err) {
-        logger.error(`[DailyDiary] Job ${jobId} failed: ${err.message}`);
-        await db('report_jobs').where({ id: jobId }).update({
-          status: 'FAILED',
-          updated_at: new Date().toISOString(),
-        }).catch(() => {});
-      }
-    });
 
     return res.status(202).json({
       status: 'accepted',

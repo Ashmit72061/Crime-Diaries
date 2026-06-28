@@ -32,7 +32,11 @@ echo [5/6] Starting frontend in a new terminal...
 start "PHAROS Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 echo.
 
-echo [5.5/6] Report generation handled by Node.js handler. Python worker skipped.
+echo [5.5/6] Installing Python dependencies and starting report worker...
+cd /d %~dp0python_worker
+pip install -r requirements.txt
+start "PHAROS Python Worker" cmd /k "cd /d %~dp0python_worker && python main.py"
+cd /d %~dp0
 echo.
 
 echo [6/6] Starting backend server in a new terminal...
