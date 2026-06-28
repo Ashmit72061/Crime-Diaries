@@ -497,8 +497,8 @@ function hidePersonSubColumns(ws, cols) {
       sub.includes('ADDRESS OF TRACED PERSON');
 
     const isTimeColumn =
-      sub.includes('TIME OF OCCURRENCE') ||
-      hdr.includes('TIME OF OCCURRENCE');
+      (sub.includes('TIME OF OCCURRENCE') || hdr.includes('TIME OF OCCURRENCE')) &&
+      !hdr.includes('DATE');
 
     if (isPersonSubField || isTimeColumn) {
       const wsCol = ws.getColumn(col.index);
@@ -775,6 +775,96 @@ async function populateSheet1_ManualFIR(workbook, date, filters) {
   }
 
   // Hide now-empty person sub-field columns (parent / address / age)
+  hidePersonSubColumns(ws, cols);
+}
+
+// 12. Juveniles Conflict Law custom populator
+async function populateSheet12_Juveniles(workbook, date, filters) {
+  const ws = workbook.getWorksheet('12.Juveniles Conflict Law');
+  if (!ws) return;
+
+  if (ws.rowCount >= 4) {
+    ws.spliceRows(4, ws.rowCount - 3);
+  }
+
+  const resolved = await resolveIntFilters(filters);
+  const psIds = resolved.psIds;
+  const districtId = resolved.districtId;
+
+  let query = db('arrest_master as am')
+    .leftJoin('fir_master as fm', 'fm.record_uid', '=', 'am.linked_fir_record_uid')
+    .leftJoin('ref_police_station as rps', 'rps.ps_id', '=', 'am.ps_id')
+    .select([
+      'rps.ps_name as ps_name',
+      'am.fir_dd_no as fir_dd_no',
+      'am.diary_record_date as date',
+      'am.sections as sections',
+      'am.arrestee_name as arrestee_name',
+      'am.arrestee_parent_name as arrestee_parent_name',
+      'am.arrestee_address as arrestee_address',
+      'am.arrestee_age as age',
+      'am.arrest_status_id as custody_status',
+      'fm.brief_facts as brief_facts'
+    ])
+    .where('am.arrestee_age', '<', 18)
+    .where('am.diary_record_date', date);
+
+  if (psIds && psIds.length > 0) query = query.whereIn('am.ps_id', psIds);
+  if (districtId) query = query.where('am.district_id', districtId);
+
+  const rows = await query.orderBy('am.arrestee_name');
+  const cols = analyzeBlockColumns(ws, 1, 14);
+
+  let rIdx = 4;
+  for (const r of rows) {
+    const row = ws.getRow(rIdx);
+    
+    // Format combined complainant/arrested details
+    const arrName = r.arrestee_name || '';
+    const arrParent = r.arrestee_parent_name || '';
+    const arrAddress = r.arrestee_address || '';
+    const arrAge = r.age || '';
+    let arrDetails = '';
+    if (arrName) {
+      let parentPart = arrParent ? `S/O ${arrParent}` : '';
+      let addrPart = arrAddress ? `R/O ${arrAddress}` : '';
+      let agePart = arrAge ? `Age- ${arrAge} yrs` : '';
+      arrDetails = [arrName, parentPart, addrPart, agePart].filter(Boolean).join(' ');
+    }
+
+    const rowValues = [];
+    for (const col of cols) {
+      const headerUpper = col.header.toUpperCase();
+      const subHeaderUpper = col.subHeader.toUpperCase();
+
+      if (subHeaderUpper === 'NAME OF JUVENILE' || headerUpper === 'NAME OF JUVENILE') {
+        rowValues.push(arrDetails);
+      } else if (subHeaderUpper.includes('FATHJER/ HUSBAND NAME OF JUVENILE') || subHeaderUpper.includes('ADDRESS OF JUVENILE') || subHeaderUpper === 'AGE OF JUVENILE') {
+        rowValues.push('');
+      } else if (headerUpper === 'SR. NO.' || subHeaderUpper === 'SR. NO.') {
+        rowValues.push(rIdx - 3);
+      } else if (headerUpper.includes('POLICE STATION')) {
+        rowValues.push(r.ps_name || '');
+      } else if (headerUpper.includes('FIR/DD')) {
+        rowValues.push(r.fir_dd_no || '');
+      } else if (headerUpper.includes('DATE') || subHeaderUpper.includes('DATE')) {
+        rowValues.push(r.date ? formatDateTime(r.date, '') : '');
+      } else if (headerUpper.includes('SECTION')) {
+        rowValues.push(r.sections || '');
+      } else if (headerUpper.includes('STATUS')) {
+        rowValues.push(r.custody_status || '');
+      } else if (headerUpper.includes('BRIEF')) {
+        rowValues.push(r.brief_facts || '');
+      } else {
+        rowValues.push('');
+      }
+    }
+
+    row.values = rowValues.map((val, idx) => formatCellValue(val, cols[idx].header));
+    applyStylesToRow(row, 14);
+    rIdx++;
+  }
+
   hidePersonSubColumns(ws, cols);
 }
 
@@ -1342,7 +1432,10 @@ const GENERATABLE_SHEETS = new Set([
   '6.Arrested E-FIR Theft',
   '7.Arrested E-FIR MV Theft',
   '8.Proclaimed Offenders',
+  '9.Listed Criminals Action',
   '10.Arrested 24 Hrs List',
+  '11.PI Dispose manual, prop. mvt',
+  '12.Juveniles Conflict Law',
   '13.Missing, uidb, abandon,trace',
   '14.Women, children Missing',
   '15.Preventive Action',
@@ -1350,17 +1443,14 @@ const GENERATABLE_SHEETS = new Set([
   '17.Important Cases',
   '18.FIR Goswara Summary',
   '19.Financial Fraud Arrest',
-  '21.NDPS Action'
+  '20.Patrolling Checking',
+  '21.NDPS Action',
+  '22.Servant Verification',
+  '23.Mobile Recovered PS',
+  '24.Mobile Recovered Summary'
 ]);
 
 const ALWAYS_EXCLUDED_SHEETS = new Set([
-  '9.Listed Criminals Action',
-  '11.PI Dispose manual, prop. mvt',
-  '12.Juveniles Conflict Law',
-  '20.Patrolling Checking',
-  '22.Servant Verification',
-  '23.Mobile Recovered PS',
-  '24.Mobile Recovered Summary',
   'Sheet1'
 ]);
 
@@ -1369,6 +1459,14 @@ const ALWAYS_EXCLUDED_SHEETS = new Set([
 // ----------------------------------------
 export const generateParallelReport = async (jobId, filters, filePath, tableNames = null) => {
   console.log(`[ParallelReportService] Compiling jobId: ${jobId} to file: ${filePath} (tableNames: ${tableNames})`);
+
+  // Ensure data warehouse is 100% synchronized in real-time before running queries
+  try {
+    const { runWarehouseSync } = await import('../warehouse/etl/sync.js');
+    await runWarehouseSync('ALL', true);
+  } catch (err) {
+    console.error('[ParallelReportService] Real-time warehouse sync failed:', err.message);
+  }
   
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -1650,6 +1748,47 @@ export const generateParallelReport = async (jobId, filters, filePath, tableName
         r['RANK OF IO'], r['MOBILE NO. OF IO'], r['REMARKS (PC REMAND / FORMAL ARREST / BAIL ETC.)']
       ]
     });
+  }
+
+  // 11. PI Dispose manual, prop. mvt (3 stacked sub-tables, processed bottom-to-top)
+  if (sheetsToKeep.has('11.PI Dispose manual, prop. mvt')) {
+    const ws11 = workbook.getWorksheet('11.PI Dispose manual, prop. mvt');
+    if (ws11) {
+      const s11blocks = findSectionBlocks(ws11, ['11.1', '11.2', '11.3']);
+      const b111 = s11blocks.find(b => b.prefix === '11.1');
+      const b112 = s11blocks.find(b => b.prefix === '11.2');
+      const b113 = s11blocks.find(b => b.prefix === '11.3');
+
+      // Block 11.3: E-MVT (bottom)
+      if (b113) await populateBlockFromView({
+        ws: ws11, viewName: 'rpt_16_pi_disposal_e_mvt', date, filters,
+        startRow: b113.dataStart, endRow: b113.dataEnd, colCount: 6,
+        isSelected: isSubBlockSelected('excel_16pi_disposal_emvt')
+      });
+
+      // Block 11.2: E-Property (middle)
+      if (b112) await populateBlockFromView({
+        ws: ws11, viewName: 'rpt_15_pi_disposal_e_property', date, filters,
+        startRow: b112.dataStart, endRow: b112.dataEnd, colCount: 6,
+        isSelected: isSubBlockSelected('excel_15pi_disposal_eproperty')
+      });
+
+      // Block 11.1: Manual (top)
+      if (b111) await populateBlockFromView({
+        ws: ws11, viewName: 'rpt_14_pi_disposal_manual', date, filters,
+        startRow: b111.dataStart, endRow: b111.dataEnd, colCount: 6,
+        isSelected: isSubBlockSelected('excel_14pi_disposal_manual')
+      });
+    }
+  }
+
+  // 12. Juveniles Conflict Law (custom populator)
+  if (sheetsToKeep.has('12.Juveniles Conflict Law')) {
+    try {
+      await populateSheet12_Juveniles(workbook, date, filters);
+    } catch (err) {
+      console.error('[ParallelReport] Sheet 12 top-level error:', err.message);
+    }
   }
 
   // 13. Missing, uidb, abandon,trace (4 stacked sub-tables, processed bottom-to-top)

@@ -566,8 +566,7 @@ export async function up(knex) {
       a.diary_record_date
     FROM arrest_master a
     JOIN ref_police_station ps ON ps.ps_id = a.ps_id
-    JOIN ref_district d ON d.district_id = ps.district_id
-    WHERE d.district_name ILIKE '%East%';
+    JOIN ref_district d ON d.district_id = ps.district_id;
   `);
 
   // rpt_08_arrested_kalandara — preventive section arrests (BNSS 126/170)
