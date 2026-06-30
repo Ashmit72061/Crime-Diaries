@@ -1766,7 +1766,7 @@ const renderOccurrenceStep = () => {
           <legend
             className="px-2 text-[#0d2a4a] font-bold uppercase text-xs cursor-pointer flex justify-between items-center"
             onClick={() => setShowOccurrencePlace(!showOccurrencePlace)}>
-            <span>Place of Occurrence</span>
+            <span>Occurrence Information</span>
             <span>{showOccurrencePlace ? "▲" : "▼"}</span>
           </legend>
 
@@ -4056,7 +4056,7 @@ const renderActionTakenStep = () => {
         ] },
         { title_en: 'FIR Contents',    title_hi: 'प्राथमिकी विवरण', keys: ['brief_facts'] },
         { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [
-          'victim_npr', 'victim_first_name', 'victim_middle_name', 'victim_last_name',
+          'victim_npr', 'victim_first_name', 'victim_middle_name', 'victim_last_name', 'victim_nickname',
           'victim_gender', 'victim_marital_status', 'victim_mobile_country_code', 'victim_mobile',
           'victim_email', 'victim_relation_type', 'victim_relative_name',
           'victim_dob', 'victim_age_year', 'victim_age_month', 'victim_birth_year',
@@ -4069,7 +4069,7 @@ const renderActionTakenStep = () => {
           'victim_perm_state', 'victim_perm_district', 'victim_perm_police_station', 'victim_perm_pincode'
         ] },
         { title_en: 'Accused',          title_hi: 'आरोपी', keys: [
-          'accused_npr', 'accused_first_name', 'accused_middle_name', 'accused_last_name',
+          'accused_npr', 'accused_first_name', 'accused_middle_name', 'accused_last_name', 'accused_nickname',
           'accused_gender', 'accused_marital_status', 'accused_mobile_country_code', 'accused_mobile',
           'accused_email', 'accused_relation_type', 'accused_relative_name',
           'accused_dob', 'accused_age_year', 'accused_age_month', 'accused_birth_year',
