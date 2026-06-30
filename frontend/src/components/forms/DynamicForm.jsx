@@ -1762,14 +1762,10 @@ const renderOccurrenceStep = () => {
 
         {/* OCCURRENCE INFORMATION */}
         <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
-          <legend
-            className="px-2 text-[#0d2a4a] font-bold uppercase text-xs cursor-pointer flex justify-between items-center"
-            onClick={() => setShowOccurrencePlace(!showOccurrencePlace)}>
-            <span>Occurrence Information</span>
-            <span>{showOccurrencePlace ? "▲" : "▼"}</span>
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            Occurrence Information
           </legend>
 
-        {showOccurrencePlace && (
           <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
             {(() => {
               const activeFields = occurrenceInfoKeys
@@ -1805,7 +1801,6 @@ const renderOccurrenceStep = () => {
               });
             })()}
           </div>
-        )}
         </fieldset>
 
         {/* FOREST AREA */}
@@ -2283,7 +2278,7 @@ const renderVictimStep = () => {
               {renderVictimModalField('victim_first_name')}
               {renderVictimModalField('victim_middle_name')}
               {renderVictimModalField('victim_last_name')}
-              {renderVictimModalField('victim_nickname', null, true)}
+              {renderVictimModalField('victim_nickname', lang === 'hi' ? 'उपनाम / Alias' : 'Nickname/Alias', true)}
             </div>
           </div>
 
@@ -2698,7 +2693,7 @@ const renderAccusedStep = () => {
               {renderAccusedModalField('accused_first_name')}
               {renderAccusedModalField('accused_middle_name')}
               {renderAccusedModalField('accused_last_name')}
-              {renderAccusedModalField('accused_nickname', null, true)}
+              {renderAccusedModalField('accused_nickname', lang === 'hi' ? 'उपनाम / Alias' : 'Nickname/Alias', true)}
             </div>
           </div>
 
