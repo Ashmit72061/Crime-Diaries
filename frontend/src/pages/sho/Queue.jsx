@@ -116,8 +116,15 @@ export default function Queue() {
 
   const countFor = (tab) => tab === 'ALL' ? queue.length : queue.filter(r => r.record_type === tab).length;
 
-  // Filter queue records based on type
-  const filteredQueue = activeTab === 'ALL' ? queue : queue.filter(r => r.record_type === activeTab);
+  // Filter queue records based on type and sort 'SENT_BACK' / 'SENT_BACK_HC' to the top
+  const filteredQueue = (activeTab === 'ALL' ? queue : queue.filter(r => r.record_type === activeTab))
+    .sort((a, b) => {
+      const aIsSentBack = a.current_status === 'SENT_BACK_HC' || a.current_status === 'SENT_BACK';
+      const bIsSentBack = b.current_status === 'SENT_BACK_HC' || b.current_status === 'SENT_BACK';
+      if (aIsSentBack && !bIsSentBack) return -1;
+      if (!aIsSentBack && bIsSentBack) return 1;
+      return 0;
+    });
 
   const getThemeClass = () => {
     const role = user?.role;
@@ -297,10 +304,16 @@ export default function Queue() {
                         rec.data.foundPlace ||
                         'No description logged';
 
+                      const isSentBack = rec.current_status === 'SENT_BACK_HC' || rec.current_status === 'SENT_BACK';
+
                       return (
                         <tr
                           key={rec.id}
-                          className="group hover:bg-[var(--bg-page-main)]/40 transition-all duration-150"
+                          className={`group transition-all duration-150 ${
+                            isSentBack
+                              ? 'bg-rose-50/80 hover:bg-rose-100/70'
+                              : 'hover:bg-[var(--bg-page-main)]/40'
+                          }`}
                         >
                           <td className="p-4 pl-6 w-12">
                             <input
@@ -321,7 +334,11 @@ export default function Queue() {
                             {gist}
                           </td>
                           <td className="p-4">
-                            <span className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className={`inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-full border ${
+                              isSentBack
+                                ? 'bg-rose-50 text-rose-700 border-rose-200/60'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
                               {t(`status.${rec.current_status}`, rec.current_status)}
                             </span>
                           </td>
