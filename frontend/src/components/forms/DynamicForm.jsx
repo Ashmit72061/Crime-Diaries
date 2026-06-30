@@ -1378,7 +1378,7 @@ export default function DynamicForm({
                       type="radio"
                       disabled={readOnly}
                       name="type_of_information"
-                      checked={isWritten}
+                      checked={values.type_of_information === 'Written' || !values.type_of_information}
                       onChange={() => {
                         handleChange('type_of_information', 'Written');
                         handleChange('case_type', 'cctns(manual FIR)');
@@ -1392,7 +1392,7 @@ export default function DynamicForm({
                       type="radio"
                       disabled={readOnly}
                       name="type_of_information"
-                      checked={!isWritten}
+                      checked={values.type_of_information === 'Oral'}
                       onChange={() => {
                         handleChange('type_of_information', 'Oral');
                         handleChange('case_type', 'Oral');
@@ -1406,7 +1406,7 @@ export default function DynamicForm({
                       type="radio"
                       disabled={readOnly}
                       name="type_of_information"
-                      checked={!isWritten}
+                      checked={values.type_of_information === 'Court Order'}
                       onChange={() => {
                         handleChange('type_of_information', 'Court Order');
                         handleChange('case_type', 'Court Order');
