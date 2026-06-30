@@ -4983,10 +4983,10 @@ const renderActionTakenStep = () => {
   const datePickerRef = useRef(null);
   const searchBtnRef  = useRef(null);
 
-  /* ── Close date picker on click-outside ────────────────────────────────── */
   useEffect(() => {
     if (!showDatePicker) return;
     const handleClickOutside = (e) => {
+      if (e.target?.placeholder === 'DD/MM/YYYY HH:MM') return;
       if (
         datePickerRef.current && !datePickerRef.current.contains(e.target) &&
         searchBtnRef.current  && !searchBtnRef.current.contains(e.target)
@@ -5126,8 +5126,28 @@ const renderActionTakenStep = () => {
       const hh = String(now.getHours()).padStart(2, '0');
       const mi = String(now.getMinutes()).padStart(2, '0');
       seed.gd_date_time = `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
-      seed.gd_date = `${dd}/${mm}/${yyyy}`;
-      seed.gd_time = `${hh}:${mi}`;
+      if (recordType === 'UIDB') {
+        seed.dd_date = `${dd}/${mm}/${yyyy}`;
+        seed.dd_time = `${hh}:${mi}`;
+      } else {
+        seed.gd_date = `${dd}/${mm}/${yyyy}`;
+        seed.gd_time = `${hh}:${mi}`;
+      }
+    }
+
+    // Combine date and time into gd_date_time for existing records if empty
+    if (!seed.gd_date_time) {
+      if (recordType === 'UIDB') {
+        const dDate = seed.dd_date || seed.ddDate;
+        const dTime = seed.dd_time || seed.ddTime;
+        if (dDate && dTime) {
+          seed.gd_date_time = `${dDate} ${dTime}`;
+        }
+      } else {
+        if (seed.gd_date && seed.gd_time) {
+          seed.gd_date_time = `${seed.gd_date} ${seed.gd_time}`;
+        }
+      }
     }
     
     // Resolve station and district dynamically based on record metadata or active user node
