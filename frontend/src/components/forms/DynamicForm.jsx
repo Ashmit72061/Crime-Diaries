@@ -1381,7 +1381,6 @@ export default function DynamicForm({
                       checked={values.type_of_information === 'Written' || !values.type_of_information}
                       onChange={() => {
                         handleChange('type_of_information', 'Written');
-                        handleChange('case_type', 'cctns(manual FIR)');
                       }}
                       className="accent-[#0f52ba] cursor-pointer"
                     />
@@ -1395,7 +1394,6 @@ export default function DynamicForm({
                       checked={values.type_of_information === 'Oral'}
                       onChange={() => {
                         handleChange('type_of_information', 'Oral');
-                        handleChange('case_type', 'Oral');
                       }}
                       className="accent-[#0f52ba] cursor-pointer"
                     />
@@ -1409,7 +1407,6 @@ export default function DynamicForm({
                       checked={values.type_of_information === 'Court Order'}
                       onChange={() => {
                         handleChange('type_of_information', 'Court Order');
-                        handleChange('case_type', 'Court Order');
                       }}
                       className="accent-[#0f52ba] cursor-pointer"
                     />
@@ -5187,6 +5184,7 @@ const renderActionTakenStep = () => {
         if (recordType === 'CASE') {
           seed.fir_date = `${dd}/${mm}/${yyyy}`;
           seed.fir_time = `${hh}:${mi}`;
+          seed.case_type = 'cctns(manual FIR)';
         }
       }
     }
