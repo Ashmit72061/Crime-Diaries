@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,7 +10,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Plus,
   ClipboardList,
   BarChart3,
   FileSpreadsheet,
@@ -20,7 +19,6 @@ import {
   Building,
   ShieldAlert,
   FileSignature,
-  Archive,
   Layers,
   Upload,
 } from "lucide-react";
@@ -28,8 +26,7 @@ import delhiPoliceLogo from "../../assets/delhi_police_logo.png";
 import useAuthStore from "../../store/authStore.js";
 
 export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language || 'en';
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [expandedSubmenu, setExpandedSubmenu] = useState(null);
 
@@ -148,6 +145,11 @@ export default function PoliceSidebar({ isCollapsed, setIsCollapsed }) {
     <aside 
       className={`sidebar-nav ${isCollapsed ? "collapsed" : "expanded"} ${getRoleThemeClass()}`}
       aria-label="Primary Navigation"
+      onMouseEnter={() => setIsCollapsed(false)}
+      onMouseLeave={() => {
+        setIsCollapsed(true);
+        setExpandedSubmenu(null);
+      }}
     >
       <div className="sidebar-header">
         <div className="emblem-container">
