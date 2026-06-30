@@ -184,10 +184,21 @@ export default function DynamicForm({
 
     // Filter unified list
     const filtered = unifiedCases.filter(c => {
-      // Date exact match
-      const cDate = c.fir_date ? c.fir_date.substring(0, 10) : '';
-      const sDate = searchDate.substring(0, 10);
-      if (cDate !== sDate) return false;
+      // Date exact match (handles both YYYY-MM-DD and DD/MM/YYYY formats)
+      const sDate = searchDate.substring(0, 10); // "YYYY-MM-DD"
+      let cNormalized = '';
+      if (c.fir_date) {
+        const parts = c.fir_date.split('/');
+        if (parts.length === 3) {
+          const dd = parts[0].padStart(2, '0');
+          const mm = parts[1].padStart(2, '0');
+          const yyyy = parts[2];
+          cNormalized = `${yyyy}-${mm}-${dd}`;
+        } else {
+          cNormalized = c.fir_date.substring(0, 10);
+        }
+      }
+      if (cNormalized !== sDate) return false;
 
       // Query (complainant name or FIR no) match
       if (searchQuery) {
