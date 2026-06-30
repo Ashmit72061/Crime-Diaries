@@ -1738,8 +1738,7 @@ const renderOccurrenceStep = () => {
     'occurrence_time_type',
     'occurrence_from_date_time',
     'occurrence_to_date_time',
-    'info_received_at_ps_date_time',
-    'local_head'
+    'info_received_at_ps_date_time'
   ];
 
   const occurrencePlaceKeys = [
@@ -4040,7 +4039,7 @@ const renderActionTakenStep = () => {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
       const tabSpecs = [
         { title_en: 'Acts & Sections', title_hi: 'अधिनियम और धाराएं', keys: ['uid', 'district', 'police_station', 'submission_status', 'case_type', 'fir_no', 'fir_date', 'gd_no', 'gd_date', 'gd_time', 'beat_no', 'act_name', 'sections'] },
-        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'local_head', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
+        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
         { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: [
           'complainant_npr', 'complainant_first_name', 'complainant_middle_name', 'complainant_last_name',
           'complainant_gender', 'complainant_marital_status', 'complainant_mobile_country_code', 'complainant_mobile',
