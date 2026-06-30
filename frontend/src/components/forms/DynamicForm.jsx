@@ -1132,6 +1132,7 @@ export default function DynamicForm({
 
 
   const renderActsAndSectionsStep = () => {
+    const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
     const isWritten = values.type_of_information !== 'Oral';
     const acts = values.act_name ? values.act_name.split(',').map(s => s.trim()).filter(Boolean) : [];
     const secs = values.sections ? values.sections.split(',').map(s => s.trim()).filter(Boolean) : [];
