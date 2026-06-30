@@ -616,7 +616,7 @@ export default function DynamicForm({
                   type="text"
                   disabled={readOnly}
                   value={values.gd_no || ''}
-                  onChange={(e) => handleChange('gd_no', e.target.value)}
+                  onChange={(e) => handleChange('gd_no', e.target.value.replace(/\D/g, ''))}
                   className="w-24 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
                   placeholder="GD Number"
                 />
@@ -624,6 +624,7 @@ export default function DynamicForm({
                   type="text"
                   disabled={readOnly}
                   value={values.gd_date_time || ''}
+                  onClick={() => setShowDatePicker(prev => !prev)}
                   onChange={(e) => {
                     const val = e.target.value;
                     handleChange('gd_date_time', val);
@@ -631,8 +632,9 @@ export default function DynamicForm({
                     if (parts[0]) handleChange('gd_date', parts[0]);
                     if (parts[1]) handleChange('gd_time', parts[1]);
                   }}
-                  className="w-48 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
+                  className="w-48 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500 cursor-pointer"
                   placeholder="DD/MM/YYYY HH:MM"
+                  readOnly
                 />
                 <button 
                   ref={searchBtnRef}
@@ -1131,7 +1133,7 @@ export default function DynamicForm({
                     type="text"
                     disabled={readOnly}
                     value={values.gd_no || ''}
-                    onChange={(e) => handleChange('gd_no', e.target.value)}
+                    onChange={(e) => handleChange('gd_no', e.target.value.replace(/\D/g, ''))}
                     className="w-20 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
                     placeholder="Number"
                   />
@@ -1139,6 +1141,7 @@ export default function DynamicForm({
                     type="text"
                     disabled={readOnly}
                     value={values.gd_date_time || ''}
+                    onClick={() => setShowDatePicker(prev => !prev)}
                     onChange={(e) => {
                       const val = e.target.value;
                       handleChange('gd_date_time', val);
@@ -1146,8 +1149,9 @@ export default function DynamicForm({
                       if (parts[0]) handleChange('gd_date', parts[0]);
                       if (parts[1]) handleChange('gd_time', parts[1]);
                     }}
-                    className="w-40 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
+                    className="w-40 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
                     placeholder="DD/MM/YYYY HH:MM"
+                    readOnly
                   />
                   <button 
                     ref={searchBtnRef}
@@ -5108,9 +5112,21 @@ const renderActionTakenStep = () => {
     }
   }, [repeaterState?.property_details?.length, readOnly, recordType]);
 
-  /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
-    const seed = initialValues?.data || initialValues || {};
+    const seed = { ...(initialValues?.data || initialValues || {}) };
+    
+    // Auto-populate GD date & time with current local time if creating a new record and gd_date_time is empty
+    if (!initialValues?.id && !seed.gd_date_time) {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mi = String(now.getMinutes()).padStart(2, '0');
+      seed.gd_date_time = `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+      seed.gd_date = `${dd}/${mm}/${yyyy}`;
+      seed.gd_time = `${hh}:${mi}`;
+    }
     
     // Resolve station and district dynamically based on record metadata or active user node
     const recordPsId = initialValues?.ps_id || initialValues?.psId;

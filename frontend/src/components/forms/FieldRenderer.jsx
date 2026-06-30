@@ -143,21 +143,23 @@ export default function FieldRenderer({ field, value, onChange, readOnly, hasErr
   }
 
 function NicknameChipsField({ disabled, value, onChange, lang, placeholder }) {
-  const list = value ? String(value).split(',').map(v => v.trim()).filter(Boolean) : [];
+  const list = Array.isArray(value)
+    ? value.filter(Boolean)
+    : String(value || '').split(',').map(v => v.trim()).filter(Boolean);
   const [inputVal, setInputVal] = React.useState('');
 
   const handleAdd = () => {
     const trimmed = inputVal.trim();
     if (trimmed && !list.includes(trimmed)) {
       const nextList = [...list, trimmed];
-      onChange(nextList.join(', '));
+      onChange(nextList);
     }
     setInputVal('');
   };
 
   const handleRemove = (item) => {
     const nextList = list.filter(v => v !== item);
-    onChange(nextList.join(', '));
+    onChange(nextList);
   };
 
   return (
@@ -220,7 +222,7 @@ function NicknameChipsField({ disabled, value, onChange, lang, placeholder }) {
   );
 }
 
-  if (key.endsWith('_nickname')) {
+  if (key.endsWith('_nickname') || key.endsWith('_nick_name') || key.endsWith('_alias')) {
     return <NicknameChipsField disabled={readOnly} value={value} onChange={handleChange} lang={lang} placeholder={placeholder} />;
   }
 
