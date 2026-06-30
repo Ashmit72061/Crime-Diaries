@@ -617,7 +617,7 @@ export default function DynamicForm({
                   type="text"
                   disabled={readOnly}
                   value={values.gd_no || ''}
-                  onChange={(e) => handleChange('gd_no', e.target.value)}
+                  onChange={(e) => handleChange('gd_no', e.target.value.replace(/\D/g, ''))}
                   className="w-24 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
                   placeholder="GD Number"
                 />
@@ -625,6 +625,7 @@ export default function DynamicForm({
                   type="text"
                   disabled={readOnly}
                   value={values.gd_date_time || ''}
+                  onClick={() => setShowDatePicker(prev => !prev)}
                   onChange={(e) => {
                     const val = e.target.value;
                     handleChange('gd_date_time', val);
@@ -632,8 +633,9 @@ export default function DynamicForm({
                     if (parts[0]) handleChange('gd_date', parts[0]);
                     if (parts[1]) handleChange('gd_time', parts[1]);
                   }}
-                  className="w-48 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
+                  className="w-48 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500 cursor-pointer"
                   placeholder="DD/MM/YYYY HH:MM"
+                  readOnly
                 />
                 <button 
                   ref={searchBtnRef}
@@ -1132,7 +1134,7 @@ export default function DynamicForm({
                     type="text"
                     disabled={readOnly}
                     value={values.gd_no || ''}
-                    onChange={(e) => handleChange('gd_no', e.target.value)}
+                    onChange={(e) => handleChange('gd_no', e.target.value.replace(/\D/g, ''))}
                     className="w-20 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
                     placeholder="Number"
                   />
@@ -1140,6 +1142,7 @@ export default function DynamicForm({
                     type="text"
                     disabled={readOnly}
                     value={values.gd_date_time || ''}
+                    onClick={() => setShowDatePicker(prev => !prev)}
                     onChange={(e) => {
                       const val = e.target.value;
                       handleChange('gd_date_time', val);
@@ -1147,8 +1150,9 @@ export default function DynamicForm({
                       if (parts[0]) handleChange('gd_date', parts[0]);
                       if (parts[1]) handleChange('gd_time', parts[1]);
                     }}
-                    className="w-40 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500"
+                    className="w-40 h-6 px-1.5 border border-[#7a9cc5] rounded bg-white text-[11px] outline-none focus:border-blue-500 cursor-pointer"
                     placeholder="DD/MM/YYYY HH:MM"
+                    readOnly
                   />
                   <button 
                     ref={searchBtnRef}
@@ -1734,8 +1738,7 @@ const renderOccurrenceStep = () => {
     'occurrence_time_type',
     'occurrence_from_date_time',
     'occurrence_to_date_time',
-    'info_received_at_ps_date_time',
-    'local_head'
+    'info_received_at_ps_date_time'
   ];
 
   const occurrencePlaceKeys = [
@@ -1759,14 +1762,10 @@ const renderOccurrenceStep = () => {
 
         {/* OCCURRENCE INFORMATION */}
         <fieldset className="border border-[#7a9cc5] rounded px-2 py-2">
-          <legend
-            className="px-2 text-[#0d2a4a] font-bold uppercase text-xs cursor-pointer flex justify-between items-center"
-            onClick={() => setShowOccurrencePlace(!showOccurrencePlace)}>
-            <span>Place of Occurrence</span>
-            <span>{showOccurrencePlace ? "▲" : "▼"}</span>
+          <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+            Occurrence Information
           </legend>
 
-        {showOccurrencePlace && (
           <div className="grid grid-cols-[220px_1fr] border border-[#c7d8ea]">
             {(() => {
               const activeFields = occurrenceInfoKeys
@@ -1802,7 +1801,6 @@ const renderOccurrenceStep = () => {
               });
             })()}
           </div>
-        )}
         </fieldset>
 
         {/* FOREST AREA */}
@@ -2279,7 +2277,8 @@ const renderVictimStep = () => {
               {renderVictimModalField('victim_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
               {renderVictimModalField('victim_first_name')}
               {renderVictimModalField('victim_middle_name')}
-              {renderVictimModalField('victim_last_name', null, true)}
+              {renderVictimModalField('victim_last_name')}
+              {renderVictimModalField('victim_nickname', lang === 'hi' ? 'उपनाम / Alias' : 'Nickname/Alias', true)}
             </div>
           </div>
 
@@ -2693,7 +2692,8 @@ const renderAccusedStep = () => {
               {renderAccusedModalField('accused_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
               {renderAccusedModalField('accused_first_name')}
               {renderAccusedModalField('accused_middle_name')}
-              {renderAccusedModalField('accused_last_name', null, true)}
+              {renderAccusedModalField('accused_last_name')}
+              {renderAccusedModalField('accused_nickname', lang === 'hi' ? 'उपनाम / Alias' : 'Nickname/Alias', true)}
             </div>
           </div>
 
@@ -3946,7 +3946,7 @@ const renderIntimationStep = () => {
 const renderActionTakenStep = () => {
   const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
   const actionTakenKeys = [
-    'io_rank', 'io_name', 'io_pis', 'io_mobile',
+    'io_name', 'io_rank', 'io_pis', 'io_mobile',
     'status', 'rc_no', 'disposal_type', 'transfer_to',
     'remarks', 'cctns_flag', 'zero_fir_flag',
   ];
@@ -4036,7 +4036,7 @@ const renderActionTakenStep = () => {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
       const tabSpecs = [
         { title_en: 'Acts & Sections', title_hi: 'अधिनियम और धाराएं', keys: ['uid', 'district', 'police_station', 'submission_status', 'case_type', 'fir_no', 'fir_date', 'gd_no', 'gd_date', 'gd_time', 'beat_no', 'act_name', 'sections'] },
-        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'local_head', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
+        { title_en: 'Occurrence',      title_hi: 'घटना', keys: ['occurrence_time_type', 'occurrence_from_date_time', 'occurrence_to_date_time', 'info_received_at_ps_date_time', 'occurrence_house_no', 'occurrence_street', 'occurrence_colony', 'occurrence_city_town_village', 'occurrence_tehsil_block_mandal', 'occurrence_pincode', 'occurrence_state', 'occurrence_district', 'occurrence_police_station', 'forest_place'] },
         { title_en: 'Complainant',     title_hi: 'शिकायतकर्ता', keys: [
           'complainant_npr', 'complainant_first_name', 'complainant_middle_name', 'complainant_last_name',
           'complainant_gender', 'complainant_marital_status', 'complainant_mobile_country_code', 'complainant_mobile',
@@ -4052,7 +4052,7 @@ const renderActionTakenStep = () => {
         ] },
         { title_en: 'FIR Contents',    title_hi: 'प्राथमिकी विवरण', keys: ['brief_facts'] },
         { title_en: 'Victim Information', title_hi: 'पीड़ित का विवरण', keys: [
-          'victim_npr', 'victim_first_name', 'victim_middle_name', 'victim_last_name',
+          'victim_npr', 'victim_first_name', 'victim_middle_name', 'victim_last_name', 'victim_nickname',
           'victim_gender', 'victim_marital_status', 'victim_mobile_country_code', 'victim_mobile',
           'victim_email', 'victim_relation_type', 'victim_relative_name',
           'victim_dob', 'victim_age_year', 'victim_age_month', 'victim_birth_year',
@@ -4065,7 +4065,7 @@ const renderActionTakenStep = () => {
           'victim_perm_state', 'victim_perm_district', 'victim_perm_police_station', 'victim_perm_pincode'
         ] },
         { title_en: 'Accused',          title_hi: 'आरोपी', keys: [
-          'accused_npr', 'accused_first_name', 'accused_middle_name', 'accused_last_name',
+          'accused_npr', 'accused_first_name', 'accused_middle_name', 'accused_last_name', 'accused_nickname',
           'accused_gender', 'accused_marital_status', 'accused_mobile_country_code', 'accused_mobile',
           'accused_email', 'accused_relation_type', 'accused_relative_name',
           'accused_dob', 'accused_age_year', 'accused_age_month', 'accused_birth_year',
@@ -4080,7 +4080,7 @@ const renderActionTakenStep = () => {
         { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: [
           'property_major_category', 'property_minor_category', 'property_details', 'property_stolen_recovered'
         ], is_repeater: true, entity_type: 'property', section: 'property_details' },
-        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_rank', 'io_name', 'io_pis', 'io_mobile', 'status', 'rc_no', 'disposal_type', 'transfer_to', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
+        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_rank', 'io_pis', 'io_mobile', 'status', 'rc_no', 'disposal_type', 'transfer_to', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
       ];
 
       return tabSpecs.map(spec => {
@@ -4983,10 +4983,10 @@ const renderActionTakenStep = () => {
   const datePickerRef = useRef(null);
   const searchBtnRef  = useRef(null);
 
-  /* ── Close date picker on click-outside ────────────────────────────────── */
   useEffect(() => {
     if (!showDatePicker) return;
     const handleClickOutside = (e) => {
+      if (e.target?.placeholder === 'DD/MM/YYYY HH:MM') return;
       if (
         datePickerRef.current && !datePickerRef.current.contains(e.target) &&
         searchBtnRef.current  && !searchBtnRef.current.contains(e.target)
@@ -5114,9 +5114,41 @@ const renderActionTakenStep = () => {
     }
   }, [repeaterState?.property_details?.length, readOnly, recordType]);
 
-  /* ── Seed initial values & System Fields ──────────────────────────────── */
   useEffect(() => {
-    const seed = initialValues?.data || initialValues || {};
+    const seed = { ...(initialValues?.data || initialValues || {}) };
+    
+    // Auto-populate GD date & time with current local time if creating a new record and gd_date_time is empty
+    if (!initialValues?.id && !seed.gd_date_time) {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mi = String(now.getMinutes()).padStart(2, '0');
+      seed.gd_date_time = `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+      if (recordType === 'UIDB') {
+        seed.dd_date = `${dd}/${mm}/${yyyy}`;
+        seed.dd_time = `${hh}:${mi}`;
+      } else {
+        seed.gd_date = `${dd}/${mm}/${yyyy}`;
+        seed.gd_time = `${hh}:${mi}`;
+      }
+    }
+
+    // Combine date and time into gd_date_time for existing records if empty
+    if (!seed.gd_date_time) {
+      if (recordType === 'UIDB') {
+        const dDate = seed.dd_date || seed.ddDate;
+        const dTime = seed.dd_time || seed.ddTime;
+        if (dDate && dTime) {
+          seed.gd_date_time = `${dDate} ${dTime}`;
+        }
+      } else {
+        if (seed.gd_date && seed.gd_time) {
+          seed.gd_date_time = `${seed.gd_date} ${seed.gd_time}`;
+        }
+      }
+    }
     
     // Resolve station and district dynamically based on record metadata or active user node
     const recordPsId = initialValues?.ps_id || initialValues?.psId;
