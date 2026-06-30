@@ -3946,7 +3946,7 @@ const renderIntimationStep = () => {
 const renderActionTakenStep = () => {
   const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
   const actionTakenKeys = [
-    'io_rank', 'io_name', 'io_pis', 'io_mobile',
+    'io_name', 'io_rank', 'io_pis', 'io_mobile',
     'status', 'rc_no', 'disposal_type', 'transfer_to',
     'remarks', 'cctns_flag', 'zero_fir_flag',
   ];
@@ -4080,7 +4080,7 @@ const renderActionTakenStep = () => {
         { title_en: 'Property of Interest', title_hi: 'संबद्ध संपत्ति', keys: [
           'property_major_category', 'property_minor_category', 'property_details', 'property_stolen_recovered'
         ], is_repeater: true, entity_type: 'property', section: 'property_details' },
-        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_rank', 'io_name', 'io_pis', 'io_mobile', 'status', 'rc_no', 'disposal_type', 'transfer_to', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
+        { title_en: 'Action Taken',    title_hi: 'की गई कार्रवाई', keys: ['io_name', 'io_rank', 'io_pis', 'io_mobile', 'status', 'rc_no', 'disposal_type', 'transfer_to', 'remarks', 'cctns_flag', 'zero_fir_flag'] },
       ];
 
       return tabSpecs.map(spec => {
