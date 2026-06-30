@@ -19,6 +19,7 @@ export default function PoliceNavbar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [hoveredNotifId, setHoveredNotifId] = useState(null);
   const notifPanelRef = useRef(null);
   const profilePanelRef = useRef(null);
   const location = useLocation();
@@ -362,9 +363,18 @@ export default function PoliceNavbar({
                       style={{
                         padding: '12px 14px',
                         borderBottom: '1px solid rgba(255,255,255,0.06)',
-                        background: notif.is_read ? 'transparent' : 'rgba(96, 165, 250, 0.05)',
+                        background: hoveredNotifId === notif.id
+                          ? (notif.is_read ? 'rgba(0, 0, 0, 0.04)' : 'rgba(96, 165, 250, 0.12)')
+                          : (notif.is_read ? 'transparent' : 'rgba(96, 165, 250, 0.05)'),
                         borderLeft: notif.is_read ? 'none' : '3px solid #60a5fa',
                         transition: 'background 0.2s',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={() => setHoveredNotifId(notif.id)}
+                      onMouseLeave={() => setHoveredNotifId(null)}
+                      onClick={() => {
+                        navigate('/queue');
+                        setNotificationsOpen(false);
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
