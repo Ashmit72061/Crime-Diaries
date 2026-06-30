@@ -58,7 +58,7 @@ export default function CompilationUI() {
 
   const today = new Date().toISOString().split('T')[0];
   const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo]   = useState('');         // optional; blank = single day
+  const [dateTo, setDateTo]   = useState(today);      // defaults to same as dateFrom (single-day export)
   const [exporting, setExporting] = useState(false);
 
   // Dropdown UI states
@@ -124,11 +124,17 @@ export default function CompilationUI() {
       return res.data.data;
     },
     onSuccess: (data) => {
-      toast.success(`Compilation created — ${data?.compiled_summary?.total_records || 0} records bundled.`);
+      const total = data?.compiled_summary?.total_records ?? 0;
+      if (total > 0) {
+        toast.success(`Compilation created — ${total} DISTRICT_REVIEW records bundled.`);
+      } else {
+        toast('No approved records to bundle yet — export will use all records for the date.', { icon: 'ℹ️' });
+      }
       queryClient.invalidateQueries({ queryKey: ['compilations'] });
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to generate compilation');
+      // Non-fatal — daily diary export proceeds independently
+      console.warn('[Compilation] Create failed (non-fatal):', err.response?.data?.message);
     },
   });
 
@@ -153,7 +159,11 @@ export default function CompilationUI() {
 
     // 1. Persist compilation in DB (non-fatal — continues even if no DISTRICT_REVIEW records)
     try {
-      await createCompMutation.mutateAsync(dateFrom);
+      await createCompMutation.mutateAsync({
+        period: dateFrom,
+        fromDate: dateFrom,
+        toDate: dateTo || dateFrom
+      });
     } catch {
       // onError toast already shown; continue to export with date-based fallback
     }
@@ -197,7 +207,7 @@ export default function CompilationUI() {
             const statusJson = await statusRes.json();
             const status = statusJson?.data?.job?.status || statusJson?.data?.status;
             if (status === 'READY') { clearInterval(iv); resolve(); }
-            else if (status === 'FAILED' || attempts > 40) {
+            else if (status === 'FAILED' || attempts > 120) {
               clearInterval(iv);
               reject(new Error(status === 'FAILED' ? 'Export failed on server' : 'Export timed out'));
             }
@@ -214,27 +224,34 @@ export default function CompilationUI() {
 
     toast.dismiss(loadingToastId);
 
-    // 4. Download the completed file
+    // 4. Download the completed file — use direct URL navigation so the browser
+    //    handles the download natively with the correct .xlsx Content-Disposition.
+    //    The /reports/download/:id/:filename? endpoint has no auth guard, so no credentials needed.
     try {
-      const dlRes = await fetch(`${BASE_URL}/reports/download/${jobId}`, { headers: authHeaders });
-      if (!dlRes.ok) throw new Error(`Download returned ${dlRes.status}`);
-      const blob = new Blob([await dlRes.arrayBuffer()], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const psSuffix = selectedPSIds.size === 0
-        ? '_All_Stations'
+      const fmtDate = (iso) => {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m,10)-1];
+        return `${d}${mon}${y}`;
+      };
+      const dateLabel = dateTo && dateTo !== dateFrom
+        ? `${fmtDate(dateFrom)}_to_${fmtDate(dateTo)}`
+        : fmtDate(dateFrom);
+      const psLabel = selectedPSIds.size === 0
+        ? 'AllStations'
         : selectedPSIds.size === 1
-          ? `_${psList.find(ps => selectedPSIds.has(ps.id))?.code || 'Station'}`
-          : '_Multiple_Stations';
-      const dateSuffix = dateTo && dateTo !== dateFrom ? `${dateFrom}_to_${dateTo}` : dateFrom;
-      link.download = `Daily_Diary_${dateSuffix}${psSuffix}.xlsx`;
+          ? (psList.find(ps => selectedPSIds.has(ps.id))?.name || 'Station').replace(/\s+/g, '_')
+          : `${selectedPSIds.size}Stations`;
+      const filename = `Daily_Diary_${dateLabel}_${psLabel}.xlsx`;
+
+      const downloadUrl = `${BASE_URL}/reports/download/${jobId}/${filename}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
-      setTimeout(() => { link.remove(); URL.revokeObjectURL(url); }, 500);
-      toast.success('Daily Diary downloaded successfully!');
+      setTimeout(() => { document.body.removeChild(link); }, 1000);
+      toast.success('Daily Diary Excel downloaded! Check your Downloads folder.');
     } catch (err) {
       console.error('[CompilationUI] Download failed:', err);
       toast.error('Export ready but download failed. Try again.');
@@ -302,8 +319,13 @@ export default function CompilationUI() {
             </span>
             <input
               type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              value={dateFrom}
+              max={today}
+              onChange={(e) => {
+                const val = e.target.value;
+                setDateFrom(val);
+                if (dateTo < val) setDateTo(val);
+              }}
               className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
             />
           </div>
@@ -315,8 +337,10 @@ export default function CompilationUI() {
             </span>
             <input
               type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              value={dateTo}
+              min={dateFrom}
+              max={today}
+              onChange={(e) => setDateTo(e.target.value)}
               className="bg-white border border-slate-200 rounded-lg text-xs text-slate-800 px-3 py-2.5 outline-none focus:border-[var(--accent-color)] transition-all font-semibold"
             />
           </div>
