@@ -1417,6 +1417,25 @@ export default function DynamicForm({
                 </td>
               </tr>
 
+              {/* Row: Case Registration Type */}
+              <tr className="border-b border-[#7a9cc5]">
+                <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
+                  {lang === 'hi' ? 'मामला पंजीकरण प्रकार' : 'Case Registration Type'}
+                </td>
+                <td className="w-2/3 bg-white px-2.5 py-1">
+                  <div className="w-64">
+                    <FieldRenderer
+                      field={allFields.find(f => f.field_key === 'case_type')}
+                      value={values.case_type || ''}
+                      onChange={handleChange}
+                      readOnly={readOnly}
+                      lang={lang}
+                      values={values}
+                    />
+                  </div>
+                </td>
+              </tr>
+
               {/* Row 3: Complaint No. */}
               <tr className="border-b border-[#7a9cc5]">
                 <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
