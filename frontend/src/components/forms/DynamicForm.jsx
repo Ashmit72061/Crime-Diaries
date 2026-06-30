@@ -585,7 +585,7 @@ export default function DynamicForm({
     return (
       <div className="space-y-4">
         {/* Top card fields */}
-        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-visible mt-2">
             {renderReadOnlyRow(lang === 'hi' ? 'रिकॉर्ड यूआईडी (UID)' : 'Record UID', values.uid || 'NEW_DRAFT_PENDING')}
             {renderReadOnlyRow(lang === 'hi' ? 'जिला' : 'District', values.district || user?.district)}
             {renderReadOnlyRow(lang === 'hi' ? 'थाना' : 'Police Station', values.police_station || user?.police_station)}
@@ -630,8 +630,22 @@ export default function DynamicForm({
                     const val = e.target.value;
                     handleChange('gd_date_time', val);
                     const parts = val.split(' ');
-                    if (parts[0]) handleChange('gd_date', parts[0]);
-                    if (parts[1]) handleChange('gd_time', parts[1]);
+                    if (parts[0]) {
+                      const dVal = parts[0];
+                      if (recordType === 'UIDB') {
+                        handleChange('dd_date', dVal);
+                      } else {
+                        handleChange('gd_date', dVal);
+                      }
+                    }
+                    if (parts[1]) {
+                      const tVal = parts[1];
+                      if (recordType === 'UIDB') {
+                        handleChange('dd_time', tVal);
+                      } else {
+                        handleChange('gd_time', tVal);
+                      }
+                    }
                   }}
                   className="w-48 h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500 cursor-pointer"
                   placeholder="DD/MM/YYYY HH:MM"
@@ -700,9 +714,17 @@ export default function DynamicForm({
                     const hh = String(pickerHour).padStart(2, '0');
                     const mi = String(pickerMinute).padStart(2, '0');
                     const formatted = `${dd}/${mm}/${pickerYear} ${hh}:${mi}`;
+                    const dVal = `${dd}/${mm}/${pickerYear}`;
+                    const tVal = `${hh}:${mi}`;
+                    
                     handleChange('gd_date_time', formatted);
-                    handleChange('gd_date', `${dd}/${mm}/${pickerYear}`);
-                    handleChange('gd_time', `${hh}:${mi}`);
+                    if (recordType === 'UIDB') {
+                      handleChange('dd_date', dVal);
+                      handleChange('dd_time', tVal);
+                    } else {
+                      handleChange('gd_date', dVal);
+                      handleChange('gd_time', tVal);
+                    }
                     setShowDatePicker(false);
                   };
 
