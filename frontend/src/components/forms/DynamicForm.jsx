@@ -2282,7 +2282,8 @@ const renderVictimStep = () => {
               {renderVictimModalField('victim_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
               {renderVictimModalField('victim_first_name')}
               {renderVictimModalField('victim_middle_name')}
-              {renderVictimModalField('victim_last_name', null, true)}
+              {renderVictimModalField('victim_last_name')}
+              {renderVictimModalField('victim_nickname', null, true)}
             </div>
           </div>
 
@@ -2696,7 +2697,8 @@ const renderAccusedStep = () => {
               {renderAccusedModalField('accused_npr', lang === 'hi' ? 'यूआईडी (UID)' : 'UID')}
               {renderAccusedModalField('accused_first_name')}
               {renderAccusedModalField('accused_middle_name')}
-              {renderAccusedModalField('accused_last_name', null, true)}
+              {renderAccusedModalField('accused_last_name')}
+              {renderAccusedModalField('accused_nickname', null, true)}
             </div>
           </div>
 
