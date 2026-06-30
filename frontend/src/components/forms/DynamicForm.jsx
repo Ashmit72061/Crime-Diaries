@@ -571,12 +571,12 @@ export default function DynamicForm({
     const chosenActObj = actsSectionsRegistry.find(item => item.act === newAct);
     const availableSections = chosenActObj ? chosenActObj.sections : [];
 
-    const renderReadOnlyRow = (label, val, isLast = false) => (
+    const renderReadOnlyRow = (label, val, isFirst = false, isLast = false) => (
       <React.Fragment>
-        <div className={`bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center min-h-[40px] ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+        <div className={`bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center min-h-[40px] ${!isLast ? 'border-b border-[#c7d8ea]' : ''} ${isFirst ? 'rounded-tl' : ''}`}>
           {label}
         </div>
-        <div className={`px-3 py-1 bg-white text-slate-700 text-[12px] flex items-center min-h-[40px] ${!isLast ? 'border-b border-[#c7d8ea]' : ''}`}>
+        <div className={`px-3 py-1 bg-white text-slate-700 text-[12px] flex items-center min-h-[40px] ${!isLast ? 'border-b border-[#c7d8ea]' : ''} ${isFirst ? 'rounded-tr' : ''}`}>
           {val || '—'}
         </div>
       </React.Fragment>
@@ -585,8 +585,8 @@ export default function DynamicForm({
     return (
       <div className="space-y-4">
         {/* Top card fields */}
-        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
-            {renderReadOnlyRow(lang === 'hi' ? 'रिकॉर्ड यूआईडी (UID)' : 'Record UID', values.uid || 'NEW_DRAFT_PENDING')}
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-visible mt-2">
+            {renderReadOnlyRow(lang === 'hi' ? 'रिकॉर्ड यूआईडी (UID)' : 'Record UID', values.uid || 'NEW_DRAFT_PENDING', true)}
             {renderReadOnlyRow(lang === 'hi' ? 'जिला' : 'District', values.district || user?.district)}
             {renderReadOnlyRow(lang === 'hi' ? 'थाना' : 'Police Station', values.police_station || user?.police_station)}
             {renderReadOnlyRow(lang === 'hi' ? 'प्रस्तुति स्थिति' : 'Submission Status', values.status || 'DRAFT')}
@@ -609,10 +609,10 @@ export default function DynamicForm({
 
             {/* GD Number, Date & Time */}
             <React.Fragment>
-              <div className="bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center min-h-[40px]">
+              <div className="bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center min-h-[40px] rounded-bl">
                 {lang === 'hi' ? 'जीडी नंबर, दिनांक और समय *' : 'GD Number, Date & Time *'}
               </div>
-              <div className="px-3 py-1 bg-white flex items-center gap-2 min-h-[40px] relative">
+              <div className="px-3 py-1 bg-white flex items-center gap-2 min-h-[40px] relative rounded-br">
                 <input
                   type="text"
                   disabled={readOnly}
@@ -5172,6 +5172,19 @@ const renderActionTakenStep = () => {
       police_station: resolvedStation,
       submission_status: initialValues?.current_status || seed.submission_status || 'DRAFT'
     };
+
+    // Formulate gd_date_time if missing but gd_date/gd_time exist
+    if (!updatedSeed.gd_date_time && updatedSeed.gd_date) {
+      let datePart = String(updatedSeed.gd_date).split('T')[0];
+      if (datePart.includes('-')) {
+        const parts = datePart.split('-');
+        if (parts.length === 3) {
+          datePart = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        }
+      }
+      const timePart = updatedSeed.gd_time || '00:00';
+      updatedSeed.gd_date_time = `${datePart} ${timePart.substring(0, 5)}`;
+    }
     
     setValues(updatedSeed);
     if (initialValues?.id) {
