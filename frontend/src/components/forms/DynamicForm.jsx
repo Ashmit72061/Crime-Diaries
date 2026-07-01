@@ -4160,6 +4160,30 @@ const renderActionTakenStep = () => {
 
     if (recordType === 'ARREST' && (caseType === 'against_fir' || caseType === 'kalandra' || !caseType)) {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
+      const statusField = allFields.find(f => f.field_key === 'status');
+      if (statusField) {
+        statusField.options = JSON.stringify([
+          { value: 'police_custody', label_en: 'Police Custody', label_hi: 'पुलिस हिरासत' },
+          { value: 'bail', label_en: 'Released on Bail', label_hi: 'जमानत पर रिहा' },
+          { value: 'judicial_custody', label_en: 'Sent to Judicial Custody', label_hi: 'न्यायिक हिरासत में' },
+          { value: 'released', label_en: 'Released', label_hi: 'रिहा' },
+          { value: 'others', label_en: 'Others / Discharged', label_hi: 'अन्य / आरोपमुक्त' }
+        ]);
+        statusField.label_en = 'Arrestee Status';
+        statusField.label_hi = 'बंदी की स्थिति';
+      }
+      if (!allFields.find(f => f.field_key === 'recovery')) {
+        allFields.push({
+          field_key: 'recovery',
+          field_type: 'TEXTAREA',
+          label_en: 'Recovered Material Items',
+          label_hi: 'बरामद की गई सामग्री',
+          visible_to_levels: ['L1', 'L2', 'L3'],
+          editable_by_levels: ['L1', 'L2', 'L3'],
+          section: 'custody_status',
+          validation_rules: JSON.stringify({ required: false })
+        });
+      }
       const effectiveCaseType = caseType || 'kalandra'; // null = edit mode, treat as kalandra
       const tabSpecs = [];
       if (effectiveCaseType === 'against_fir') {
@@ -4176,7 +4200,7 @@ const renderActionTakenStep = () => {
           title_hi: 'सामान्य जानकारी',
           keys: [
             'uid', 'district', 'police_station', 'submission_status', 'case_type',
-            'gd_no', 'gd_date', 'gd_time', 'act_name', 'sections', 'crime_head', 'status', 'linked_fir_dd_no'
+            'gd_no', 'gd_date', 'gd_time', 'act_name', 'sections', 'crime_head', 'linked_fir_dd_no'
           ]
         },
         {
@@ -4201,7 +4225,7 @@ const renderActionTakenStep = () => {
         {
           title_en: 'Custody Status',
           title_hi: 'हिरासत की स्थिति',
-          keys: ['other_status_reason', 'recovery']
+          keys: ['status', 'other_status_reason', 'recovery']
         },
         {
           title_en: 'Particulars',
