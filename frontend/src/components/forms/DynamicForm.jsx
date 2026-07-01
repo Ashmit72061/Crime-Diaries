@@ -4200,6 +4200,26 @@ const renderActionTakenStep = () => {
         });
       }
 
+      if (!allFields.find(f => f.field_key === 'scheme_of_arrest')) {
+        allFields.push({
+          field_key: 'scheme_of_arrest',
+          field_type: 'SELECT',
+          label_en: 'Scheme of Arrest',
+          label_hi: 'गिरफ्तारी की योजना',
+          visible_to_levels: ['L1', 'L2', 'L3'],
+          editable_by_levels: ['L1', 'L2', 'L3'],
+          section: 'arrested_info',
+          validation_rules: JSON.stringify({ required: false }),
+          options: JSON.stringify([
+            { value: 'Integrated Pride', label_en: 'Integrated Pride', label_hi: 'Integrated Pride' },
+            { value: 'Group Patrolling', label_en: 'Group Patrolling', label_hi: 'Group Patrolling' },
+            { value: 'Anti-snatching', label_en: 'Anti-snatching', label_hi: 'Anti-snatching' },
+            { value: 'By Prahari', label_en: 'By Prahari', label_hi: 'By Prahari' },
+            { value: 'By Eyes & Ears Scheme Members', label_en: 'By Eyes & Ears Scheme Members', label_hi: 'By Eyes & Ears Scheme Members' }
+          ])
+        });
+      }
+
       const effectiveCaseType = caseType || 'kalandra'; // null = edit mode, treat as kalandra
       const tabSpecs = [];
       if (effectiveCaseType === 'against_fir') {
@@ -4225,7 +4245,8 @@ const renderActionTakenStep = () => {
           keys: [
             'arrest_date', 'arrest_place',
             'nick_name', 'arrested_mobile_country_code', 'arrested_npr', 'arrested_first_name', 'arrested_middle_name', 'arrested_last_name',
-            'arrested_gender', 'arrested_marital_status', 'arrested_relation_type', 'arrested_relative_name', 'arrested_landline', 'arrested_mobile', 'arrested_email',
+            'arrested_gender', 'arrested_marital_status', 'arrested_relation_type', 'arrested_relative_name', 'arrested_mobile',
+            'scheme_of_arrest',
             'arrested_dob', 'arrested_age_year', 'arrested_age_month', 'arrested_birth_year', 'arrested_age_range_from', 'arrested_age_range_to',
             'prev_involvement', 'proclaimed_offender',
             'arrested_present_address', 'arrested_perm_same', 'arrested_house_no', 'arrested_street', 'arrested_colony', 'arrested_city_town_village',

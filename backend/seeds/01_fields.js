@@ -1012,12 +1012,6 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       validation_rules: JSON.stringify({ required: false })
     },
     {
-      id: `${prefix}_landline`,        field_key: `${prefix}_landline`,        field_type: 'TEXT',
-      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Landline No.`, label_hi: `${labelPrefixHi} लैंडलाइन नंबर`,
-      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
-      sort_order: baseOrder + 7, is_active: true, scope_level: 'global'
-    },
-    {
       id: `${prefix}_mobile_country_code`, field_key: `${prefix}_mobile_country_code`, field_type: 'TEXT',
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Mobile Country Code`, label_hi: `${labelPrefixHi} मोबाइल देश कोड`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
@@ -1030,11 +1024,47 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       sort_order: baseOrder + 8, is_active: true, scope_level: 'global'
     },
     {
-      id: `${prefix}_email`,           field_key: `${prefix}_email`,           field_type: 'TEXT',
-      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Email ID`, label_hi: `${labelPrefixHi} ईमेल आईडी`,
-      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
-      sort_order: baseOrder + 8.1, is_active: true, scope_level: 'global'
+  id: 'AP_XX',
+  field_key: 'scheme_of_arrest',
+  field_type: 'SELECT',
+  applicable_record_types: JSON.stringify(['ARREST']),
+  label_en: 'Scheme of Arrest',
+  label_hi: 'गिरफ्तारी की योजना',
+  visible_to_levels: L,
+  editable_by_levels: E,
+  section: 'person_particulars',
+  sort_order: 7.5,   // Mobile No. ke baad wala order
+  validation_rules: JSON.stringify({ required: false }),
+  options: JSON.stringify([
+    {
+      value: 'Integrated Pride',
+      label_en: 'Integrated Pride',
+      label_hi: 'Integrated Pride'
     },
+    {
+      value: 'Group Patrolling',
+      label_en: 'Group Patrolling',
+      label_hi: 'Group Patrolling'
+    },
+    {
+      value: 'Anti-snatching',
+      label_en: 'Anti-snatching',
+      label_hi: 'Anti-snatching'
+    },
+    {
+      value: 'By Prahari',
+      label_en: 'By Prahari',
+      label_hi: 'By Prahari'
+    },
+    {
+      value: 'By Eyes & Ears Scheme Members',
+      label_en: 'By Eyes & Ears Scheme Members',
+      label_hi: 'By Eyes & Ears Scheme Members'
+    }
+  ])
+},
+
+
     {
       id: `${prefix}_dob`,             field_key: `${prefix}_dob`,             field_type: 'DATE',
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Date of Birth`, label_hi: `${labelPrefixHi} जन्म तिथि`,
