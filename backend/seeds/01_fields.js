@@ -747,7 +747,7 @@ const fields = [
     { value: 'Lockup', label_en: 'Lockup', label_hi: 'Lockup' },
     { value: 'Fine', label_en: 'Fine', label_hi: 'Fine' },
     { value: '35(3) BNS Notice', label_en: '35(3) BNS Notice', label_hi: '35(3) BNS Notice' }]) },
-  { id: 'A_32', field_key: 'scheme_of_arrest',            field_type: 'SELECT',   applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Scheme of Arrest',                  label_hi: 'गिरफ्तारी की योजना',                  visible_to_levels: L, editable_by_levels: E, section: 'arrested_info', sort_order: 10.5, validation_rules: JSON.stringify({ required: false }), options: JSON.stringify([
+  { id: 'A_31', field_key: 'scheme_of_arrest',            field_type: 'SELECT',   applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Scheme of Arrest',                  label_hi: 'गिरफ्तारी की योजना',                  visible_to_levels: L, editable_by_levels: E, section: 'arrested_info', sort_order: 10.5, validation_rules: JSON.stringify({ required: false }), options: JSON.stringify([
     { value: 'Integrated Pride', label_en: 'Integrated Pride', label_hi: 'Integrated Pride' },
     { value: 'Group Patrolling', label_en: 'Group Patrolling', label_hi: 'Group Patrolling' },
     { value: 'Anti-snatching', label_en: 'Anti-snatching', label_hi: 'Anti-snatching' },
@@ -1028,6 +1028,20 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Mobile No.`, label_hi: `${labelPrefixHi} मोबाइल नंबर`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
       sort_order: baseOrder + 8, is_active: true, scope_level: 'global'
+    },
+    {
+      id: `${prefix}_qualification`,   field_key: `${prefix}_qualification`,   field_type: 'SELECT',
+      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Qualification`, label_hi: `${labelPrefixHi} योग्यता`,
+      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
+      sort_order: baseOrder + 8.5, is_active: true, scope_level: 'global',
+      validation_rules: JSON.stringify({ required: false }),
+      options: JSON.stringify([
+        { value: 'Uneducated', label_en: 'Uneducated', label_hi: 'अशिक्षित' },
+        { value: '10th', label_en: '10th', label_hi: '10वीं' },
+        { value: '10+2', label_en: '10+2', label_hi: '12वीं' },
+        { value: 'Graduate', label_en: 'Graduate', label_hi: 'स्नातक' },
+        { value: 'Post-Graduate', label_en: 'Post-Graduate', label_hi: 'स्नातकोत्तर' }
+      ])
     },
     {
       id: `${prefix}_dob`,             field_key: `${prefix}_dob`,             field_type: 'DATE',
