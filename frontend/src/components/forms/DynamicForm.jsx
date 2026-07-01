@@ -3377,6 +3377,21 @@ const renderArrestedStep = () => {
   const renderArrestedModalField = (key, customLabel = null, isLast = false, forceReadOnly = false) => {
     const field = allFields.find(f => f.field_key === key);
     if (!field) return null;
+
+    if (field.show_when) {
+      try {
+        const cond = typeof field.show_when === 'string' ? JSON.parse(field.show_when) : field.show_when;
+        if (cond && cond.field) {
+          const val = arrestedTempValues[cond.field];
+          const checkVals = Array.isArray(cond.value) ? cond.value : [cond.value];
+          const isShown = checkVals.some(v => String(v || '').toLowerCase() === String(val || '').toLowerCase());
+          if (!isShown) return null;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const label = customLabel || (lang === 'hi' ? (field.label_hi || field.label_en) : field.label_en);
     const rules = parseRules(field.validation_rules);
     const isRequired = !!rules.required || key === 'arrested_first_name' || key === 'arrested_gender';
@@ -3519,6 +3534,21 @@ const renderArrestedStep = () => {
           {renderArrestedModalField('arresting_officer')}
           {renderArrestedModalField('arresting_officer_mobile')}
           {renderArrestedModalField('listed_criminal', null, true)}
+        </div>
+      </fieldset>
+    );
+  };
+
+  const renderArrestedCustodyStatusSubTab = () => {
+    return (
+      <fieldset className="bg-white">
+        <legend className="px-2 text-[#0d2a4a] font-bold uppercase text-xs">
+          {lang === 'hi' ? 'हिरासत की स्थिति' : 'Custody Status'}
+        </legend>
+        <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
+          {renderArrestedModalField('status')}
+          {renderArrestedModalField('other_status_reason')}
+          {renderArrestedModalField('recovery', null, true)}
         </div>
       </fieldset>
     );
@@ -3677,6 +3707,7 @@ const renderArrestedStep = () => {
                 { id: 'arrest_details', label_en: 'Arrest Details', label_hi: 'गिरफ्तारी का विवरण' },
                 { id: 'person_particulars', label_en: 'Person Particulars', label_hi: 'व्यक्तिगत जानकारी' },
                 { id: 'particular_details', label_en: 'Particular Details', label_hi: 'विवरण' },
+                { id: 'custody_status', label_en: 'Custody Status', label_hi: 'हिरासत की स्थिति' },
                 { id: 'address', label_en: 'Address', label_hi: 'पता' }
               ].map(t => (
                 <button
@@ -3699,6 +3730,7 @@ const renderArrestedStep = () => {
               {arrestedSubTab === 'arrest_details' && renderArrestedDetailsSubTab()}
               {arrestedSubTab === 'person_particulars' && renderArrestedPersonalInfoSubTab()}
               {arrestedSubTab === 'particular_details' && renderArrestedParticularDetailsSubTab()}
+              {arrestedSubTab === 'custody_status' && renderArrestedCustodyStatusSubTab()}
               {arrestedSubTab === 'address' && renderArrestedAddressSubTab()}
             </div>
 
@@ -4173,6 +4205,7 @@ const renderActionTakenStep = () => {
             'arrested_dob', 'arrested_age_year', 'arrested_age_month', 'arrested_birth_year',
             'prev_involvement', 'proclaimed_offender',
             'nafis_prepared', 'dossier_prepared', 'arresting_officer_mobile', 'arresting_officer', 'listed_criminal',
+            'status', 'other_status_reason', 'recovery',
             'arrested_present_address', 'arrested_perm_same', 'arrested_house_no', 'arrested_street', 'arrested_colony', 'arrested_city_town_village',
             'arrested_tehsil_block_mandal', 'arrested_country', 'arrested_state', 'arrested_district', 'arrested_police_station', 'arrested_pincode',
             'arrested_perm_address', 'arrested_perm_country', 'arrested_perm_state', 'arrested_perm_district',
@@ -4183,11 +4216,7 @@ const renderActionTakenStep = () => {
           person_type: 'ARRESTED',
           section: 'arrested_info'
         },
-        {
-          title_en: 'Custody Status',
-          title_hi: 'हिरासत की स्थिति',
-          keys: ['status', 'other_status_reason', 'recovery']
-        },
+
         {
           title_en: 'Particulars',
           title_hi: 'विवरण',
@@ -4733,7 +4762,7 @@ const renderActionTakenStep = () => {
   };
 
   const saveArrestedEntry = () => {
-    const arrestedFields = allSchemaFields.filter(f => f.field_key?.startsWith('arrested_') || f.field_key?.startsWith('arrest_') || f.section === 'arrestee_info' || f.section === 'arrested_personal_info' || f.section === 'arrested_address' || f.section === 'arrest_details' || f.field_key === 'scheme_of_arrest');
+    const arrestedFields = allSchemaFields.filter(f => f.field_key?.startsWith('arrested_') || f.field_key?.startsWith('arrest_') || f.section === 'arrestee_info' || f.section === 'arrested_personal_info' || f.section === 'arrested_address' || f.section === 'arrest_details' || f.field_key === 'scheme_of_arrest' || f.section === 'custody_status' || f.field_key === 'status');
     const errs = {};
     const touchedFields = {};
 
