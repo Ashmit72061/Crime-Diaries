@@ -3513,7 +3513,12 @@ const renderArrestedStep = () => {
         </legend>
         <div className="grid grid-cols-[220px_1fr] border border-[#7a9cc5] rounded overflow-hidden mt-2">
           {renderArrestedModalField('prev_involvement')}
-          {renderArrestedModalField('proclaimed_offender', null, true)}
+          {renderArrestedModalField('proclaimed_offender')}
+          {renderArrestedModalField('nafis_prepared')}
+          {renderArrestedModalField('dossier_prepared')}
+          {renderArrestedModalField('arresting_officer')}
+          {renderArrestedModalField('arresting_officer_mobile')}
+          {renderArrestedModalField('listed_criminal', null, true)}
         </div>
       </fieldset>
     );
@@ -4167,6 +4172,7 @@ const renderActionTakenStep = () => {
             'scheme_of_arrest',
             'arrested_dob', 'arrested_age_year', 'arrested_age_month', 'arrested_birth_year',
             'prev_involvement', 'proclaimed_offender',
+            'nafis_prepared', 'dossier_prepared', 'arresting_officer_mobile', 'arresting_officer', 'listed_criminal',
             'arrested_present_address', 'arrested_perm_same', 'arrested_house_no', 'arrested_street', 'arrested_colony', 'arrested_city_town_village',
             'arrested_tehsil_block_mandal', 'arrested_country', 'arrested_state', 'arrested_district', 'arrested_police_station', 'arrested_pincode',
             'arrested_perm_address', 'arrested_perm_country', 'arrested_perm_state', 'arrested_perm_district',
@@ -4203,11 +4209,7 @@ const renderActionTakenStep = () => {
         //   person_type: 'INTIMATED',
         //   section: 'intimation_details'
         // },
-        {
-          title_en: 'Procedural Slips',
-          title_hi: 'प्रक्रियात्मक पर्ची',
-          keys: ['nafis_prepared', 'dossier_prepared', 'arresting_officer_mobile', 'arresting_officer', 'listed_criminal']
-        },
+
         {
           title_en: 'Investigating Officer',
           title_hi: 'जांच अधिकारी',
