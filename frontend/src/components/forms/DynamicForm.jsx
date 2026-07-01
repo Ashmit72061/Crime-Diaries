@@ -1386,7 +1386,7 @@ export default function DynamicForm({
                 </td>
               </tr>
 
-              {/* Row 2: Type of Information */}
+              {/* Row 2: Type of Information
               <tr className="border-b border-[#7a9cc5]">
                 <td className="w-1/3 bg-[#d0e0f8] text-[#0d2a4a] text-[11px] font-bold px-2.5 py-1 border-r border-[#7a9cc5] align-middle">
                   Type of Information
@@ -1432,7 +1432,7 @@ export default function DynamicForm({
                     <span>Court Order</span>
                   </label>
                 </td>
-              </tr>
+              </tr> */}
 
               {/* Row: Case Registration Type */}
               <tr className="border-b border-[#7a9cc5]">
@@ -1460,7 +1460,7 @@ export default function DynamicForm({
                 </td>
                 <td className="w-2/3 bg-white px-2.5 py-1">
                   <input
-                    type="text"
+                    type="number"
                     disabled={readOnly}
                     value={values.complaint_no || ''}
                     onChange={(e) => {
