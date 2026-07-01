@@ -3556,8 +3556,8 @@ const renderArrestedStep = () => {
                   </div>
                 </div>
               </React.Fragment>
-              {renderArrestedModalField('scheme_of_arrest')}
               {renderArrestedModalField('arrested_qualification')}
+              {renderArrestedModalField('scheme_of_arrest')}
               {renderArrestedModalField('arrested_landline')}
               {renderArrestedModalField('arrested_email', null, true)}
             </div>
