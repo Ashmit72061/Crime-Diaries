@@ -3547,7 +3547,7 @@ const renderArrestedStep = () => {
                   </div>
                 </div>
               </React.Fragment>
-
+              {renderArrestedModalField('scheme_of_arrest')}
               {renderArrestedModalField('arrested_landline')}
               {renderArrestedModalField('arrested_email', null, true)}
             </div>
@@ -4813,7 +4813,7 @@ const renderActionTakenStep = () => {
   };
 
   const saveArrestedEntry = () => {
-    const arrestedFields = allSchemaFields.filter(f => f.field_key?.startsWith('arrested_') || f.field_key?.startsWith('arrest_') || f.section === 'arrestee_info' || f.section === 'arrested_personal_info' || f.section === 'arrested_address' || f.section === 'arrest_details');
+    const arrestedFields = allSchemaFields.filter(f => f.field_key?.startsWith('arrested_') || f.field_key?.startsWith('arrest_') || f.section === 'arrestee_info' || f.section === 'arrested_personal_info' || f.section === 'arrested_address' || f.section === 'arrest_details' || f.field_key === 'scheme_of_arrest');
     const errs = {};
     const touchedFields = {};
 
