@@ -362,6 +362,7 @@ export default function DynamicForm({
                             let ioRank = '';
                             let ioPis = '';
                             let ioMobile = '';
+                            let caseTypeVal = 'cctns(manual FIR)';
 
                             if (row.isBackend) {
                               const matched = (casesData || []).find(c => {
@@ -377,6 +378,7 @@ export default function DynamicForm({
                                 ioRank = cData.io_rank || '';
                                 ioPis = cData.io_pis || '';
                                 ioMobile = cData.io_mobile || '';
+                                caseTypeVal = cData.case_type || matched.case_type || 'cctns(manual FIR)';
                               }
                             } else {
                               // It's a mock case
@@ -386,6 +388,7 @@ export default function DynamicForm({
                               ioRank = 'Inspector';
                               ioPis = '28081234';
                               ioMobile = '9876543210';
+                              caseTypeVal = 'cctns(manual FIR)';
                             }
 
                             // Directly update values
@@ -398,7 +401,8 @@ export default function DynamicForm({
                               io_name: ioName,
                               io_rank: ioRank,
                               io_pis: ioPis,
-                              io_mobile: ioMobile
+                              io_mobile: ioMobile,
+                              case_type: caseTypeVal
                             }));
                           }}
                           className={`group cursor-pointer hover:bg-slate-50/80 transition-all ${
@@ -578,6 +582,7 @@ export default function DynamicForm({
     const acts = values.act_name ? values.act_name.split(',').map(s => s.trim()).filter(Boolean) : [];
     const secs = values.sections ? values.sections.split(',').map(s => s.trim()).filter(Boolean) : [];
     const maxLen = Math.max(acts.length, secs.length);
+    const allFields = schema ? schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []) : [];
 
     const chosenActObj = actsSectionsRegistry.find(item => item.act === newAct);
     const availableSections = chosenActObj ? chosenActObj.sections : [];
@@ -608,13 +613,16 @@ export default function DynamicForm({
                 {lang === 'hi' ? 'मामले का प्रकार' : 'CASE TYPE'}
               </div>
               <div className="px-3 py-1 bg-white flex items-center border-b border-[#c7d8ea] min-h-[40px]">
-                <input
-                  type="text"
-                  disabled={readOnly}
-                  value={values.case_type || ''}
-                  onChange={(e) => handleChange('case_type', e.target.value)}
-                  className="w-full max-w-md h-7 px-2 border border-[#7a9cc5] rounded bg-white text-[12px] outline-none focus:border-blue-500"
-                />
+                <div className="w-full max-w-md">
+                  <FieldRenderer
+                    field={allFields.find(f => f.field_key === 'case_type')}
+                    value={values.case_type || ''}
+                    onChange={handleChange}
+                    readOnly={readOnly}
+                    lang={lang}
+                    values={values}
+                  />
+                </div>
               </div>
             </React.Fragment>
 
@@ -5625,6 +5633,7 @@ const renderActionTakenStep = () => {
             io_rank: cData.io_rank || '',
             io_pis: cData.io_pis || '',
             io_mobile: cData.io_mobile || '',
+            case_type: cData.case_type || matchedBackendCase.case_type || 'cctns(manual FIR)',
           };
         } else if (matchedMockCase) {
           autofilled = {
@@ -5634,6 +5643,7 @@ const renderActionTakenStep = () => {
             io_rank: 'Inspector',
             io_pis: '28081234',
             io_mobile: '9876543210',
+            case_type: 'cctns(manual FIR)',
           };
         }
         setValues(prev => ({
@@ -5645,6 +5655,7 @@ const renderActionTakenStep = () => {
           io_rank: prev.io_rank || autofilled.io_rank || '',
           io_pis: prev.io_pis || autofilled.io_pis || '',
           io_mobile: prev.io_mobile || autofilled.io_mobile || '',
+          case_type: prev.case_type || autofilled.case_type || 'cctns(manual FIR)',
         }));
       }
     }
