@@ -4158,20 +4158,35 @@ const renderActionTakenStep = () => {
       });
     }
 
-    if (recordType === 'ARREST' && (caseType === 'against_fir' || caseType === 'kalandra' || !caseType)) {
+    if (recordType === 'ARREST') {
       const allFields = schema.reduce((acc, sec) => [...acc, ...(sec.fields || [])], []);
       const statusField = allFields.find(f => f.field_key === 'status');
       if (statusField) {
-        statusField.options = JSON.stringify([
-          { value: 'police_custody', label_en: 'Police Custody', label_hi: 'पुलिस हिरासत' },
-          { value: 'bail', label_en: 'Released on Bail', label_hi: 'जमानत पर रिहा' },
-          { value: 'judicial_custody', label_en: 'Sent to Judicial Custody', label_hi: 'न्यायिक हिरासत में' },
-          { value: 'released', label_en: 'Released', label_hi: 'रिहा' },
-          { value: 'others', label_en: 'Others / Discharged', label_hi: 'अन्य / आरोपमुक्त' }
-        ]);
-        statusField.label_en = 'Arrestee Status';
+        const effectiveCaseType = caseType || 'kalandra';
+        if (effectiveCaseType === 'against_fir') {
+          statusField.options = JSON.stringify([
+            { value: 'JC', label_en: 'JC', label_hi: 'जेसी' },
+            { value: 'PC', label_en: 'PC', label_hi: 'पीसी' },
+            { value: 'Bail', label_en: 'Bail', label_hi: 'जमानत पर रिहा' },
+            { value: 'Bound Down', label_en: 'Bound Down', label_hi: 'Bound Down' },
+            { value: 'Released', label_en: 'Released', label_hi: 'रिहा' },
+            { value: 'Lockup', label_en: 'Lockup', label_hi: 'जेल' },
+            { value: '35(3) BNS Notice', label_en: '35(3) BNS Notice', label_hi: '35(3) BNS Notice' },
+            { value: 'others', label_en: 'Others', label_hi: 'अन्य' }
+          ]);
+        } else {
+          statusField.options = JSON.stringify([
+            { value: 'JC', label_en: 'JC', label_hi: 'जेसी' },
+            { value: 'Bound Down', label_en: 'Bound Down', label_hi: 'Bound Down' },
+            { value: 'Lockup', label_en: 'Lockup', label_hi: 'जेल' },
+            { value: 'Fine', label_en: 'Fine', label_hi: 'Fine' },
+            { value: 'others', label_en: 'Others', label_hi: 'अन्य' }
+          ]);
+        }
+        statusField.label_en = 'Status';
         statusField.label_hi = 'बंदी की स्थिति';
       }
+
       if (!allFields.find(f => f.field_key === 'recovery')) {
         allFields.push({
           field_key: 'recovery',
@@ -4184,6 +4199,7 @@ const renderActionTakenStep = () => {
           validation_rules: JSON.stringify({ required: false })
         });
       }
+
       const effectiveCaseType = caseType || 'kalandra'; // null = edit mode, treat as kalandra
       const tabSpecs = [];
       if (effectiveCaseType === 'against_fir') {
@@ -4235,19 +4251,19 @@ const renderActionTakenStep = () => {
           entity_type: 'property',
           section: 'property_details'
         },
-        {
-          title_en: 'Intimation Details',
-          title_hi: 'सूचना का विवरण',
-          keys: [
-            'intimation_date_time', 'intimated_relative_name', 'intimated_relative_relation', 'intimation_mode',
-            'intimation_house_no', 'intimation_street', 'intimation_colony', 'intimation_city_town_village', 'intimation_tehsil_block_mandal',
-            'intimation_country', 'intimation_state', 'intimation_district', 'intimation_police_station', 'intimation_pincode'
-          ],
-          is_repeater: true,
-          entity_type: 'person',
-          person_type: 'INTIMATED',
-          section: 'intimation_details'
-        },
+        // {
+        //   title_en: 'Intimation Details',
+        //   title_hi: 'सूचना का विवरण',
+        //   keys: [
+        //     'intimation_date_time', 'intimated_relative_name', 'intimated_relative_relation', 'intimation_mode',
+        //     'intimation_house_no', 'intimation_street', 'intimation_colony', 'intimation_city_town_village', 'intimation_tehsil_block_mandal',
+        //     'intimation_country', 'intimation_state', 'intimation_district', 'intimation_police_station', 'intimation_pincode'
+        //   ],
+        //   is_repeater: true,
+        //   entity_type: 'person',
+        //   person_type: 'INTIMATED',
+        //   section: 'intimation_details'
+        // },
         {
           title_en: 'Procedural Slips',
           title_hi: 'प्रक्रियात्मक पर्ची',
@@ -4359,8 +4375,8 @@ const renderActionTakenStep = () => {
       });
     }
     return schema;
-  }, [schema, recordType, caseType, finalFirOptions]);
-
+  },
+  [schema, recordType, caseType, finalFirOptions]);
   const { triggerAutosave, saveImmediately, saveStatus, savedRecord } = useAutosave(
     recordType,
     initialValues?.id

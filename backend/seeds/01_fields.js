@@ -745,6 +745,7 @@ const fields = [
     { value: 'Bound Down', label_en: 'Bound Down', label_hi: 'Bound Down' },
     { value: 'Release', label_en: 'Release', label_hi: 'रिहाई' },
     { value: 'Lockup', label_en: 'Lockup', label_hi: 'Lockup' },
+    { value: 'Fine', label_en: 'Fine', label_hi: 'Fine' },
     { value: '35(3) BNS Notice', label_en: '35(3) BNS Notice', label_hi: '35(3) BNS Notice' }]) },
     
   { id: 'A_12', field_key: 'nafis_prepared',              field_type: 'RADIO',  applicable_record_types: JSON.stringify(['ARREST']), label_en: 'NAFIS Prepared',                   label_hi: 'नाफिस तैयार किया गया',                 visible_to_levels: L, editable_by_levels: E, section: 'procedure_slips', sort_order: 12, show_when: JSON.stringify({ required: false }), is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' }, { value: 'No', label_en: 'No', label_hi: 'नहीं' }]) },
