@@ -747,6 +747,12 @@ const fields = [
     { value: 'Lockup', label_en: 'Lockup', label_hi: 'Lockup' },
     { value: 'Fine', label_en: 'Fine', label_hi: 'Fine' },
     { value: '35(3) BNS Notice', label_en: '35(3) BNS Notice', label_hi: '35(3) BNS Notice' }]) },
+  { id: 'A_32', field_key: 'scheme_of_arrest',            field_type: 'SELECT',   applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Scheme of Arrest',                  label_hi: 'गिरफ्तारी की योजना',                  visible_to_levels: L, editable_by_levels: E, section: 'arrested_info', sort_order: 10.5, validation_rules: JSON.stringify({ required: false }), options: JSON.stringify([
+    { value: 'Integrated Pride', label_en: 'Integrated Pride', label_hi: 'Integrated Pride' },
+    { value: 'Group Patrolling', label_en: 'Group Patrolling', label_hi: 'Group Patrolling' },
+    { value: 'Anti-snatching', label_en: 'Anti-snatching', label_hi: 'Anti-snatching' },
+    { value: 'By Prahari', label_en: 'By Prahari', label_hi: 'By Prahari' },
+    { value: 'By Eyes & Ears Scheme Members', label_en: 'By Eyes & Ears Scheme Members', label_hi: 'By Eyes & Ears Scheme Members' }]) },
     
   { id: 'A_12', field_key: 'nafis_prepared',              field_type: 'RADIO',  applicable_record_types: JSON.stringify(['ARREST']), label_en: 'NAFIS Prepared',                   label_hi: 'नाफिस तैयार किया गया',                 visible_to_levels: L, editable_by_levels: E, section: 'procedure_slips', sort_order: 12, show_when: JSON.stringify({ required: false }), is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' }, { value: 'No', label_en: 'No', label_hi: 'नहीं' }]) },
   { id: 'A_13', field_key: 'dossier_prepared',            field_type: 'RADIO',  applicable_record_types: JSON.stringify(['ARREST']), label_en: 'Dossier Prepared',                 label_hi: 'डोजियर तैयार किया गया',                visible_to_levels: L, editable_by_levels: E, section: 'procedure_slips', sort_order: 13, show_when: JSON.stringify({ required: false }), is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Yes', label_en: 'Yes', label_hi: 'हाँ' }, { value: 'No', label_en: 'No', label_hi: 'नहीं' }]) },
@@ -1023,48 +1029,6 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
       sort_order: baseOrder + 8, is_active: true, scope_level: 'global'
     },
-    {
-  id: 'AP_XX',
-  field_key: 'scheme_of_arrest',
-  field_type: 'SELECT',
-  applicable_record_types: JSON.stringify(['ARREST']),
-  label_en: 'Scheme of Arrest',
-  label_hi: 'गिरफ्तारी की योजना',
-  visible_to_levels: L,
-  editable_by_levels: E,
-  section: 'person_particulars',
-  sort_order: 7.5,   // Mobile No. ke baad wala order
-  validation_rules: JSON.stringify({ required: false }),
-  options: JSON.stringify([
-    {
-      value: 'Integrated Pride',
-      label_en: 'Integrated Pride',
-      label_hi: 'Integrated Pride'
-    },
-    {
-      value: 'Group Patrolling',
-      label_en: 'Group Patrolling',
-      label_hi: 'Group Patrolling'
-    },
-    {
-      value: 'Anti-snatching',
-      label_en: 'Anti-snatching',
-      label_hi: 'Anti-snatching'
-    },
-    {
-      value: 'By Prahari',
-      label_en: 'By Prahari',
-      label_hi: 'By Prahari'
-    },
-    {
-      value: 'By Eyes & Ears Scheme Members',
-      label_en: 'By Eyes & Ears Scheme Members',
-      label_hi: 'By Eyes & Ears Scheme Members'
-    }
-  ])
-},
-
-
     {
       id: `${prefix}_dob`,             field_key: `${prefix}_dob`,             field_type: 'DATE',
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Date of Birth`, label_hi: `${labelPrefixHi} जन्म तिथि`,
