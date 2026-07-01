@@ -179,7 +179,7 @@ export const getFieldsForForm = async (req, res) => {
             ];
           } else if (normalizedType === 'MISSING') {
             options = [
-              { value: 'Active', label_en: 'Active', label_hi: 'सक्रिय' },
+              { value: 'Un-traced', label_en: 'Un-traced', label_hi: 'लापता/सुराग नहीं' },
               { value: 'Traced', label_en: 'Traced', label_hi: 'पता लगाया गया' },
               { value: 'Referred', label_en: 'Referred', label_hi: 'स संदर्भित' },
               { value: 'Closed', label_en: 'Closed', label_hi: 'बंद' }
