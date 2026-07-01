@@ -610,7 +610,7 @@ export default function DynamicForm({
             {/* Case Type field */}
             <React.Fragment>
               <div className="bg-[#dfeaf5] px-3 py-2 text-[12px] font-semibold text-[#0d2a4a] flex items-center border-b border-[#c7d8ea] min-h-[40px]">
-                {lang === 'hi' ? 'मामले का प्रकार' : 'CASE TYPE'}
+                {lang === 'hi' ? 'मामला पंजीकरण प्रकार' : 'Case Registration Type'}
               </div>
               <div className="px-3 py-1 bg-white flex items-center border-b border-[#c7d8ea] min-h-[40px]">
                 <div className="w-full max-w-md">
