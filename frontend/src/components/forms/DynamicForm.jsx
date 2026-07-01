@@ -2140,36 +2140,7 @@ const renderComplainantStep = () => {
                 </div>
               </React.Fragment>
 
-              {renderFieldWithLabel('complainant_birth_year')}
-
-              {/* Age Range */}
-              <React.Fragment>
-                <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1">
-                  <span>{lang === 'hi' ? 'आयु सीमा (से - तक)' : 'Age Range (From - To)'}</span>
-                </div>
-                <div className="px-2 py-1 flex gap-2">
-                  <div className="flex-1">
-                    <FieldRenderer
-                      field={allFields.find(f => f.field_key === 'complainant_age_range_from')}
-                      value={values.complainant_age_range_from}
-                      onChange={handleChange}
-                      readOnly={readOnly}
-                      lang={lang}
-                      values={values}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <FieldRenderer
-                      field={allFields.find(f => f.field_key === 'complainant_age_range_to')}
-                      value={values.complainant_age_range_to}
-                      onChange={handleChange}
-                      readOnly={readOnly}
-                      lang={lang}
-                      values={values}
-                    />
-                  </div>
-                </div>
-              </React.Fragment>
+              {renderFieldWithLabel('complainant_birth_year', null, true)}
             </div>
           </fieldset>
 
@@ -2442,36 +2413,7 @@ const renderVictimStep = () => {
                 </div>
               </React.Fragment>
 
-              {renderVictimModalField('victim_birth_year')}
-
-              {/* Age Range */}
-              <React.Fragment>
-                <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1">
-                  <span>{lang === 'hi' ? 'आयु सीमा (से - तक)' : 'Age Range (From - To)'}</span>
-                </div>
-                <div className="px-2 py-1 flex gap-2">
-                  <div className="flex-1">
-                    <FieldRenderer
-                      field={allFields.find(f => f.field_key === 'victim_age_range_from')}
-                      value={victimTempValues.victim_age_range_from}
-                      onChange={handleVictimModalChange}
-                      readOnly={readOnly}
-                      lang={lang}
-                      values={victimTempValues}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <FieldRenderer
-                      field={allFields.find(f => f.field_key === 'victim_age_range_to')}
-                      value={victimTempValues.victim_age_range_to}
-                      onChange={handleVictimModalChange}
-                      readOnly={readOnly}
-                      lang={lang}
-                      values={victimTempValues}
-                    />
-                  </div>
-                </div>
-              </React.Fragment>
+              {renderVictimModalField('victim_birth_year', null, true)}
             </div>
           </fieldset>
 
@@ -2858,36 +2800,7 @@ const renderAccusedStep = () => {
                 </div>
               </React.Fragment>
 
-              {renderAccusedModalField('accused_birth_year')}
-
-              {/* Age Range */}
-              <React.Fragment>
-                <div className="bg-[#dfeaf5] px-2 py-2 text-[12px] font-medium flex items-center gap-1">
-                  <span>{lang === 'hi' ? 'आयु सीमा (से - तक)' : 'Age Range (From - To)'}</span>
-                </div>
-                <div className="px-2 py-1 flex gap-2">
-                  <div className="flex-1">
-                    <FieldRenderer
-                      field={allFields.find(f => f.field_key === 'accused_age_range_from')}
-                      value={accusedTempValues.accused_age_range_from}
-                      onChange={handleAccusedModalChange}
-                      readOnly={readOnly}
-                      lang={lang}
-                      values={accusedTempValues}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <FieldRenderer
-                      field={allFields.find(f => f.field_key === 'accused_age_range_to')}
-                      value={accusedTempValues.accused_age_range_to}
-                      onChange={handleAccusedModalChange}
-                      readOnly={readOnly}
-                      lang={lang}
-                      values={accusedTempValues}
-                    />
-                  </div>
-                </div>
-              </React.Fragment>
+              {renderAccusedModalField('accused_birth_year', null, true)}
             </div>
           </fieldset>
 
@@ -3584,9 +3497,7 @@ const renderArrestedStep = () => {
               {renderArrestedModalField('arrested_dob')}
               {renderArrestedModalField('arrested_age_year')}
               {renderArrestedModalField('arrested_age_month')}
-              {renderArrestedModalField('arrested_birth_year', null, false, true)}
-              {renderArrestedModalField('arrested_age_range_from')}
-              {renderArrestedModalField('arrested_age_range_to', null, true)}
+              {renderArrestedModalField('arrested_birth_year', null, true, true)}
             </div>
           </fieldset>
         </div>
@@ -4112,7 +4023,6 @@ const renderActionTakenStep = () => {
           'complainant_gender', 'complainant_marital_status', 'complainant_mobile_country_code', 'complainant_mobile',
           'complainant_email', 'complainant_same_as_victim', 'complainant_relation_type', 'complainant_relative_name',
           'complainant_dob', 'complainant_age_year', 'complainant_age_month', 'complainant_birth_year',
-          'complainant_age_range_from', 'complainant_age_range_to',
           'complainant_house_no', 'complainant_street', 'complainant_colony', 'complainant_city_town_village',
           'complainant_tehsil_block_mandal', 'complainant_country', 'complainant_state', 'complainant_district',
           'complainant_police_station', 'complainant_pincode',
@@ -4126,7 +4036,6 @@ const renderActionTakenStep = () => {
           'victim_gender', 'victim_marital_status', 'victim_mobile_country_code', 'victim_mobile',
           'victim_email', 'victim_relation_type', 'victim_relative_name',
           'victim_dob', 'victim_age_year', 'victim_age_month', 'victim_birth_year',
-          'victim_age_range_from', 'victim_age_range_to',
           'victim_house_no', 'victim_street', 'victim_colony', 'victim_city_town_village',
           'victim_tehsil_block_mandal', 'victim_country', 'victim_state', 'victim_district',
           'victim_police_station', 'victim_pincode', 'victim_present_address',
@@ -4139,7 +4048,6 @@ const renderActionTakenStep = () => {
           'accused_gender', 'accused_marital_status', 'accused_mobile_country_code', 'accused_mobile',
           'accused_email', 'accused_relation_type', 'accused_relative_name',
           'accused_dob', 'accused_age_year', 'accused_age_month', 'accused_birth_year',
-          'accused_age_range_from', 'accused_age_range_to',
           'accused_house_no', 'accused_street', 'accused_colony', 'accused_city_town_village',
           'accused_tehsil_block_mandal', 'accused_country', 'accused_state', 'accused_district',
           'accused_police_station', 'accused_pincode', 'accused_present_address',
@@ -4257,7 +4165,7 @@ const renderActionTakenStep = () => {
             'nick_name', 'arrested_mobile_country_code', 'arrested_npr', 'arrested_first_name', 'arrested_middle_name', 'arrested_last_name',
             'arrested_gender', 'arrested_marital_status', 'arrested_relation_type', 'arrested_relative_name', 'arrested_mobile',
             'scheme_of_arrest',
-            'arrested_dob', 'arrested_age_year', 'arrested_age_month', 'arrested_birth_year', 'arrested_age_range_from', 'arrested_age_range_to',
+            'arrested_dob', 'arrested_age_year', 'arrested_age_month', 'arrested_birth_year',
             'prev_involvement', 'proclaimed_offender',
             'arrested_present_address', 'arrested_perm_same', 'arrested_house_no', 'arrested_street', 'arrested_colony', 'arrested_city_town_village',
             'arrested_tehsil_block_mandal', 'arrested_country', 'arrested_state', 'arrested_district', 'arrested_police_station', 'arrested_pincode',

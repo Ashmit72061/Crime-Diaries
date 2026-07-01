@@ -507,7 +507,7 @@ const fields = [
   { id: 'C_8',  field_key: 'occurrence_place',  field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE', 'PCR_CALL']),                  label_en: 'Place of Occurrence',         label_hi: 'घटना का स्थान',                 visible_to_levels: L, editable_by_levels: E, section: 'incident_details',        sort_order: 8,  validation_rules: JSON.stringify({ required: false }) },
 
   // io_mobile — IO mobile number, shared by CASE, ARREST and UIDB
-  { id: 'C_19', field_key: 'io_mobile',         field_type: 'TEXT',   applicable_record_types: JSON.stringify(['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB']),   label_en: 'IO Mobile No.',               label_hi: 'जांच अधिकारी का मोबाइल',        visible_to_levels: L, editable_by_levels: E, section: 'investigation_officer',   sort_order: 503 },
+  { id: 'C_19', field_key: 'io_mobile',         field_type: 'NUMBER',   applicable_record_types: JSON.stringify(['CASE', 'ARREST', 'PCR_CALL', 'MISSING', 'UIDB']),   label_en: 'IO Mobile No.',               label_hi: 'जांच अधिकारी का मोबाइल',        visible_to_levels: L, editable_by_levels: E, section: 'investigation_officer',   sort_order: 503 },
 
   // informant_name — Informant name, shared by MISSING and UIDB
   { id: 'MS_10',field_key: 'informant_name',    field_type: 'TEXT',   applicable_record_types: JSON.stringify(['MISSING', 'UIDB']),                   label_en: 'Informant Name',              label_hi: 'सूचना देने वाले का नाम',         visible_to_levels: L, editable_by_levels: E, section: 'contacts_assigned',       sort_order: 10 },
@@ -860,7 +860,7 @@ const fields = [
   { id: 'MS_8', field_key: 'missing_place',                field_type: 'TEXT',     applicable_record_types: JSON.stringify(['MISSING']), label_en: 'Last Seen Place',        label_hi: 'अंतिम बार देखा गया स्थान',     visible_to_levels: L, editable_by_levels: E, section: 'person_details', sort_order: 2.42 },
   { id: 'MS_9', field_key: 'physical_description',         field_type: 'TEXTAREA', applicable_record_types: JSON.stringify(['MISSING']), label_en: 'Physical Description',   label_hi: 'शारीरिक हुलिया',                visible_to_levels: L, editable_by_levels: E, section: 'person_details', sort_order: 2.46, full_width: true },
   { id: 'MS_11',field_key: 'informant_mobile',             field_type: 'NUMBER',   applicable_record_types: JSON.stringify(['MISSING','UIDB']), label_en: 'Informant Mobile',       label_hi: 'सूचना देने वाले का मोबाइल',    visible_to_levels: L, editable_by_levels: E, section: 'contacts_assigned',    sort_order: 11 },
-  { id: 'MS_19',field_key: 'dress_color',                  field_type: 'TEXT',     applicable_record_types: JSON.stringify(['MISSING']), label_en: 'Dress & Color',          label_hi: 'पहनावा और रंग',                 visible_to_levels: L, editable_by_levels: E, section: 'person_details', sort_order: 2.45, is_active: true, scope_level: 'global' },
+  { id: 'MS_19',field_key: 'Mental State',                  field_type: 'SELECT',     applicable_record_types: JSON.stringify(['MISSING']), label_en: 'Mental State',          label_hi: 'मानसिक स्थिति',                 visible_to_levels: L, editable_by_levels: E, section: 'person_details', sort_order: 2.45, is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Normal', label_en: 'Normal', label_hi: 'सामान्य' }, { value: 'Abnormal', label_en: 'Abnormal', label_hi: 'असामान्य' }]) },
   { id: 'MS_23',field_key: 'missing_type',                 field_type: 'SELECT',   applicable_record_types: JSON.stringify(['MISSING']), label_en: 'Missing / Found Type',   label_hi: 'लापता / मिला प्रकार',          visible_to_levels: L, editable_by_levels: E, section: 'general_info',         sort_order: 3,  is_active: true, scope_level: 'global', options: JSON.stringify([{ value: 'Missing', label_en: 'Missing', label_hi: 'लापता' }, { value: 'Found', label_en: 'Found', label_hi: 'मिला' }]) },
  // { id: 'MS_24',field_key: 'pcr_call_flag',                field_type: 'RADIO',  applicable_record_types: JSON.stringify(['MISSING']), label_en: 'PCR Call (Y/N)',         label_hi: 'पीसीआर कॉल (हाँ/नहीं)',         visible_to_levels: L, editable_by_levels: E, section: 'general_info',         sort_order: 4,  is_active: true, scope_level: 'global', options: JSON.stringify([{ value: true, label_en: 'Yes', label_hi: 'हाँ' }, { value: false, label_en: 'No', label_hi: 'नहीं' }]) },
   { id: 'MS_25',field_key: 'operator_name',                field_type: 'TEXT',     applicable_record_types: JSON.stringify(['MISSING']), label_en: 'Operator Name to Whom MPS', label_hi: 'ऑपरेटर का नाम जिसे एमपीएस भेजा गया', visible_to_levels: L, editable_by_levels: E, section: 'general_info',    sort_order: 5,  is_active: true, scope_level: 'global' },
@@ -1066,18 +1066,6 @@ function generatePersonFields(prefix, labelPrefixEn, labelPrefixHi, recordTypes,
       applicable_record_types: typesStr, label_en: `${labelPrefixEn} Year of Birth`, label_hi: `${labelPrefixHi} जन्म का वर्ष`,
       visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
       sort_order: baseOrder + 12, is_active: true, scope_level: 'global'
-    },
-    {
-      id: `${prefix}_age_range_from`,  field_key: `${prefix}_age_range_from`,  field_type: 'NUMBER',
-      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Age Range From`, label_hi: `${labelPrefixHi} आयु सीमा से`,
-      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
-      sort_order: baseOrder + 12.1, is_active: true, scope_level: 'global'
-    },
-    {
-      id: `${prefix}_age_range_to`,    field_key: `${prefix}_age_range_to`,    field_type: 'NUMBER',
-      applicable_record_types: typesStr, label_en: `${labelPrefixEn} Age Range To`, label_hi: `${labelPrefixHi} आयु सीमा तक`,
-      visible_to_levels: L, editable_by_levels: E, section: `${prefix}_personal_info`,
-      sort_order: baseOrder + 12.2, is_active: true, scope_level: 'global'
     },
     {
       id: `${prefix}_house_no`,        field_key: `${prefix}_house_no`,        field_type: 'TEXT',
